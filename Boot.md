@@ -101,6 +101,18 @@ Understand current priority.
 
 ---
 
+## Step 7 — Load Session Log (Flight Recorder)
+
+Read:
+
+```
+memory/SESSION_LOG.md
+```
+
+Understand the active session journal and last recorded actions.
+
+---
+
 # Context Rules
 
 Do not load everything automatically.
@@ -150,16 +162,15 @@ Avoid unnecessary complexity.
 
 Before ending a significant session:
 
-Summarize:
-
-* What changed.
-* What was learned.
-* What decisions were made.
-* What the next action should be.
-
-Suggest updates to relevant files.
-
-Do not modify long-term memory without approval.
+1. Update the session journal in `memory/SESSION_LOG.md` with timestamped entries of what was done.
+2. Run the `tools/continuity_bootstrap.py` script to compile the current session state, git diff, and bootstrap instructions into `memory/BOOTSTRAP.md`.
+3. Summarize:
+   * What changed.
+   * What was learned.
+   * What decisions were made.
+   * What the next action should be.
+4. Suggest updates to other relevant files.
+5. Do not modify long-term memory without approval.
 
 ---
 

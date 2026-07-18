@@ -32,13 +32,13 @@ Status:
 Active
 
 Purpose:
-Build a persistent AI-assisted environment that maintains continuity across models, projects, and time.
+Build a persistent AI-assisted operating environment that maintains continuity across models, projects, learning, and time.
 
 Current milestone:
-v0.2.0 Identity Framework
+v0.6.0 Session Continuity Complete
 
 Next milestone:
-v0.3.0 Memory and State System
+v0.7.0 Context Optimization & Compression
 
 ---
 
@@ -108,10 +108,12 @@ Experience:
 
 # Immediate Next Actions
 
-1. Complete Amir OS memory structure.
-2. Begin tracking learning progress.
-3. Create project state tracking.
-4. Develop AI boot process.
+1. Validate the session resume bootstrap tool (`tools/continuity_bootstrap.py`).
+2. Implement automated session summaries in `memory/SESSION_LOG.md`.
+3. Set up templates for context compression to optimize token usage.
+4. Continue with Networking (DNS, DHCP, Subnetting) and Security+ hands-on studies in the home lab.
+
+---
 
 # Memory Management Rules
 

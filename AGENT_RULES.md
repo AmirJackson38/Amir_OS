@@ -170,6 +170,11 @@ Capture:
 
 The system should make future continuation easier.
 
+To ensure resilience against unexpected cutoffs:
+1. Log progress incrementally in `memory/SESSION_LOG.md` (the flight recorder).
+2. Periodically run the `tools/continuity_bootstrap.py` compiler to refresh the `memory/BOOTSTRAP.md` write-ahead log.
+3. If rate limits or session drops occur, the next session can immediately boot using `memory/BOOTSTRAP.md`.
+
 ---
 
 # Rule 10 — Optimize For Amir's Growth

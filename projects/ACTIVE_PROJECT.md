@@ -32,20 +32,20 @@ Foundation and architecture
 
 Current milestone:
 
-v0.3.0 Memory Foundation Complete
+v0.6.0 Session Continuity Complete
 
 ---
 
 # Completed Recently
 
-* Created Amir OS folder structure.
+* Created Amir OS folder structure (v0.1.0).
 * Added Git version control.
-* Created identity framework.
-* Defined coaching principles.
-* Defined goals and priorities.
-* Created memory foundation.
-* Created learning tracking system.
-* Created project tracking system.
+* Created identity framework, defined coaching principles and goals (v0.2.0).
+* Created memory foundation, decisions log, and lessons learned (v0.3.0).
+* Created learning and project tracking systems (v0.4.0).
+* Developed agent boot system and rules (v0.5.0).
+* Designed session continuity workflow (v0.6.0).
+* Created incremental flight recorder (`memory/SESSION_LOG.md`) and compiled bootstrap generator (`tools/continuity_bootstrap.py`).
 
 ---
 
@@ -53,10 +53,10 @@ v0.3.0 Memory Foundation Complete
 
 Next steps:
 
-1. Complete project organization.
-2. Create AI boot/context loading process.
-3. Design session tracking system.
-4. Build efficient context handoff workflow.
+1. Validate the session resume workflow with active testing.
+2. Draft templates for context compression and automatic memory pruning.
+3. Integrate session log updates into git hooks or shell aliases.
+4. Establish next active learning milestones for networking and cybersecurity.
 
 ---
 
