@@ -2,8 +2,8 @@
 
 ## Last Updated
 
-Date:
-Version:
+Date: July 23, 2026
+Version: v0.6.0
 
 ---
 

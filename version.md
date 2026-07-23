@@ -2,15 +2,15 @@
 
 ## Current Version
 
-**v0.6.0**
+**v0.7.0**
 
 ---
 
 # Status
 
-**v0.6.0 Session Continuity Established**
+**v0.7.0 Context Optimization & Memory Compaction Established**
 
-The operating environment now supports robust session continuity using a journaled session log (`memory/SESSION_LOG.md`) and an automated compilation tool (`tools/continuity_bootstrap.py`) to survive unexpected cutoffs.
+The operating environment now features deterministic memory compaction (`tools/memory_compactor.py`), strict character budget enforcement (~2,500 chars), and updated master home lab network documentation.
 
 ---
 

@@ -28,11 +28,11 @@ Build the foundation of a personal AI-assisted operating environment that can ma
 
 Phase:
 
-Foundation and architecture
+Context Optimization & Resilient Memory Engine
 
 Current milestone:
 
-v0.6.0 Session Continuity Complete
+v0.7.0 Context Optimization & Incremental Memory Checkpointing
 
 ---
 
@@ -44,8 +44,9 @@ v0.6.0 Session Continuity Complete
 * Created memory foundation, decisions log, and lessons learned (v0.3.0).
 * Created learning and project tracking systems (v0.4.0).
 * Developed agent boot system and rules (v0.5.0).
-* Designed session continuity workflow (v0.6.0).
-* Created incremental flight recorder (`memory/SESSION_LOG.md`) and compiled bootstrap generator (`tools/continuity_bootstrap.py`).
+* Designed session continuity workflow & flight data recorder (`memory/SESSION_LOG.md`) (v0.6.0).
+* Created compiled bootstrap generator (`tools/continuity_bootstrap.py`).
+* Implemented deterministic memory compactor (`tools/memory_compactor.py`) with a strict ~2,500-character budget (~625 tokens).
 
 ---
 
@@ -53,9 +54,9 @@ v0.6.0 Session Continuity Complete
 
 Next steps:
 
-1. Validate the session resume workflow with active testing.
-2. Draft templates for context compression and automatic memory pruning.
-3. Integrate session log updates into git hooks or shell aliases.
+1. Integrate deterministic memory compactor and continuity bootstrap into session end routines.
+2. Establish continuous 1-line incremental fact checkpointing during long troubleshooting sessions.
+3. Design `v0.8.0` Cognitive Observer & User Profile Learner (`tools/profile_observer.py`).
 4. Establish next active learning milestones for networking and cybersecurity.
 
 ---
