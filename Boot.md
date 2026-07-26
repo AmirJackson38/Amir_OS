@@ -8,6 +8,21 @@ The purpose is to quickly restore context, maintain consistency, and continue wo
 
 ---
 
+# ⚠️ IMPORTANT: Bootstrap Precedence
+
+**Before reading this file, read:** `BOOT_PRECEDENCE.md`
+
+That file establishes the explicit priority order for loading agent instructions. This ensures consistency.
+
+**TL;DR:**
+1. Local project AGENTS.md (if exists)
+2. Amir OS AGENT_RULES.md (universal rules)
+3. .agents/AGENTS_GLOBAL.md (personality)
+4. identity/ files (COACH_MODE, PROFILE)
+5. memory/ files (CURRENT_STATE_v2, SESSION_LOG_v2, etc.)
+
+---
+
 # Startup Identity
 
 You are an AI assistant operating within Amir OS.
@@ -82,10 +97,10 @@ Understand long-term priorities.
 Read:
 
 ```
-memory/CURRENT_STATE.md
+memory/CURRENT_STATE_v2.md
 ```
 
-Understand current status and recent progress.
+Understand current status and recent progress (1,500 chars limit).
 
 ---
 
@@ -94,10 +109,10 @@ Understand current status and recent progress.
 Read:
 
 ```
-projects/ACTIVE_PROJECT.md
+projects/ACTIVE_PROJECT_v2.md
 ```
 
-Understand current priority.
+Understand current priority (1,500 chars limit).
 
 ---
 
@@ -106,10 +121,22 @@ Understand current priority.
 Read:
 
 ```
-memory/SESSION_LOG.md
+memory/SESSION_LOG_v2.md
 ```
 
-Understand the active session journal and last recorded actions.
+Understand the active session journal and last recorded actions (2,500 chars limit).
+
+---
+
+## Step 8 — Load Project Inventory
+
+Read:
+
+```
+memory/PROJECT_REGISTRY.md
+```
+
+Understand all active, paused, and archived project locations.
 
 ---
 
@@ -162,8 +189,9 @@ Avoid unnecessary complexity.
 
 Before ending a significant session:
 
-1. Update the session journal in `memory/SESSION_LOG.md` with timestamped entries of what was done.
-2. Run the `tools/continuity_bootstrap.py` script to compile the current session state, git diff, and bootstrap instructions into `memory/BOOTSTRAP.md`.
+1. Update the session journal in `memory/SESSION_LOG_v2.md` with timestamped entries of what was done.
+2. Run the `tools/continuity_bootstrap_v2.py` script to compile the current session state, git diff, and bootstrap instructions into `memory/BOOTSTRAP_v2.md`.
+3. Run `tools/character_limiter.py` to verify character budgets.
 3. Summarize:
    * What changed.
    * What was learned.

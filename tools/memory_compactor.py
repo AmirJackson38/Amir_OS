@@ -1,6 +1,11 @@
 import os
 import sys
+import io
 import re
+
+# Force UTF-8 output on Windows
+if sys.platform == 'win32':
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 DEFAULT_CHAR_BUDGET = 2500
 
@@ -104,7 +109,9 @@ def compact_session_log(session_log_path, char_budget=DEFAULT_CHAR_BUDGET):
 
 def main():
     root = get_repo_root()
-    session_log_path = os.path.join(root, "memory", "SESSION_LOG.md")
+    session_log_path = os.path.join(root, "memory", "SESSION_LOG_v2.md")
+    if not os.path.exists(session_log_path):
+        session_log_path = os.path.join(root, "memory", "SESSION_LOG.md")
     
     print("\033[1;36mInitializing Amir OS Memory Compactor...\033[0m")
     print(f"Target file: {session_log_path}")
