@@ -1,5 +1,5 @@
 # Amir OS Session Resume Bootstrap (v2 Fast-Boot)
-> Generated: 2026-07-26 23:40:40 UTC
+> Generated: 2026-07-26 23:58:38 UTC
 > Amir OS Version: v0.8.0 (Single-File Fast-Boot Engine)
 > Memory Efficiency: 6819 / 5,500 chars used
 
@@ -14,6 +14,7 @@ Single-File Fast Boot: Reading this file provides 100% of the active context in 
 | File Path | Purpose | On-Demand Read Trigger | Write / Update Trigger |
 | :--- | :--- | :--- | :--- |
 | `memory/BOOTSTRAP_v2.md` | Single-File Fast Boot & Active Context WAL | Loaded automatically at session start | Recompiled by `continuity_bootstrap_v2.py` |
+| `memory/STAGING_INTENT.md` | Pre-Execution Intent WAL (in-flight actions) | Read on boot to check for interrupted tasks | Written BEFORE major code/system changes |
 | `version.md` | Compact version summary & current milestone | Checked on boot or version query | Updated on version releases |
 | `docs/CHANGELOG.md` | Complete historical release notes (v0.1.0+) | Read when researching historical changes | Updated on milestone releases |
 | `memory/CURRENT_STATE_v2.md` | Active focus, study areas, next actions | Read if detailed state inspection needed | Updated when active focus shifts |
@@ -27,7 +28,25 @@ Single-File Fast Boot: Reading this file provides 100% of the active context in 
 
 ---
 
-## 2. Active Context
+## 2. In-Flight Staged Intent (Pre-Execution WAL)
+
+# Staging Intent Log (Pre-Execution Intent WAL)
+
+> **Purpose:** Captures active architectural plans and major execution steps BEFORE they are executed.
+> If a session is interrupted (rate limit / crash), the next session reads this file to resume in-flight work immediately.
+
+---
+
+## Active Staged Action
+
+- **Timestamp:** 2026-07-26 23:59:00 UTC
+- **Target Component:** Memory Engine Architecture (v0.8.1)
+- **Planned Action:** Implement `STAGING_INTENT.md` state machine across `continuity_bootstrap_v2.py`, `BOOTSTRAP_v2.md`, `AGENT_RULES.md`, and `.agents/AGENTS.md`.
+- **Status:** Completed
+
+---
+
+## 3. Active Context
 
 ### Version
 # Amir OS Version
@@ -151,7 +170,7 @@ This project builds: Documentation, system design, information architecture, aut
 
 ---
 
-## 3. Recent Work & Journal (Flight Recorder)
+## 4. Recent Work & Journal (Flight Recorder)
 
 # Session Log (v2 — Flight Recorder, 2,500 chars max)
 
@@ -235,7 +254,7 @@ This project builds: Documentation, system design, information architecture, aut
 
 ---
 
-## 4. Project Registry Summary
+## 5. Project Registry Summary
 
 # Project Registry (Auto-Generated)
 
@@ -270,37 +289,30 @@ This project builds: Documentation, system design, information architecture, aut
 
 ---
 
-## 5. Active Workspace Changes (Git Status)
+## 6. Active Workspace Changes (Git Status)
 
 ```
-M memory/SESSION_LOG_v2.md
+M memory/BOOTSTRAP_v2.md
+ M tools/continuity_bootstrap_v2.py
+?? memory/STAGING_INTENT.md
 ```
 
 ---
 
-## 6. Current Code Diffs (Capped at 50 Lines)
+## 7. Current Code Diffs (Capped at 50 Lines)
 
 ```diff
-diff --git a/memory/SESSION_LOG_v2.md b/memory/SESSION_LOG_v2.md
-index 102ffa8..4d142bf 100644
---- a/memory/SESSION_LOG_v2.md
-+++ b/memory/SESSION_LOG_v2.md
-@@ -25,6 +25,8 @@
- * **18:10** - Standardized UTC timestamp generation (`%Y-%m-%d %H:%M:%S UTC`) and UTF-8 encoding across `continuity_bootstrap_v2.py`, `project_autodiscovery.py`, `character_limiter.py`, and `memory_compactor.py`.
- * **18:10** - Switched core boot sequences in [Boot.md](file:///C:/Users/Admin/Documents/Amir_OS/Boot.md), [AGENT_RULES.md](file:///C:/Users/Admin/Documents/Amir_OS/AGENT_RULES.md), and [.agents/AGENTS.md](file:///C:/Users/Admin/.agents/AGENTS.md) to target v2 memory files and `BOOT_PRECEDENCE.md`.
- * **18:10** - Validated all v2 python tools (`character_limiter.py`, `continuity_bootstrap_v2.py`, `project_autodiscovery.py`) — generated fresh [BOOTSTRAP_v2.md](file:///C:/Users/Admin/Documents/Amir_OS/memory/BOOTSTRAP_v2.md).
-+* **18:28** - Implemented Single-File Fast Boot, created `docs/CHANGELOG.md`, embedded System File Index (Memory Map), capped `git diff` to 50 lines. Reduced boot calls from 6 to 1 and tokens by ~80%.
-+* **18:40** - Configured local Git remote URL with authenticated PAT token. Pushed commit `7f79be8` to `github.com/AmirJackson38/Amir_OS` on branch `master`.
- 
- ---
+No active diff or diff unavailable.
 ```
 
 ---
 
-## 7. Fast-Boot Instructions for AI Agent
+## 8. Fast-Boot Instructions for AI Agent
 
 If you are an AI model initializing this session:
-1. You have loaded `BOOTSTRAP_v2.md`. You possess complete active context.
+1. You have loaded `BOOTSTRAP_v2.md`. Check Section 2 (`In-Flight Staged Intent`).
+   - If `Status == In-Progress`, an action was interrupted mid-flight. Resume it immediately.
+   - If `Status == Completed` or clear, proceed normally.
 2. Use the **System File Index** in Section 1 to fetch extra files on-demand (`docs/CHANGELOG.md`, `DECISIONS_v2.md`, etc.) only when requested or needed.
 3. State active project, last progress, and ask Amir: "How should I proceed?"
 

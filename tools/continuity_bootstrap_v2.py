@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-continuity_bootstrap_v2.py — Generate session resume state (v2 with hard limits & System File Index).
+continuity_bootstrap_v2.py — Generate session resume state (v2 with hard limits, System File Index, and Staging Intent).
 """
 
 import os
@@ -95,9 +95,18 @@ def main():
     elif not git_diff or "Error" in git_diff:
         git_diff = "No active diff or diff unavailable."
     
-    # 2. Load v2 Memory Files
+    # 2. Load v2 Memory Files & Staging Intent
     print("Loading v2 memory files...")
     
+    staging_intent_path = os.path.join(root, "memory", "STAGING_INTENT.md")
+    staging_intent = "No active staging intent."
+    if os.path.exists(staging_intent_path):
+        try:
+            with open(staging_intent_path, 'r', encoding='utf-8') as f:
+                staging_intent = f.read().strip()
+        except:
+            pass
+
     current_state_path = os.path.join(root, "memory", "CURRENT_STATE_v2.md")
     current_state = extract_section(current_state_path, r'^#')
     current_state_chars = get_file_stats(current_state_path)
@@ -144,6 +153,7 @@ Single-File Fast Boot: Reading this file provides 100% of the active context in 
 | File Path | Purpose | On-Demand Read Trigger | Write / Update Trigger |
 | :--- | :--- | :--- | :--- |
 | `memory/BOOTSTRAP_v2.md` | Single-File Fast Boot & Active Context WAL | Loaded automatically at session start | Recompiled by `continuity_bootstrap_v2.py` |
+| `memory/STAGING_INTENT.md` | Pre-Execution Intent WAL (in-flight actions) | Read on boot to check for interrupted tasks | Written BEFORE major code/system changes |
 | `version.md` | Compact version summary & current milestone | Checked on boot or version query | Updated on version releases |
 | `docs/CHANGELOG.md` | Complete historical release notes (v0.1.0+) | Read when researching historical changes | Updated on milestone releases |
 | `memory/CURRENT_STATE_v2.md` | Active focus, study areas, next actions | Read if detailed state inspection needed | Updated when active focus shifts |
@@ -157,7 +167,13 @@ Single-File Fast Boot: Reading this file provides 100% of the active context in 
 
 ---
 
-## 2. Active Context
+## 2. In-Flight Staged Intent (Pre-Execution WAL)
+
+{staging_intent}
+
+---
+
+## 3. Active Context
 
 ### Version
 {version_info}
@@ -170,19 +186,19 @@ Single-File Fast Boot: Reading this file provides 100% of the active context in 
 
 ---
 
-## 3. Recent Work & Journal (Flight Recorder)
+## 4. Recent Work & Journal (Flight Recorder)
 
 {session_log}
 
 ---
 
-## 4. Project Registry Summary
+## 5. Project Registry Summary
 
 {project_registry}
 
 ---
 
-## 5. Active Workspace Changes (Git Status)
+## 6. Active Workspace Changes (Git Status)
 
 ```
 {git_status}
@@ -190,7 +206,7 @@ Single-File Fast Boot: Reading this file provides 100% of the active context in 
 
 ---
 
-## 6. Current Code Diffs (Capped at 50 Lines)
+## 7. Current Code Diffs (Capped at 50 Lines)
 
 ```diff
 {git_diff}
@@ -198,10 +214,12 @@ Single-File Fast Boot: Reading this file provides 100% of the active context in 
 
 ---
 
-## 7. Fast-Boot Instructions for AI Agent
+## 8. Fast-Boot Instructions for AI Agent
 
 If you are an AI model initializing this session:
-1. You have loaded `BOOTSTRAP_v2.md`. You possess complete active context.
+1. You have loaded `BOOTSTRAP_v2.md`. Check Section 2 (`In-Flight Staged Intent`).
+   - If `Status == In-Progress`, an action was interrupted mid-flight. Resume it immediately.
+   - If `Status == Completed` or clear, proceed normally.
 2. Use the **System File Index** in Section 1 to fetch extra files on-demand (`docs/CHANGELOG.md`, `DECISIONS_v2.md`, etc.) only when requested or needed.
 3. State active project, last progress, and ask Amir: "How should I proceed?"
 
