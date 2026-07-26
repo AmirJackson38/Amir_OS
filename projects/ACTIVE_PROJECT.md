@@ -47,6 +47,11 @@ v0.7.0 Context Optimization & Incremental Memory Checkpointing
 * Designed session continuity workflow & flight data recorder (`memory/SESSION_LOG.md`) (v0.6.0).
 * Created compiled bootstrap generator (`tools/continuity_bootstrap.py`).
 * Implemented deterministic memory compactor (`tools/memory_compactor.py`) with a strict ~2,500-character budget (~625 tokens).
+* Integrated OpenCode with local OmniRoute instance — OpenCode now routes through `omniroute/auto/best-chat`.
+* Built **My Agent** (`projects/my-agent/`) — lightweight terminal AI client that talks exclusively to OmniRoute.
+* Fixed Windows UTF-8 encoding bug in Rich terminal rendering (em dash mojibake).
+* Verified end-to-end: OpenCode and My Agent both reach OmniRoute → `claude-web/claude-sonnet-5`.
+* Created `memory/OPENCODE_INTEGRATION.md` handoff note for future agents.
 
 ---
 
@@ -54,10 +59,12 @@ v0.7.0 Context Optimization & Incremental Memory Checkpointing
 
 Next steps:
 
-1. Integrate deterministic memory compactor and continuity bootstrap into session end routines.
-2. Establish continuous 1-line incremental fact checkpointing during long troubleshooting sessions.
-3. Design `v0.8.0` Cognitive Observer & User Profile Learner (`tools/profile_observer.py`).
-4. Establish next active learning milestones for networking and cybersecurity.
+1. Test My Agent thoroughly — multi-line paste, route switching, conversation persistence.
+2. Consider exposing OmniRoute to LAN so TARS Pi and TrueNAS can use it.
+3. Integrate deterministic memory compactor and continuity bootstrap into session end routines.
+4. Establish continuous 1-line incremental fact checkpointing during long troubleshooting sessions.
+5. Design `v0.8.0` Cognitive Observer & User Profile Learner (`tools/profile_observer.py`).
+6. Establish next active learning milestones for networking and cybersecurity.
 
 ---
 

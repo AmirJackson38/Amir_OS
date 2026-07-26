@@ -1,0 +1,97 @@
+# My Agent
+
+Lightweight terminal AI client for [OmniRoute](https://omniroute.ai).
+
+My Agent is a personal AI terminal interface. It does **not** communicate directly with AI providers — it talks exclusively to your local OmniRoute installation, which handles routing, failover, and model selection.
+
+## Architecture
+
+```
+You
+  ↓
+My Agent (terminal UI)
+  ↓
+http://localhost:20128/v1
+  ↓
+OmniRoute (routing / fallback / model selection)
+  ↓
+Underlying AI provider/model
+  ↓
+Response → My Agent → You
+```
+
+## Installation
+
+```bash
+cd projects/my-agent
+pip install -r requirements.txt
+pip install -e .
+```
+
+## Usage
+
+```bash
+myagent
+```
+
+Or without installing as a package:
+
+```bash
+python -m myagent
+```
+
+### Options
+
+| Flag | Description |
+|------|-------------|
+| `--debug` | Show routing metadata after each response |
+| `--version` | Show version |
+
+### Commands
+
+| Command | Description |
+|---------|-------------|
+| `/help` | Show help |
+| `/status` | Show connection status |
+| `/models` | List available OmniRoute routes |
+| `/route <name>` | Switch route |
+| `/new` | New conversation |
+| `/history` | List saved conversations |
+| `/load <id>` | Load a conversation |
+| `/save` | Save conversation |
+| `/rename <title>` | Rename conversation |
+| `/delete <id>` | Delete conversation |
+| `/clear` | Clear messages |
+| `/config` | Show configuration |
+| `/debug` | Toggle debug mode |
+| `/quit` | Exit |
+
+## Configuration
+
+Config file: `~/.myagent/config.json`
+
+```json
+{
+  "omniroute": {
+    "base_url": "http://localhost:20128/v1",
+    "api_key": "sk-omniroute",
+    "default_route": "auto/best-chat"
+  }
+}
+```
+
+Environment variables override config:
+
+- `OMNIROUTE_BASE_URL`
+- `OMNIROUTE_API_KEY`
+- `OMNIROUTE_MODEL`
+
+## System Prompt
+
+Edit `~/.myagent/system_prompt.md` to customize the AI's behavior.
+
+## Dependencies
+
+- Python 3.10+
+- Rich (terminal UI)
+- httpx (HTTP streaming)

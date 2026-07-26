@@ -95,6 +95,109 @@ Data accuracy standard enforced:
 
 ---
 
+# 3a. Hardware Specifications & Data Transfer Performance
+
+## Workstation Hardware
+### Admin Workstation (Amirwhitehat)
+- **Model:** Lenovo ThinkPad E15 Gen 1 (BIOS: R11ET45W)
+- **CPU:** AMD Ryzen 5 3500U (2.10 GHz, Vega Mobile Gfx)
+- **RAM:** 8.00 GB (5.89 GB usable)
+- **Graphics:** AMD Radeon Vega 8 Graphics (2 GB)
+- **Storage:** 238 GB total (154 GB used)
+- **OS:** Windows 10/11 64-bit
+
+**USB Port Specifications:**
+| Port | Location | Spec | Speed | Use Case |
+| :--- | :--- | :--- | :--- | :--- |
+| Left USB-A #1 | Left side | USB 3.0 + SuperSpeed | 5 Gbps (~500 MB/s practical) | **Recommended for external drives** |
+| Left USB-A #2 | Left side | USB 3.0 + SuperSpeed + Powered | 5 Gbps (~500 MB/s practical) | **Recommended (charges devices when off)** |
+| Right USB-A | Right side | USB 2.0 | 480 Mbps (~60 MB/s practical) | **Avoid for storage** |
+| USB-C | Power Port | Power-only (no data) | — | Charging only |
+
+---
+
+## Storage Hardware
+
+### Seagate BarraCuda 8TB Internal HDD (×2)
+- **Specification:** 3.5" SATA 6 Gb/s, 5400 RPM, 256 MB cache
+- **Practical Speed:** ~140-160 MB/s sequential read/write
+- **Deployment:** 2× units installed in WavLink 4-bay enclosure
+- **Purpose:** Redundant storage for media, backups, and home lab datasets
+
+### WavLink 4-Bay External Enclosure
+- **Interface:** USB 3.2 Gen 1 (10 Gbps capable = 1.25 GB/s theoretical)
+- **Features:** Temp-controlled cooling fans, aluminum shell, 4K HDMI output
+- **Current Capacity:** 16 TB (2× 8TB BarraCuda drives installed, 2 bays available)
+- **Connection Method:** USB-C to Admin Workstation (left USB 3.0 Type-A port)
+
+**Data Transfer Bottleneck Analysis:**
+- WavLink enclosure (10 Gbps USB 3.2) → Admin PC USB 3.0 (5 Gbps) = **5 Gbps is the limiting factor**
+- Expected practical transfer rate: **400-500 MB/s** (limited by Ryzen 5 3500U USB 3.0 controller)
+- Individual drives max out at ~160 MB/s, so enclosure can sustain 2× drive simultaneous access at LAN speeds
+
+---
+
+## Raspberry Pi Hardware
+
+### Vilros Raspberry Pi 4 4GB Basic Start Kit (×2)
+- **Model:** Raspberry Pi 4 Model B, 4GB RAM
+- **CPU:** Broadcom BCM2711 (ARM Cortex-A72, 1.5 GHz quad-core)
+- **Storage:** Amazon Basics microSD XC, 100 MB/s speed class, 128 GB (×2)
+- **Case:** MiuZei case with cooling fans (clear acrylic, ×2)
+- **USB:** 4× USB 3.0 Type-A ports per Pi (5 Gbps capable)
+- **Ethernet:** 1 Gbps Gigabit Ethernet (per Pi)
+
+**Connected Displays (×2 units each):**
+1. **Hosyond 5" Touchscreen** (MIPI DSI Interface)
+   - Resolution: 800×480 pixels
+   - Type: IPS, capacitive touch
+   - Driver: Driverfree interface
+   - Use Case: Primary UI/monitoring on one Pi
+
+2. **Hosyond 3.5" Touchscreen** (SPI Interface)
+   - Resolution: 480×320 pixels
+   - Type: TFT LCD
+   - Driver: SPI panel
+   - Use Case: Secondary/compact display on second Pi
+
+**Deployment Notes:**
+- Both Pi 4s connected via Ethernet (Cat 8 cables) to ER605 LAN switch
+- MicroSD cards provide 128 GB local storage per Pi (adequate for OS + containerized services)
+- Dual displays enable side-by-side monitoring/dashboarding capability
+
+---
+
+## Network Infrastructure Hardware
+
+### Cabling
+- **Ethernet Cables:** dbillionDa Cat 8 with gold-plated tips (×multiple)
+  - **Standard:** Category 8 (40 Gbps rated, but home lab uses 1-2.5 GbE)
+  - **Current Usage:** All connected devices use Cat 8 (future-proof infrastructure)
+  - **Practical Benefit:** Ensures zero network bottleneck; overkill but guaranteed performance
+
+### Switch
+- **RealHD SW8-25G-MGV2:** 2.5GbE core switch (referenced in topology)
+- **Ports:** 8 managed ports @ 2.5 Gbps each
+- **Function:** Core LAN switching for TrueNAS, TARS Pi, Admin PC, and future devices
+
+---
+
+## Performance Summary Table
+
+| Component | Theoretical Max | Practical Sustained | Bottleneck |
+| :--- | :--- | :--- | :--- |
+| **WavLink Enclosure** | 10 Gbps (USB 3.2) | 1.25 GB/s | — |
+| **Admin PC USB 3.0 Ports** | 5 Gbps | ~500 MB/s | Workstation controller |
+| **Seagate BarraCuda 8TB** (each) | 6 Gbps (SATA) | ~160 MB/s | Drive speed |
+| **Raspberry Pi 4 USB 3.0** | 5 Gbps | ~500 MB/s | Pi USB controller |
+| **Raspberry Pi 4 Ethernet** | 1 Gbps | ~125 MB/s | Gigabit limit |
+| **Cat 8 Cabling** | 40 Gbps | Not reached | Infrastructure overspecced |
+| **ER605 Router LAN Port** | 1 Gbps | ~125 MB/s | ISP/home LAN standard |
+
+**Key Insight:** The infrastructure is well-designed for growth. USB 3.2 enclosure and Cat 8 cabling will support future device upgrades without replacement.
+
+---
+
 # 4. Service Catalog & Port Forwarding Matrix
 
 ## Public / WAN Ingress Rules (Xfinity Gateway → ER605)

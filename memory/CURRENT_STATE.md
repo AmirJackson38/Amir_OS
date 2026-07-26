@@ -2,8 +2,8 @@
 
 ## Last Updated
 
-Date: July 23, 2026
-Version: v0.6.0
+Date: July 24, 2026
+Version: v1.1.0
 
 ---
 
@@ -35,10 +35,10 @@ Purpose:
 Build a persistent AI-assisted operating environment that maintains continuity across models, projects, learning, and time.
 
 Current milestone:
-v0.6.0 Session Continuity Complete
+v1.1.0 My Agent Agent Runtime Complete
 
 Next milestone:
-v0.7.0 Context Optimization & Compression
+Local model integration for tool execution
 
 ---
 
@@ -62,6 +62,57 @@ Explore building a personal AI assistant system.
 
 Important:
 TARS is a project inside the larger Amir OS ecosystem, not the main objective.
+
+---
+
+## My Agent
+
+Status:
+Active (v1.1.0)
+
+Purpose:
+Terminal AI client with full agent runtime. Talks to OmniRoute at `http://localhost:20128/v1`. Built with Python + Rich TUI.
+
+Capabilities:
+- 14 built-in tools (8 filesystem/shell/search + 4 meta-tooling + 2 audit)
+- Tool registry with runtime tool creation (`register_tool`, `update_tool`, `delete_tool`)
+- System auditor: 6 checks (OmniRoute, config, memory freshness, git, custom tools, disk)
+- ReAct agent loop with up to 10 iterations
+- 3-layer tool dispatch: pre-fetch boot context → native OpenAI `tools` → text `TOOL_CALL:` fallback
+- Per-tool permission prompts (y/N/a/s)
+- Diagnostics log + session stats
+- SQLite conversation persistence
+- Boot identity injection (7.4K system prompt with condensed profile, goals, rules, state)
+- Custom tools persist across restarts (`~/.myagent/custom_tools/`)
+
+Known blocker:
+- OmniRoute strips `tools` parameter from outbound API calls. Both Kimi and Claude ignore the tool system through OmniRoute. Tools work locally in the My Agent process but no model reached through OmniRoute will call them. Requires local/CLI-native model for tool execution.
+
+---
+
+## OmniRoute
+
+Status:
+Active — running on local ThinkPad
+
+Purpose:
+Local OpenAI-compatible AI routing gateway (`http://localhost:20128/v1`). 227 routes.
+
+Notable:
+- `auto/*` routes all resolve to kimi-web/k2d6 — virtual combos, not direct
+- Direct routes like `claude-web/claude-sonnet-5`, `kr/claude-sonnet-5`, `cw/claude-sonnet-5` work but strip `tools` parameter
+- Source of UTF-8 mojibake in streamed responses
+- kimi-web backend leaked `.agent-gw.json` config during probing (documented)
+
+---
+
+## OpenCode Integration
+
+Status:
+Active
+
+Note:
+OpenCode configured with `omniroute/auto/best-chat` as default model. Config at `C:\Users\Admin\.config\opencode\opencode.jsonc`. Auth at `C:\Users\Admin\.local\share\opencode\auth.json`.
 
 ---
 
@@ -108,10 +159,10 @@ Experience:
 
 # Immediate Next Actions
 
-1. Validate the session resume bootstrap tool (`tools/continuity_bootstrap.py`).
-2. Implement automated session summaries in `memory/SESSION_LOG.md`.
-3. Set up templates for context compression to optimize token usage.
-4. Continue with Networking (DNS, DHCP, Subnetting) and Security+ hands-on studies in the home lab.
+1. Run a local LLM (Ollama, LM Studio) through OmniRoute — test if local models respect the `tools` parameter or `TOOL_CALL:` text protocol
+2. If local model works, the full tool system is validated: file edits, shell, git, search, meta-tooling, audit all functional
+3. If not, consider bypassing OmniRoute entirely for tool-capable operations
+4. Continue with Networking (DNS, DHCP, Subnetting) and Security+ hands-on studies in the home lab
 
 ---
 
