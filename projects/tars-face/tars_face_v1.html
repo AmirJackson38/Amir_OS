@@ -441,6 +441,7 @@ windowFrame.add(trimRight);
 // ============================================================
 
 // Left wall has a window opening - create wall segments around it
+const LEFT_WALL_THICK = 0.3;
 const lwallLeftSeg = new THREE.Mesh(new THREE.BoxGeometry(-8 - lwinLeft, 8, LEFT_WALL_THICK), backWallMat);
 lwallLeftSeg.position.set((-8 + lwinLeft) / 2, 4, LEFT_WALL_X);
 lwallLeftSeg.receiveShadow = true;
