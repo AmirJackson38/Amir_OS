@@ -198,10 +198,16 @@
         <input type="range" min="0" max="1" step="0.05" value="0" oninput="document.getElementById('speech-amp-val').innerText = this.value; window.TARS.setSpeechAmplitude(parseFloat(this.value));">
     </div>
 
-    <div class="ctrl-group">
+<div class="ctrl-group">
         <label>SPEECH PITCH: <span id="speech-pitch-val">1.0</span></label>
         <input type="range" min="0.5" max="2" step="0.05" value="1" oninput="document.getElementById('speech-pitch-val').innerText = this.value; window.TARS.setSpeechPitch(parseFloat(this.value));">
     </div>
+
+    <div class="ctrl-group">
+        <label>ACTIVITY LOG</label>
+        <div id="activity-log" style="max-height: 150px; overflow-y: auto; font-size: 11px; font-family: monospace; color: #8ab4f8;"></div>
+    </div>
+</div>
 
     <div class="ctrl-group">
         <label>GESTURE TESTS</label>
@@ -341,7 +347,8 @@ room.add(floor);
 const leftWall = new THREE.Mesh(new THREE.BoxGeometry(0.3, 8, 14), material(0x0a1016, 0.95));
 leftWall.position.set(-8, 4, 0);
 leftWall.receiveShadow = true;
-room.add(leftWall);
+// REMOVED: solid leftWall - replaced by 4 segments with window opening below
+// room.add(leftWall);
 
 const rightWall = new THREE.Mesh(new THREE.BoxGeometry(0.3, 8, 14), material(0x0a1016, 0.95));
 rightWall.position.set(8, 4, 0);
@@ -440,35 +447,57 @@ windowFrame.add(trimRight);
 // LEFT WALL WINDOW (window_left)
 // ============================================================
 
-// Left wall has a window opening - create wall segments around it
-const LEFT_WALL_THICK = 0.3;
-const lwallLeftSeg = new THREE.Mesh(new THREE.BoxGeometry(-8 - lwinLeft, 8, LEFT_WALL_THICK), backWallMat);
-lwallLeftSeg.position.set((-8 + lwinLeft) / 2, 4, LEFT_WALL_X);
-lwallLeftSeg.receiveShadow = true;
-room.add(lwallLeftSeg);
+// Left wall runs along Z axis at x = -8, from z = -7 to z = 7
+// Window centered at x = -7.5, z = 0, width 6 (along Z), height 4 (along Y)
+const lwinLeftZ = -3;   // LWIN_X is x offset, window spans Z from -3 to 3
+const lwinRightZ = 3;
+const lwinTopY = LWIN_Y + LWIN_H / 2;   // 6.2
+const lwinBottomY = LWIN_Y - LWIN_H / 2; // 2.2
 
-const lwallRightSeg = new THREE.Mesh(new THREE.BoxGeometry(0 - lwinRight, 8, LEFT_WALL_THICK), backWallMat);
-lwallRightSeg.position.set((lwinRight + 0) / 2, 4, LEFT_WALL_X);
-lwallRightSeg.receiveShadow = true;
-room.add(lwallRightSeg);
-
-const lwallTopSeg = new THREE.Mesh(new THREE.BoxGeometry(LEFT_WIN_W, 8 - lwinTop, LEFT_WALL_THICK), backWallMat);
-lwallTopSeg.position.set(LEFT_WIN_X, (lwinTop + 8) / 2, LEFT_WALL_X);
+// Top wall segment (above window) - spans full Z
+const lwallTopSeg = new THREE.Mesh(
+    new THREE.BoxGeometry(LEFT_WALL_THICK, 8 - lwinTopY, 14), 
+    backWallMat
+);
+lwallTopSeg.position.set(LEFT_WALL_X + LEFT_WALL_THICK/2, (lwinTopY + 8) / 2, 0);
 lwallTopSeg.receiveShadow = true;
 room.add(lwallTopSeg);
 
-const lwallBottomSeg = new THREE.Mesh(new THREE.BoxGeometry(LEFT_WIN_W, lwinBottom, LEFT_WALL_THICK), backWallMat);
-lwallBottomSeg.position.set(LEFT_WIN_X, lwinBottom / 2, LEFT_WALL_X);
+// Bottom wall segment (below window) - spans full Z
+const lwallBottomSeg = new THREE.Mesh(
+    new THREE.BoxGeometry(LEFT_WALL_THICK, lwinBottomY, 14), 
+    backWallMat
+);
+lwallBottomSeg.position.set(LEFT_WALL_X + LEFT_WALL_THICK/2, lwinBottomY / 2, 0);
 lwallBottomSeg.receiveShadow = true;
 room.add(lwallBottomSeg);
 
-// Left window frame + glass
+// Left wall segment (left of window along Z)
+const lwallLeftSeg = new THREE.Mesh(
+    new THREE.BoxGeometry(LEFT_WALL_THICK, 8, lwinLeftZ - (-7)), 
+    backWallMat
+);
+lwallLeftSeg.position.set(LEFT_WALL_X + LEFT_WALL_THICK/2, 4, (-7 + lwinLeftZ) / 2);
+lwallLeftSeg.receiveShadow = true;
+room.add(lwallLeftSeg);
+
+// Right wall segment (right of window along Z)
+const lwallRightSeg = new THREE.Mesh(
+    new THREE.BoxGeometry(LEFT_WALL_THICK, 8, 7 - lwinRightZ), 
+    backWallMat
+);
+lwallRightSeg.position.set(LEFT_WALL_X + LEFT_WALL_THICK/2, 4, (lwinRightZ + 7) / 2);
+lwallRightSeg.receiveShadow = true;
+room.add(lwallRightSeg);
+
+// Left window frame + glass - rotated 90° on Y to face into room
 const lwindowFrame = new THREE.Group();
-lwindowFrame.position.set(LEFT_WIN_X, LEFT_WIN_Y, LEFT_WALL_X + 0.22);
+lwindowFrame.position.set(LWIN_X, LWIN_Y, 0);  // centered at z=0 on the wall
+lwindowFrame.rotation.y = -Math.PI / 2;  // face normal along +X into room
 room.add(lwindowFrame);
 
 const lglass = new THREE.Mesh(
-    new THREE.PlaneGeometry(LEFT_WIN_W, LEFT_WIN_H),
+    new THREE.PlaneGeometry(LWIN_W, LWIN_H),
     new THREE.MeshPhysicalMaterial({
         color: 0x0b2233,
         transparent: true,
@@ -481,62 +510,71 @@ const lglass = new THREE.Mesh(
 );
 lwindowFrame.add(lglass);
 
+// Left window glow - repositioned outside the wall along X
 const lwindowGlow = new THREE.PointLight(0x1679c9, 10, 15);
-lwindowGlow.position.set(LEFT_WIN_X, LEFT_WIN_Y - 0.2, LEFT_WALL_X + 1);
+lwindowGlow.position.set(LEFT_WALL_X - 1, LWIN_Y - 0.2, 0);
 scene.add(lwindowGlow);
 
 const lframeMaterial = material(0x101820, 0.6, 0.5);
-const lvFrame = new THREE.Mesh(new THREE.BoxGeometry(0.12, LEFT_WIN_H + 0.3, 0.2), lframeMaterial);
+const lvFrame = new THREE.Mesh(new THREE.BoxGeometry(0.12, LWIN_H + 0.3, 0.2), lframeMaterial);
 lwindowFrame.add(lvFrame);
-const lhFrame = new THREE.Mesh(new THREE.BoxGeometry(LEFT_WIN_W + 0.3, 0.12, 0.2), lframeMaterial);
+const lhFrame = new THREE.Mesh(new THREE.BoxGeometry(LWIN_W + 0.3, 0.12, 0.2), lframeMaterial);
 lwindowFrame.add(lhFrame);
 const ltrimMat = material(0x0d151c, 0.55, 0.4);
-const ltrimTop = new THREE.Mesh(new THREE.BoxGeometry(LEFT_WIN_W + 0.4, 0.15, 0.25), ltrimMat);
-ltrimTop.position.y = LEFT_WIN_H / 2 + 0.1;
+const ltrimTop = new THREE.Mesh(new THREE.BoxGeometry(LWIN_W + 0.4, 0.15, 0.25), ltrimMat);
+ltrimTop.position.y = LWIN_H / 2 + 0.1;
 lwindowFrame.add(ltrimTop);
 const ltrimBottom = ltrimTop.clone();
-ltrimBottom.position.y = -LEFT_WIN_H / 2 - 0.1;
+ltrimBottom.position.y = -LWIN_H / 2 - 0.1;
 lwindowFrame.add(ltrimBottom);
-const ltrimLeft = new THREE.Mesh(new THREE.BoxGeometry(0.15, LEFT_WIN_H + 0.4, 0.25), ltrimMat);
-ltrimLeft.position.x = -LEFT_WIN_W / 2 - 0.1;
+const ltrimLeft = new THREE.Mesh(new THREE.BoxGeometry(0.15, LWIN_H + 0.4, 0.25), ltrimMat);
+ltrimLeft.position.x = -LWIN_W / 2 - 0.1;
 lwindowFrame.add(ltrimLeft);
 const ltrimRight = ltrimLeft.clone();
-ltrimRight.position.x = LEFT_WIN_W / 2 + 0.1;
+ltrimRight.position.x = LWIN_W / 2 + 0.1;
 lwindowFrame.add(ltrimRight);
 
-// Left window exterior (shares the same exterior group)
+// Left window exterior - Bridge/River view (different from right window city view)
 const lexterior = new THREE.Group();
-lexterior.position.set(0, 0, LEFT_WALL_X - 3);
+// Position outside the left wall along X axis (LEFT_WALL_X = -8, so -11 is outside)
+lexterior.position.set(LEFT_WALL_X - 3, 0, 0);  // x = -11, y = 0, z = 0
 scene.add(lexterior);
 
+// Left sky plane - larger for wider bridge view
 const lskyPlane = new THREE.Mesh(
-    new THREE.PlaneGeometry(30, 20),
+    new THREE.PlaneGeometry(40, 25),
     new THREE.MeshBasicMaterial({ color: 0x04070c, fog: false })
 );
-lskyPlane.position.set(0, 6, -10);
+// Rotated to face the window (along -X axis)
+lskyPlane.rotation.y = Math.PI / 2;
+lskyPlane.position.set(-12, 7, 0);  // x=-12 (further out), y=7, z=0
 lexterior.add(lskyPlane);
 
+// Left celestial body (separate from right window)
 const lcelestial = new THREE.Mesh(
-    new THREE.CircleGeometry(0.5, 32),
+    new THREE.CircleGeometry(0.6, 32),
     new THREE.MeshBasicMaterial({ color: 0xfff3d6, toneMapped: false, transparent: true })
 );
-lcelestial.position.set(0, 5, -9.5);
+lcelestial.rotation.y = Math.PI / 2;
+lcelestial.position.set(-11.5, 6, -2);  // x=-11.5, y=6, z=-2
 lexterior.add(lcelestial);
 
+// Left stars
 const lstarGeometry = new THREE.BufferGeometry();
-const lstarCount = 100;
+const lstarCount = 150;
 const lstarPositions = new Float32Array(lstarCount * 3);
 for (let i = 0; i < lstarCount; i++) {
-    lstarPositions[i * 3] = (Math.random() - 0.5) * 26;
-    lstarPositions[i * 3 + 1] = 2 + Math.random() * 14;
-    lstarPositions[i * 3 + 2] = -9.8 - Math.random() * 2;
+    lstarPositions[i * 3] = -11.8 - Math.random() * 3;  // x: further out
+    lstarPositions[i * 3 + 1] = 2 + Math.random() * 18;  // y
+    lstarPositions[i * 3 + 2] = (Math.random() - 0.5) * 35;  // z: spread along wall
 }
 lstarGeometry.setAttribute("position", new THREE.BufferAttribute(lstarPositions, 3));
 const lstars = new THREE.Points(lstarGeometry, new THREE.PointsMaterial({
-    color: 0xffffff, size: 0.045, map: dotSprite, transparent: true, opacity: 0.8, depthWrite: false
+    color: 0xffffff, size: 0.05, map: dotSprite, transparent: true, opacity: 0.8, depthWrite: false
 }));
 lexterior.add(lstars);
 
+// Left window building window texture function
 function lbuildingWindowTex() {
     return canvasTexture((ctx, w, h) => {
         ctx.fillStyle = "#050a10";
@@ -552,26 +590,207 @@ function lbuildingWindowTex() {
     }, 128, 256);
 }
 
+// --- Parallax Bridge Layers ---
+const lbridgeLayers = [];
+
+// Layer 1: Distant hills/mountains (furthest)
+const lhillsGeo = new THREE.PlaneGeometry(50, 12);
+const lhillsTex = canvasTexture((ctx, w, h) => {
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, "#0a121a");
+    grad.addColorStop(0.5, "#0f1a2a");
+    grad.addColorStop(1, "#142335");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+    // Distant mountain silhouettes
+    ctx.fillStyle = "#0d1826";
+    for (let i = 0; i < 8; i++) {
+        const mx = (Math.random() - 0.5) * w * 0.9;
+        const mw = 40 + Math.random() * 80;
+        const mh = 20 + Math.random() * 40;
+        ctx.beginPath();
+        ctx.moveTo(mx, h);
+        ctx.lineTo(mx - mw/2, h - mh);
+        ctx.lineTo(mx + mw/2, h - mh);
+        ctx.closePath();
+        ctx.fill();
+    }
+}, 256, 128);
+const lhillsMat = new THREE.MeshBasicMaterial({ map: lhillsTex, transparent: true, opacity: 0.7, fog: false });
+const lhillsMesh = new THREE.Mesh(lhillsGeo, lhillsMat);
+// Rotate to face the window (along -X), positioned further out
+lhillsMesh.rotation.y = Math.PI / 2;
+lhillsMesh.position.set(-18, 4, 0);  // x=-18 (further out), y=4, z=0 (centered on wall)
+lexterior.add(lhillsMesh);
+lbridgeLayers.push({ mesh: lhillsMesh, depth: -18, speed: 0.005 });
+
+// Layer 2: Bridge structure (mid-distance)
+const lbridgeGroup = new THREE.Group();
+// Positioned at x=-8 (between hills at -18 and water at -2), centered on wall (z=0)
+lbridgeGroup.position.set(-8, 0, 0);
+lexterior.add(lbridgeGroup);
+lbridgeLayers.push({ mesh: lbridgeGroup, depth: -8, speed: 0.02 });
+
+// Bridge towers (two main towers) - along Z axis (along the wall)
+for (let t = -1; t <= 1; t += 2) {
+    const towerGeo = new THREE.BoxGeometry(1.2, 14, 1.2);
+    const towerMat = new THREE.MeshStandardMaterial({ color: 0x2a2f3a, roughness: 0.8, metalness: 0.2 });
+    const tower = new THREE.Mesh(towerGeo, towerMat);
+    tower.position.set(0, 7, t * 8);  // x=0 (at bridge), y=7, z=±8 (along wall)
+    tower.castShadow = true;
+    lbridgeGroup.add(tower);
+    
+    // Tower top detail
+    const topGeo = new THREE.BoxGeometry(1.6, 1.5, 1.6);
+    const top = new THREE.Mesh(topGeo, towerMat);
+    top.position.set(0, 14.7, t * 8);
+    lbridgeGroup.add(top);
+}
+
+// Bridge deck - along Z axis (spanning the wall)
+const deckGeo = new THREE.BoxGeometry(1.2, 0.6, 22);  // thickness=1.2, height=0.6, length=22
+const deckMat = new THREE.MeshStandardMaterial({ color: 0x1a1f2a, roughness: 0.9 });
+const deck = new THREE.Mesh(deckGeo, deckMat);
+deck.position.set(0, 1.3, 0);
+deck.receiveShadow = true;
+lbridgeGroup.add(deck);
+
+// Suspension cables (visual lines) - along Z axis
+for (let side = -1; side <= 1; side += 2) {
+    for (let i = 0; i < 12; i++) {
+        const cableGeo = new THREE.CylinderGeometry(0.04, 0.04, 16, 4);
+        const cableMat = new THREE.MeshBasicMaterial({ color: 0x2a2f3a, transparent: true, opacity: 0.6 });
+        const cable = new THREE.Mesh(cableGeo, cableMat);
+        const z = -10 + i * 1.8;
+        cable.position.set(side * 3, 8, z);  // x=±3 (sides), y=8 z along bridge
+        cable.rotation.x = Math.PI / 2;
+        cable.rotation.z = Math.atan2(14 - 1.3, 8) * side * 0.5;
+        lbridgeGroup.add(cable);
+    }
+}
+
+// Bridge lights on deck
+const bridgeLights = [];
+for (let i = 0; i < 10; i++) {
+    const lightGeo = new THREE.SphereGeometry(0.12, 8, 8);
+    const lightMat = new THREE.MeshBasicMaterial({ color: 0xffdd88, transparent: true, opacity: 0 });
+    const light = new THREE.Mesh(lightGeo, lightMat);
+    light.position.set(0, 1.8, -9 + i * 2);
+    lbridgeGroup.add(light);
+    bridgeLights.push(light);
+}
+
+// Layer 3: Foreground water/river (closest) - along Z axis
+const lwaterGeo = new THREE.PlaneGeometry(35, 8);
+const lwaterMat = new THREE.MeshPhysicalMaterial({
+    color: 0x051020,
+    metalness: 0.9,
+    roughness: 0.1,
+    transmission: 0.3,
+    transparent: true,
+    opacity: 0.6,
+    side: THREE.DoubleSide
+});
+const lwaterMesh = new THREE.Mesh(lwaterGeo, lwaterMat);
+lwaterMesh.rotation.x = -Math.PI / 2;
+lwaterMesh.position.set(0, 0.15, -2);
+lexterior.add(lwaterMesh);
+lbridgeLayers.push({ mesh: lwaterMesh, depth: -2, speed: 0.05 });
+
+// Water reflection effect - animated normal map via vertex displacement in shader would be better, using simple animation
+const lwaterDistortion = { time: 0 };
+
+// --- Buildings on far riverbanks ---
+const lfarBuildings = [];
 const lbuildings = [];
-for (let i = 0; i < 9; i++) {
-    const bw = 1.2 + Math.random() * 1.6;
-    const bh = 3 + Math.random() * 7;
-    const bd = 1.2 + Math.random() * 1.6;
-    const bx = -3 + i * 1.3 + (Math.random() - 0.5) * 0.6;
+for (let i = 0; i < 12; i++) {
+    const bw = 1.5 + Math.random() * 2;
+    const bh = 4 + Math.random() * 10;
+    const bd = 1.5 + Math.random() * 2;
+    const side = Math.random() > 0.5 ? -1 : 1;
+    const bz = side * (12 + Math.random() * 8);
     const tex = lbuildingWindowTex();
     const buildingMat = new THREE.MeshStandardMaterial({
         map: tex, color: 0x2a3a4c, roughness: 0.9,
         emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.6
     });
     const buildingMesh = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), buildingMat);
-    buildingMesh.position.set(bx, bh / 2 - 0.1, -Math.random() * 4);
+    buildingMesh.position.set(-4 - Math.random() * 6, bh / 2 - 0.1, bz);
+    buildingMesh.rotation.y = Math.PI / 2;
+    lexterior.add(buildingMesh);
+    lfarBuildings.push(buildingMat);
+}
+
+// Window-side buildings (closer, for day/night cycle)
+for (let i = 0; i < 6; i++) {
+    const bw = 1.2 + Math.random() * 1.5;
+    const bh = 3 + Math.random() * 7;
+    const bd = 1.2 + Math.random() * 1.5;
+    const bz = -6 + i * 1.4 + (Math.random() - 0.5) * 0.5;
+    const tex = lbuildingWindowTex();
+    const buildingMat = new THREE.MeshStandardMaterial({
+        map: tex, color: 0x2a3a4c, roughness: 0.9,
+        emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.6
+    });
+    const buildingMesh = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), buildingMat);
+    buildingMesh.position.set(-4 - Math.random() * 2, bh / 2 - 0.1, bz);
+    buildingMesh.rotation.y = Math.PI / 2;
     lexterior.add(buildingMesh);
     lbuildings.push(buildingMat);
 }
 
+    // --- Cars on bridge (animated) ---
+const lcars = [];
+const lcarLights = [];
+for (let i = 0; i < 6; i++) {
+    const carGroup = new THREE.Group();
+    const carGeo = new THREE.BoxGeometry(1.6, 0.6, 3.2);
+    const carMat = new THREE.MeshStandardMaterial({ 
+        color: new THREE.Color().setHSL(Math.random(), 0.5, 0.3), 
+        roughness: 0.4, metalness: 0.6 
+    });
+    const carBody = new THREE.Mesh(carGeo, carMat);
+    carBody.position.y = 1.9;
+    carGroup.add(carBody);
+    
+    // Headlights
+    const headlightGeo = new THREE.SphereGeometry(0.08, 8, 8);
+    const headlightMat = new THREE.MeshBasicMaterial({ 
+        color: 0xffffee, transparent: true, opacity: 1 
+    });
+    const leftLight = new THREE.Mesh(headlightGeo, headlightMat.clone());
+    leftLight.position.set(-0.5, 1.9, 1.7);
+    carGroup.add(leftLight);
+    
+    const rightLight = new THREE.Mesh(headlightGeo, headlightMat.clone());
+    rightLight.position.set(0.5, 1.9, 1.7);
+    carGroup.add(rightLight);
+    
+    // Taillights
+    const tailMat = new THREE.MeshBasicMaterial({ color: 0xff2222, transparent: true, opacity: 1 });
+    const leftTail = new THREE.Mesh(headlightGeo, tailMat.clone());
+    leftTail.position.set(-0.5, 1.9, -1.7);
+    carGroup.add(leftTail);
+    
+    const rightTail = new THREE.Mesh(headlightGeo, tailMat.clone());
+    rightTail.position.set(0.5, 1.9, -1.7);
+    carGroup.add(rightTail);
+    
+    // Position on bridge deck (two lanes each direction) - along Z axis
+    const lane = (i % 4) < 2 ? -1.5 : 1.5;
+    const startZ = -9 + (i % 4) * 5 + Math.random() * 2;
+    carGroup.position.set(0, 0, startZ);  // x=0 (at bridge), y=0, z=position along bridge
+    carGroup.userData = { speed: 0.08 + Math.random() * 0.06, lane: lane, offset: startZ };
+    
+    lbridgeGroup.add(carGroup);
+    lcars.push(carGroup);
+    lcarLights.push({ left: leftLight, right: rightLight, leftTail: leftTail, rightTail: rightTail });
+}
+
 // Left window rain
 const lrainGroup = new THREE.Group();
-lrainGroup.position.set(0, 0, LEFT_WALL_X - 0.6);
+// Position just outside the window along X axis
+lrainGroup.position.set(LEFT_WALL_X - 0.6, 0, 0);
 scene.add(lrainGroup);
 
 const lrainCount = 200;
@@ -579,8 +798,8 @@ const lrainGeometry = new THREE.BufferGeometry();
 const lrainPositions = new Float32Array(lrainCount * 3);
 const lrainSpeeds = new Float32Array(lrainCount);
 for (let i = 0; i < lrainCount; i++) {
-    lrainPositions[i * 3] = lwinLeft + Math.random() * LEFT_WIN_W;
-    lrainPositions[i * 3 + 1] = lwinBottom + Math.random() * (LEFT_WIN_H + 2);
+    lrainPositions[i * 3] = lwinLeft + Math.random() * LWIN_W;
+    lrainPositions[i * 3 + 1] = lwinBottom + Math.random() * (LWIN_H + 2);
     lrainPositions[i * 3 + 2] = -Math.random() * 2.5;
     lrainSpeeds[i] = 0.04 + Math.random() * 0.05;
 }
@@ -662,10 +881,10 @@ const rainGroup = new THREE.Group();
 rainGroup.position.set(0, 0, WALL_Z - 0.6);
 scene.add(rainGroup);
 
-const rainCount = 200;  // Reduced from 500
+let rainCount = 200;  // Reduced from 500
 const rainGeometry = new THREE.BufferGeometry();
 const rainPositions = new Float32Array(rainCount * 3);
-const rainSpeeds = new Float32Array(rainCount);
+let rainSpeeds = new Float32Array(rainCount);
 for (let i = 0; i < rainCount; i++) {
     rainPositions[i * 3] = winLeft + Math.random() * WIN_W;
     rainPositions[i * 3 + 1] = winBottom + Math.random() * (WIN_H + 2);
@@ -707,10 +926,13 @@ function updateDayNight() {
 
     const sky = new THREE.Color().lerpColors(NIGHT_SKY, DAY_SKY, dayFactor).lerp(WARM_TINT, warmth * 0.35);
     skyPlane.material.color.copy(sky);
+    lskyPlane.material.color.copy(sky.clone().lerp(new THREE.Color(0x081220), 0.3));
 
     const glow = new THREE.Color().lerpColors(NIGHT_GLOW, DAY_GLOW, dayFactor).lerp(WARM_TINT, warmth * 0.5);
     windowGlow.color.copy(glow);
     windowGlow.intensity = 6 + dayFactor * 8 + warmth * 4;
+    lwindowGlow.color.copy(glow.clone().lerp(new THREE.Color(0x104a7c), 0.4));
+    lwindowGlow.intensity = 4 + dayFactor * 6 + warmth * 3;
 
     ambientLight.intensity = 1.0 + dayFactor * 0.7;
 
@@ -721,9 +943,28 @@ function updateDayNight() {
     celestial.material.opacity = aboveHorizon * (0.6 + warmth * 0.4);
     celestial.material.color.copy(dayFactor > 0.5 ? SUN_COLOR : MOON_COLOR).lerp(WARM_TINT, warmth * 0.6);
 
+    lcelestial.position.x = Math.cos(angle + 0.5) * 3.2;
+    lcelestial.position.y = 4 + Math.sin(angle + 0.5) * 5.5;
+    const laboveHorizon = lcelestial.position.y > 0.5 ? 1 : 0;
+    lcelestial.material.opacity = laboveHorizon * (0.6 + warmth * 0.4);
+    lcelestial.material.color.copy(dayFactor > 0.5 ? SUN_COLOR : MOON_COLOR).lerp(WARM_TINT, warmth * 0.6);
+
     stars.material.opacity = (1 - dayFactor) * 0.85;
+    lstars.material.opacity = (1 - dayFactor) * 0.85;
 
     buildings.forEach(mat => { mat.emissiveIntensity = 0.15 + (1 - dayFactor) * 0.75; });
+    lbuildings.forEach(mat => { mat.emissiveIntensity = 0.15 + (1 - dayFactor) * 0.75; });
+    lfarBuildings.forEach(mat => { mat.emissiveIntensity = 0.1 + (1 - dayFactor) * 0.6; });
+
+    // Car headlights/taillights intensity based on time of day
+    lcarLights.forEach((lights, i) => {
+        const isNight = dayFactor < 0.4;
+        const intensity = isNight ? 1.0 : 0.1;
+        lights.left.material.opacity = intensity;
+        lights.right.material.opacity = intensity;
+        lights.leftTail.material.opacity = intensity * 0.8;
+        lights.rightTail.material.opacity = intensity * 0.8;
+    });
 
     return dayFactor;
 }
@@ -1094,6 +1335,134 @@ function drawTARSOS(ctx, w, h, time) {
     ctx.strokeRect(1, 1, w - 2, h - 2);
 }
 
+// ============================================================
+// MONITOR STATE MACHINE - BUG 3 FIX
+// ============================================================
+
+let monitor1State = 'terminal'; // 'terminal' | 'tarsOS' | 'matrix' | 'starfield' | 'syslogs' | 'codeReview' | 'logCleanup'
+let monitor2State = 'waveform'; // 'waveform' | 'matrix' | 'starfield' | 'syslogs'
+let monitorIdleTimer = 0;
+let monitorIdleTimeout = 8000; // 8 seconds to screensaver
+
+function setMonitorState(monitor, state) {
+    if (monitor === 1) {
+        monitor1State = state;
+    } else if (monitor === 2) {
+        monitor2State = state;
+    }
+    updateMonitorDrawFunctions();
+}
+
+function updateMonitorDrawFunctions() {
+    const m1 = animatedScreens.find(s => s.drawFn === drawTerminal || s.drawFn === drawTARSOS || s.drawFn === drawMatrix || s.drawFn === drawStarfield || s.drawFn === drawSysLogs || s.drawFn === drawCodeReview || s.drawFn === drawLogCleanup);
+    const m2 = animatedScreens.find(s => s.drawFn === drawWaveform || s.drawFn === drawMatrix || s.drawFn === drawStarfield || s.drawFn === drawSysLogs);
+    if (!m1 || !m2) return;
+    
+    // Monitor 1
+    switch (monitor1State) {
+        case 'terminal': m1.drawFn = drawTerminal; break;
+        case 'tarsOS': m1.drawFn = drawTARSOS; break;
+        case 'matrix': m1.drawFn = drawMatrix; break;
+        case 'starfield': m1.drawFn = drawStarfield; break;
+        case 'syslogs': m1.drawFn = drawSysLogs; break;
+        case 'codeReview': m1.drawFn = drawCodeReview; break;
+        case 'logCleanup': m1.drawFn = drawLogCleanup; break;
+    }
+    
+    // Monitor 2
+    switch (monitor2State) {
+        case 'waveform': m2.drawFn = drawWaveform; break;
+        case 'matrix': m2.drawFn = drawMatrix; break;
+        case 'starfield': m2.drawFn = drawStarfield; break;
+        case 'syslogs': m2.drawFn = drawSysLogs; break;
+    }
+}
+
+function drawMatrix(ctx, w, h, time) {
+    ctx.fillStyle = "rgba(0,10,0,0.15)";
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = "#0f0";
+    ctx.font = "14px monospace";
+    if (!drawMatrix.drops) drawMatrix.drops = Array(40).fill(0).map(() => Math.random() * -300);
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()";
+    for (let i = 0; i < drawMatrix.drops.length; i++) {
+        const char = chars[Math.floor(Math.random() * chars.length)];
+        ctx.fillText(char, i * 20, drawMatrix.drops[i]);
+        drawMatrix.drops[i] += 20;
+        if (drawMatrix.drops[i] > h) drawMatrix.drops[i] = Math.random() * -100;
+    }
+}
+
+function drawStarfield(ctx, w, h, time) {
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = "#fff";
+    if (!drawStarfield.stars) drawStarfield.stars = Array(100).fill(0).map(() => ({
+        x: Math.random(), y: Math.random(), z: Math.random(), speed: 0.01 + Math.random() * 0.02
+    }));
+    drawStarfield.stars.forEach(s => {
+        s.z -= s.speed;
+        if (s.z <= 0) s.z = 1;
+        const sx = (s.x - 0.5) / s.z * w + w/2;
+        const sy = (s.y - 0.5) / s.z * h + h/2;
+        const size = (1 - s.z) * 3;
+        if (sx > 0 && sx < w && sy > 0 && sy < h) {
+            ctx.fillRect(sx, sy, size, size);
+        }
+    });
+}
+
+function drawSysLogs(ctx, w, h, time) {
+    ctx.fillStyle = "#040d14";
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = "#4fd6ff";
+    ctx.font = "12px monospace";
+    const logs = [
+        "[SYS] Memory scrub complete",
+        "[NET] Connection pool refreshed",
+        "[FS] Integrity check: OK",
+        "[GPU] Temp: 42C, Load: 12%",
+        "[AI] Dream cycle: processing...",
+        "[PWR] Battery: 99.2%",
+        "[SEC] No intrusions detected"
+    ];
+    logs.forEach((l, i) => {
+        const alpha = 0.3 + 0.7 * Math.abs(Math.sin(time * 0.5 + i));
+        ctx.fillStyle = `rgba(79,214,255,${alpha})`;
+        ctx.fillText(l, 14, 30 + i * 22);
+    });
+}
+
+function drawCodeReview(ctx, w, h, time) {
+    ctx.fillStyle = "#050c14";
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = "rgba(0,255,136,0.8)";
+    ctx.font = "14px monospace";
+    const lines = [
+        "> git diff main.cpp",
+        "+  optimized pathfinding algo",
+        "-  legacy A* implementation", 
+        "~  refactored node expansion",
+        "> PR #2341 approved"
+    ];
+    lines.forEach((l, i) => ctx.fillText(l, 20, 60 + i * 22));
+}
+
+function drawLogCleanup(ctx, w, h, time) {
+    ctx.fillStyle = "#07131a";
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = "rgba(255,136,0,0.8)";
+    ctx.font = "13px monospace";
+    const lines = [
+        ">> SYSTEM MAINTENANCE",
+        ">> Cleaning temp files...",
+        ">> Rotating logs (47 files)",
+        ">> Vacuum database...",
+        ">> Free space: +2.3 GB"
+    ];
+    lines.forEach((l, i) => ctx.fillText(l, 20, 50 + i * 22));
+}
+
 // Rack data transfer visualization
 function drawRackTransfer(ctx, w, h, time) {
     ctx.fillStyle = "#010305";
@@ -1114,6 +1483,48 @@ function drawRackTransfer(ctx, w, h, time) {
     ctx.fillStyle = "#5fd0ff";
     ctx.fillText(`RATE: ${(2.4 + Math.sin(time * 3) * 0.6).toFixed(1)} GB/s`, 10, 40);
     ctx.fillText(`PKTS: ${Math.floor(15000 + Math.sin(time * 5) * 300)}/s`, 10, 58);
+}
+
+// ============================================================
+// MONITOR IDLE/SCREENSAVER SYSTEM - BUG 3 FIX
+// ============================================================
+
+function updateMonitorIdle(dt) {
+    // If at desk, reset idle timer and show active states
+    if (currentState.atDesk) {
+        monitorIdleTimer = 0;
+        const screensaverStates = ['matrix', 'starfield', 'syslogs'];
+        if (screensaverStates.includes(monitor1State)) {
+            setMonitorState(1, 'tarsOS');
+        }
+        if (screensaverStates.includes(monitor2State)) {
+            setMonitorState(2, 'waveform');
+        }
+    } else {
+        // Away from desk - start idle timer
+        monitorIdleTimer += dt * 1000;
+        if (monitorIdleTimer > monitorIdleTimeout) {
+            // Cycle through screensaver states
+            if (monitor1State === 'terminal' || monitor1State === 'tarsOS') {
+                setMonitorState(1, 'matrix');
+            } else if (monitor1State === 'matrix') {
+                setMonitorState(1, 'starfield');
+            } else if (monitor1State === 'starfield') {
+                setMonitorState(1, 'syslogs');
+            } else if (monitor1State === 'syslogs') {
+                setMonitorState(1, 'matrix');
+            }
+            if (monitor2State === 'waveform') {
+                setMonitorState(2, 'matrix');
+            } else if (monitor2State === 'matrix') {
+                setMonitorState(2, 'starfield');
+            } else if (monitor2State === 'starfield') {
+                setMonitorState(2, 'syslogs');
+            } else if (monitor2State === 'syslogs') {
+                setMonitorState(2, 'waveform');
+            }
+        }
+    }
 }
 
 function createMonitor(x, y, z, scale, drawFn, refreshRate) {
@@ -1536,144 +1947,6 @@ for (let i = 0; i < birdCount; i++) {
     birdMeshes.push(bird);
 }
 
-// ============================================================
-// SCREENSAVER SYSTEM - Monitors show screensavers when away
-// ============================================================
-
-let screensaverTimer = 0;
-const screensaverDelay = 8; // seconds away before screensaver
-
-function updateScreensavers(dt, atDesk, atRack, atWindow) {
-    screensaverTimer += dt;
-    
-    // Desk monitors
-    const monitor1 = animatedScreens.find(s => s.drawFn === drawTerminal || s.drawFn === drawTARSOS);
-    const monitor2 = animatedScreens.find(s => s.drawFn === drawWaveform);
-    
-    if (!atDesk && !currentState.atDesk) {
-        // Away from desk - maybe trigger screensaver
-        if (screensaverTimer > screensaverDelay && Math.random() < 0.002) {
-            triggerScreensaver(monitor1, monitor2);
-        }
-    } else {
-        screensaverTimer = 0;
-    }
-}
-
-function triggerScreensaver(m1, m2) {
-    if (!m1 || !m2) return;
-    
-    const savers = [
-        () => { // Matrix rain
-            const orig1 = m1.drawFn;
-            const orig2 = m2.drawFn;
-            let chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()";
-            let drops1 = Array(40).fill(0).map(() => Math.random() * -300);
-            let drops2 = Array(40).fill(0).map(() => Math.random() * -300);
-            m1.drawFn = function(ctx, w, h, time) {
-                ctx.fillStyle = "rgba(0,10,0,0.15)";
-                ctx.fillRect(0, 0, w, h);
-                ctx.fillStyle = "#0f0";
-                ctx.font = "14px monospace";
-                for (let i = 0; i < drops1.length; i++) {
-                    const char = chars[Math.floor(Math.random() * chars.length)];
-                    ctx.fillText(char, i * 20, drops1[i]);
-                    drops1[i] += 20;
-                    if (drops1[i] > h) drops1[i] = Math.random() * -100;
-                }
-            };
-            m2.drawFn = function(ctx, w, h, time) {
-                ctx.fillStyle = "rgba(0,10,0,0.15)";
-                ctx.fillRect(0, 0, w, h);
-                ctx.fillStyle = "#0f0";
-                ctx.font = "14px monospace";
-                for (let i = 0; i < drops2.length; i++) {
-                    const char = chars[Math.floor(Math.random() * chars.length)];
-                    ctx.fillText(char, i * 20, drops2[i] + 50);
-                    drops2[i] += 20;
-                    if (drops2[i] > h) drops2[i] = Math.random() * -100;
-                }
-            };
-            setTimeout(() => { m1.drawFn = orig1; m2.drawFn = orig2; }, 20000);
-        },
-        () => { // Starfield
-            const orig1 = m1.drawFn;
-            const orig2 = m2.drawFn;
-            let stars = Array(100).fill(0).map(() => ({
-                x: Math.random(), y: Math.random(), z: Math.random(), speed: 0.01 + Math.random() * 0.02
-            }));
-            m1.drawFn = function(ctx, w, h, time) {
-                ctx.fillStyle = "#000";
-                ctx.fillRect(0, 0, w, h);
-                ctx.fillStyle = "#fff";
-                stars.forEach(s => {
-                    s.z -= s.speed;
-                    if (s.z <= 0) s.z = 1;
-                    const sx = (s.x - 0.5) / s.z * w + w/2;
-                    const sy = (s.y - 0.5) / s.z * h + h/2;
-                    const size = (1 - s.z) * 3;
-                    if (sx > 0 && sx < w && sy > 0 && sy < h) {
-                        ctx.fillRect(sx, sy, size, size);
-                    }
-                });
-            };
-            m2.drawFn = function(ctx, w, h, time) {
-                ctx.fillStyle = "#000";
-                ctx.fillRect(0, 0, w, h);
-                ctx.fillStyle = "#fff";
-                stars.forEach(s => {
-                    const sx = (s.x - 0.5) / s.z * w + w/2;
-                    const sy = (s.y - 0.5) / s.z * h + h/2;
-                    const size = (1 - s.z) * 3;
-                    if (sx > 0 && sx < w && sy > 0 && sy < h) {
-                        ctx.fillRect(sx, sy, size, size);
-                    }
-                });
-            };
-            setTimeout(() => { m1.drawFn = orig1; m2.drawFn = orig2; }, 25000);
-        },
-        () => { // System logs
-            const orig1 = m1.drawFn;
-            m1.drawFn = function(ctx, w, h, time) {
-                ctx.fillStyle = "#040d14";
-                ctx.fillRect(0, 0, w, h);
-                ctx.fillStyle = "#4fd6ff";
-                ctx.font = "12px monospace";
-                const logs = [
-                    "[SYS] Memory scrub complete",
-                    "[NET] Connection pool refreshed",
-                    "[FS] Integrity check: OK",
-                    "[GPU] Temp: 42C, Load: 12%",
-                    "[AI] Dream cycle: processing...",
-                    "[PWR] Battery: 99.2%",
-                    "[SEC] No intrusions detected"
-                ];
-                logs.forEach((l, i) => {
-                    const alpha = 0.3 + 0.7 * Math.abs(Math.sin(time * 0.5 + i));
-                    ctx.fillStyle = `rgba(79,214,255,${alpha})`;
-                    ctx.fillText(l, 14, 30 + i * 22);
-                });
-            };
-            m2.drawFn = function(ctx, w, h, time) {
-                ctx.fillStyle = "#050a12";
-                ctx.fillRect(0, 0, w, h);
-                ctx.strokeStyle = "#5fd0ff";
-                ctx.lineWidth = 1;
-                ctx.beginPath();
-                for (let x = 0; x < w; x++) {
-                    const y = h/2 + Math.sin(x*0.03 + time*1.5) * 15 * Math.sin(x*0.002 + time*0.3) + (Math.random()-0.5)*3;
-                    if (x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-                }
-                ctx.stroke();
-            };
-            setTimeout(() => { m1.drawFn = orig1; m2.drawFn = orig2; }, 30000);
-        }
-    ];
-    
-    const saver = savers[Math.floor(Math.random() * savers.length)];
-    saver();
-}
-
 // Desk wiggle state
 const deskWiggle = { intensity: 0, timer: 0, x: 0, z: 0, prevDist: 0 };
 const rackWiggle = { intensity: 0, timer: 0, prevDist: 0 };
@@ -1865,6 +2138,17 @@ function getPreference(category, target) {
     return worldState.tars.preferences[category]?.[target] ?? 0.5;
 }
 
+// Helper: Update activity log display in UI
+function updateActivityDisplay() {
+    const logEl = document.getElementById("activity-log");
+    if (!logEl) return;
+    const recent = worldState.activityLog.slice(-10).reverse();
+    logEl.innerHTML = recent.map(e => {
+        const time = new Date(e.timestamp).toLocaleTimeString();
+        return `<div class="log-entry">[${time}] ${e.activity || e.state || e.type} @ ${e.location || ""}</div>`;
+    }).join("");
+}
+
 // ============================================================
 // ENVIRONMENT / WEATHER VISUAL ENGINE
 // ============================================================
@@ -1970,59 +2254,6 @@ const weatherVisualEngine = {
 // Initialize weather visual engine
 weatherVisualEngine.updateFromWeatherState();
 
-// ============================================================
-// ACTIVITY LOGGING INTEGRATION
-// ============================================================
-
-// Hook into existing lookAt to log location changes
-const originalLookAt = window.TARS.lookAt;
-window.TARS.lookAt = function(targetKey) {
-    const previousLocation = worldState.tars.location;
-    const result = originalLookAt.apply(this, arguments);
-    
-    if (worldState.tars.location !== targetKey) {
-        worldState.tars.location = targetKey;
-        const activityMap = {
-            "window_left": "observing_weather",
-            "window_right": "observing_weather",
-            "desk": "computer_work",
-            "rack-a": "server_check",
-            "user": "interacting_with_user"
-        };
-        const activity = activityMap[targetKey] || "idle";
-        setTARSActivity(activity, targetKey, `navigated_to_${targetKey}`);
-    }
-    return result;
-};
-
-// Hook into triggerLocationBehavior to log activity starts
-const originalTriggerLocationBehavior = window.triggerLocationBehavior;
-window.triggerLocationBehavior = function(locationKey) {
-    const result = originalTriggerLocationBehavior.apply(this, arguments);
-    
-    const activityMap = {
-        "window_left": "weather_observation",
-        "window_right": "weather_observation",
-        "desk": "computer_work",
-        "rack-a": "server_check",
-        "user": "user_interaction"
-    };
-    const reasonMap = {
-        "window_left": "weather_observation",
-        "window_right": "storm_watch",
-        "desk": "computer_work",
-        "rack-a": "server_maintenance",
-        "user": "user_interaction"
-    };
-    
-    if (activityMap[locationKey]) {
-        setTARSActivity(activityMap[locationKey], locationKey, reasonMap[locationKey] || "autonomous_choice", {
-            weather: worldState.environment.weather
-        });
-    }
-    return result;
-};
-
 // Initialize TARS state
 worldState.tars.location = "spawn";
 worldState.tars.activity = "idle";
@@ -2043,7 +2274,6 @@ window.getPreference = getPreference;
 // ============================================================
 // ROOM BOUNDS & GAZE TARGET REFERENCE MATRIX
 // ============================================================
-
 const ROOM_BOUNDS = { xMin: -7.5, xMax: 7.5, yMin: 0.15, yMax: 7.6, zMin: -5.5, zMax: 6.8 };
 const OBSTACLES = [
     { x: 1.7, z: -2.2, radius: 1.3, label: "desk" },
@@ -2724,6 +2954,17 @@ window.TARS = {
             
             // Trigger location-specific behaviors
             triggerLocationBehavior(targetKey);
+            
+            // Update activity tracking (BUG 4 fix)
+            const activityMap = {
+                "window_left": "weather_observation",
+                "window_right": "weather_observation", 
+                "desk": "computer_work",
+                "rack-a": "server_check",
+                "user": "user_interaction"
+            };
+            const activity = activityMap[targetKey] || "idle";
+            setTARSActivity(activity, targetKey, "autonomous_move");
         }
     },
     moveTo(pos) {
@@ -2757,7 +2998,42 @@ window.TARS = {
         if (gestures[gesture]) gestures[gesture]();
     }
 };
+
+// ============================================================
+// ACTIVITY LOGGING INTEGRATION (moved after TARS init)
+// ============================================================
+
+// Hook into existing lookAt to log location changes
+const originalLookAt = window.TARS.lookAt;
+window.TARS.lookAt = function(targetKey) {
+    const previousLocation = worldState.tars.location;
+    const result = originalLookAt.apply(this, arguments);
     
+    if (worldState.tars.location !== targetKey) {
+        worldState.tars.location = targetKey;
+        const activityMap = {
+            "window_left": "observing_weather",
+            "window_right": "observing_weather",
+            "desk": "computer_work",
+            "rack-a": "server_check",
+            "user": "interacting_with_user"
+        };
+        const activity = activityMap[targetKey] || "idle";
+        setTARSActivity(activity, targetKey, "autonomous_move");
+        worldState.activityLog.push({
+            type: "activity",
+            timestamp: Date.now(),
+            activity: activity,
+            location: targetKey,
+            previousLocation: previousLocation
+        });
+        if (worldState.activityLog.length > 50) worldState.activityLog.shift();
+        updateActivityDisplay();
+        console.log(`[TARS Activity] ${activity} at ${targetKey}`);
+    }
+    return result;
+};
+
     // ============================================================
     // LOCATION-BEHAVIOR SYSTEM - Random animations per station
     // ============================================================
@@ -3092,6 +3368,191 @@ window.TARS_ROOM = {
 };
 
 // ============================================================
+// PHASE 2: AUTONOMOUS NEEDS & DECISION ENGINE
+// ============================================================
+
+// Initialize needs if not present
+if (!worldState.tars.needs) {
+    worldState.tars.needs = {
+        energy: 0.6,        // Lower initial energy to drive seeking rack/desk
+        curiosity: 0.4,     // Some curiosity to drive window visits
+        social: 0.2,        // Social need builds up
+        maintenance: 0.3,   // Maintenance need to drive rack visits
+        comfort: 0.5        // Lower comfort to drive seeking better spots
+    };
+}
+if (!worldState.tars.lastDecisionTime) worldState.tars.lastDecisionTime = 0;
+if (!worldState.tars.currentGoal) worldState.tars.currentGoal = null;
+
+// Set initial location to "user" (center) so time-at-location penalty works
+if (worldState.tars.location === "spawn") {
+    worldState.tars.location = "user";
+    worldState.tars.activityStartedAt = Date.now();
+}
+
+const NEED_DECAY_RATES = {
+    energy: 0.00005,        // ~6%/min - faster drain to drive movement
+    curiosity: 0.00003,
+    social: 0.00004,
+    maintenance: 0.00002,
+    comfort: 0.00003
+};
+
+const NEED_RESTORATION = {
+    desk: { energy: 0.001, curiosity: 0.0005 },
+    "rack-a": { energy: 0.0015, maintenance: 0.002 },
+    "window_right": { curiosity: 0.002, comfort: 0.001 },
+    "window_left": { curiosity: 0.0025, comfort: 0.0015 }, // Bridge view more interesting
+    user: { social: 0.003, energy: 0.0005 }
+};
+
+const LOCATIONS = ["desk", "rack-a", "window_right", "window_left", "user"];
+
+function updateNeeds(dt) {
+    // Decay all needs
+    for (const [need, rate] of Object.entries(NEED_DECAY_RATES)) {
+        worldState.tars.needs[need] = Math.max(0, worldState.tars.needs[need] - rate * dt * 60);
+    }
+    
+    // Restore needs based on current location
+    const loc = worldState.tars.location;
+    if (NEED_RESTORATION[loc]) {
+        for (const [need, amount] of Object.entries(NEED_RESTORATION[loc])) {
+            worldState.tars.needs[need] = Math.min(1, worldState.tars.needs[need] + amount * dt * 60);
+        }
+    }
+    
+    // Time-of-day modifiers
+    const hour = new Date().getHours();
+    const isNight = hour < 6 || hour > 22;
+    if (isNight) {
+        worldState.tars.needs.energy = Math.max(0, worldState.tars.needs.energy - 0.00005 * dt * 60);
+        worldState.tars.needs.comfort = Math.max(0, worldState.tars.needs.comfort - 0.00003 * dt * 60);
+    }
+    
+    // Weather modifiers
+    const weather = worldState.environment.weather.condition;
+    if (weather === "thunderstorm" || weather === "heavy_rain") {
+        worldState.tars.needs.curiosity = Math.min(1, worldState.tars.needs.curiosity + 0.0001 * dt * 60);
+        worldState.tars.needs.comfort = Math.max(0, worldState.tars.needs.comfort - 0.0001 * dt * 60);
+    }
+}
+
+function scoreLocation(location) {
+    let score = 0;
+    const needs = worldState.tars.needs;
+    const prefs = worldState.tars.preferences;
+    const currentLoc = worldState.tars.location;
+    
+    // Need satisfaction potential
+    const restoration = NEED_RESTORATION[location] || {};
+    for (const [need, amount] of Object.entries(restoration)) {
+        const deficit = 1 - needs[need];
+        score += deficit * amount * 100;
+    }
+    
+    // Location preference
+    score += (prefs.locations[location] || 0.5) * 10;
+    
+    // Activity preference for likely activity at location
+    const activityMap = {
+        desk: "computer_work",
+        "rack-a": "server_check",
+        "window_right": "weather_observation",
+        "window_left": "weather_observation",
+        user: "user_interaction"
+    };
+    const activity = activityMap[location];
+    if (activity) score += (prefs.activities[activity] || 0.5) * 10;
+    
+    // Weather affinity for windows
+    if (location.includes("window")) {
+        const weather = worldState.environment.weather.condition;
+        score += (prefs.conditions[weather] || 0.5) * 15;
+    }
+    
+    // Routine bonus
+    const hour = new Date().getHours();
+    const currentWeather = worldState.environment.weather.condition;
+    if (hour >= 6 && hour < 10 && location === "rack-a") score += prefs.routines.morning_check * 20;
+    if (hour >= 18 && hour < 22 && location === "desk") score += prefs.routines.evening_wind_down * 15;
+    if (currentWeather === "thunderstorm" && location.includes("window")) score += prefs.routines.storm_watch * 25;
+    
+    // Avoid staying in same place too long
+    if (location === currentLoc) {
+        const timeHere = Date.now() - worldState.tars.activityStartedAt;
+        if (timeHere > 30000) score -= 30; // Penalty after 30 sec
+        if (timeHere > 90000) score -= 50; // Stronger penalty after 90 sec
+    }
+    
+    // Distance penalty (prefer closer locations but not too strong)
+    const currentPos = tarsEntityGroup.position;
+    const targetPos = TARGET_POSITIONS[location];
+    if (targetPos) {
+        const dist = currentPos.distanceTo(targetPos);
+        score -= dist * 1;  // Reduced from 2
+    }
+    
+    // Add some randomness for organic behavior
+    score += (Math.random() - 0.5) * 15;
+    
+    return score;
+}
+
+function makeAutonomousDecision() {
+    const now = Date.now();
+    // Only decide every 1-3 seconds (faster for testing)
+    if (now - worldState.tars.lastDecisionTime < 1000 + Math.random() * 2000) return;
+    
+    // Don't interrupt active one-shot FX states (not ambient emotions)
+    const blockingFx = ["strobe_orange", "strobe_red", "strobe", "bounce", "expansive"];
+    if (currentState.fx && blockingFx.includes(currentState.fx)) return;
+    
+    // Score all locations
+    const scores = LOCATIONS.map(loc => ({ location: loc, score: scoreLocation(loc) }));
+    scores.sort((a, b) => b.score - a.score);
+    
+    const best = scores[0];
+    const current = worldState.tars.location;
+    
+    // Always log scores for debugging
+    console.log(`[TARS Autonomy] Scores:`, scores.map(s => `${s.location}:${s.score.toFixed(1)}`).join(" | "));
+    
+    // Only switch if significantly better or current is very poor
+    const currentScore = scoreLocation(current);
+    if (best.location !== current && (best.score > currentScore + 3 || currentScore < 40)) {
+        worldState.tars.lastDecisionTime = now;
+        worldState.tars.currentGoal = best.location;
+        
+        console.log(`[TARS Autonomy] MOVING: ${best.location} (${best.score.toFixed(1)}) vs ${current} (${currentScore.toFixed(1)})`);
+        console.log(`[TARS Autonomy] Needs:`, Object.entries(worldState.tars.needs).map(([k,v]) => `${k}:${(v*100).toFixed(0)}%`).join(" "));
+        
+        // Trigger move
+        window.TARS.lookAt(best.location);
+        
+        // Set emotion based on activity
+        const emotionMap = {
+            desk: "think",
+            "rack-a": "listen",
+            "window_right": "curious",
+            "window_left": "chill",
+            user: "listen"
+        };
+        if (emotionMap[best.location]) {
+            window.TARS.setEmotion(emotionMap[best.location], 0.5 + Math.random() * 0.3);
+        }
+    }
+}
+
+// Expose autonomy for debugging
+window.TARS_AUTONOMY = {
+    getNeeds: () => ({ ...worldState.tars.needs }),
+    getScores: () => LOCATIONS.map(loc => ({ location: loc, score: scoreLocation(loc) })),
+    forceDecision: makeAutonomousDecision,
+    setNeed: (need, value) => { worldState.tars.needs[need] = Math.max(0, Math.min(1, value)); }
+};
+
+// ============================================================
 // CAMERA PARALLAX
 // ============================================================
 
@@ -3133,6 +3594,13 @@ function animate() {
         clockAccum = 0;
         setClockToRealTime();
     }
+
+    // 2b. Autonomous Needs & Decision Making
+    updateNeeds(dt);
+    makeAutonomousDecision();
+
+    // Monitor idle/screensaver system (BUG 3 fix)
+    updateMonitorIdle(dt);
 
     // 3. Environment LEDs & Fans
     serverLEDs.forEach(entry => {
@@ -3334,6 +3802,8 @@ function animate() {
         // Switch monitor1 to TARS OS
         const deskScreen = animatedScreens.find(s => s.drawFn === drawTerminal);
         if (deskScreen) deskScreen.drawFn = drawTARSOS;
+        // Trigger location-specific behavior
+        triggerLocationBehavior("desk");
         console.log("[TARS] At desk - neural interface active");
     } else if (!atDesk && currentState.atDesk) {
         currentState.atDesk = false;
@@ -3352,6 +3822,8 @@ function animate() {
             led.phase = Math.random() * Math.PI * 2;
             led.speed = 15 + Math.random() * 10; // Fast pulsing
         });
+        // Trigger location-specific behavior (sparks, screen effects, etc.)
+        triggerLocationBehavior("rack-a");
         console.log("[TARS] At rack - data transfer initiated");
     } else if (!atRack && currentState.atRack) {
         currentState.atRack = false;
@@ -3365,6 +3837,7 @@ function animate() {
     if (atWindow && !currentState.atWindow) {
         currentState.atWindow = true;
         currentState.atWindowSide = atWindowLeft ? "left" : "right";
+        triggerLocationBehavior(atWindowLeft ? "window" : "window");
         console.log("[TARS] At window - scanning exterior", currentState.atWindowSide);
     } else if (!atWindow && currentState.atWindow) {
         currentState.atWindow = false;
@@ -3513,10 +3986,10 @@ function animate() {
         }
     }
 
-    // Screensaver update
-    const tarsPos = tarsEntityGroup.position;
-    const atDeskScreen = tarsPos.distanceTo(new THREE.Vector3(1.7, 2.3, -2.2)) < 1.5;
-    updateScreensavers(dt, atDeskScreen, false, false);
+    // Screensaver update - handled by updateMonitorIdle(dt) called earlier
+    // const tarsPos = tarsEntityGroup.position;
+    // const atDeskScreen = tarsPos.distanceTo(new THREE.Vector3(1.7, 2.3, -2.2)) < 1.5;
+    // updateScreensavers(dt, atDeskScreen, false, false);
 
     // FX System - Special visual effects per emotion
     currentState.fxTimer += dt;
@@ -3661,6 +4134,39 @@ function animate() {
         fxParticleGeo.attributes.size.needsUpdate = true;
         fxParticleGeo.attributes.color.needsUpdate = true;
     }
+
+    // Left window bridge: animate cars on bridge
+    lcars.forEach((car, i) => {
+        const ud = car.userData;
+        car.position.z += ud.speed;
+        // Loop cars on bridge
+        if (car.position.z > 11) {
+            car.position.z = -11;
+            // Randomize speed slightly each loop
+            ud.speed = 0.08 + Math.random() * 0.06;
+        }
+        // Headlight beam animation (subtle)
+        if (lcarLights[i]) {
+            const beamScale = 0.5 + Math.sin(time * 10 + i) * 0.1;
+            lcarLights[i].left.scale.setScalar(beamScale);
+            lcarLights[i].right.scale.setScalar(beamScale);
+        }
+    });
+
+    // Left window bridge: parallax layers follow camera slightly
+    lbridgeLayers.forEach(layer => {
+        // Camera moves in room coordinates; bridge is outside at x=-11
+        // Parallax along the wall (Z) and depth (X)
+        const parallaxZ = camera.position.z * layer.speed;
+        const parallaxX = (camera.position.x + 8) * layer.speed * 0.5; // relative to wall
+        layer.mesh.position.z += (parallaxZ - layer.mesh.position.z) * 0.01;
+        layer.mesh.position.x += (parallaxX - layer.mesh.position.x) * 0.005;
+    });
+
+    // Water surface subtle animation
+    lwaterDistortion.time += dt;
+    lwaterMesh.position.y = 0.15 + Math.sin(lwaterDistortion.time * 1.5) * 0.02;
+    lwaterMesh.rotation.z = Math.sin(lwaterDistortion.time * 0.7) * 0.005;
 
     renderer.render(scene, camera);
 }
