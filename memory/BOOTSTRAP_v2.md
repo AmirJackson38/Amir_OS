@@ -1,5 +1,5 @@
 # Amir OS Session Resume Bootstrap (v2 Fast-Boot)
-> Generated: 2026-07-27 21:21:30 UTC
+> Generated: 2026-07-27 21:30:14 UTC
 > Amir OS Version: v0.8.0 (Single-File Fast-Boot Engine)
 > Memory Efficiency: 4833 / 5,500 chars used
 
@@ -534,10 +534,58 @@ Exposed as `window.getTARSContext`.
 
 - No active hunger restoration yet (no food activity available)
 - Offline rates are linear per hour — no time-of-day variation yet
-- No LLM actually reads the context API yet (Phase 6)
-- Activity registry is minimal (5 entries) — needs expansion in Phase 6
 
-## Phase 6 (Planned) — Environmental Events & Ambient Life
+## Phase 6 (Complete) — LLM ↔ World Engine Integration
+
+**Objective:** Build the integration boundary that allows an LLM to observe and participate in the World Engine without creating a second behavior system.
+
+**Timestamp:** 2026-07-27
+
+### What was built
+
+| System | Description |
+|--------|-------------|
+| **getTARSContext() enhanced** | Now includes `availableActions` (emotions, gestures, gaze targets, movements, activities), `locations` with coordinates, `isNight` |
+| **validateIntent()** | Public validation returning `{ valid, errors[], sanitized }` — safe for LLM intents, no mutation |
+| **TARS_INTENT.sanitize()** | Silently strips invalid fields from raw object input (replaces old `validate()` as the inner pipeline) |
+| **TARS_INTENT.parse() fixed** | Now returns `{ behavior, validation }` object instead of raw behavior; missing `.shift()` for log pruning fixed; `validateIntent` exposed publicly |
+| **TARS_LLM** | Clean entry point: `handleIntent(intent)` → validates → routes through existing `TARS.setBehavior()` pipeline; `endConversation()` → releases control; `getContext()` → structured snapshot; `isAvailable()` → checks controlMode |
+| **queueWorldEvent()** | External event queue with priority; events drain silently if below current activity priority |
+| **processWorldEvents()** | Called each frame in animate loop; compares event priority vs current activity priority; interrupts only if event > current; defers entirely when controlMode === "llm" |
+| **ACTIVITY_REGISTRY expanded** | Added `gaming`, `tv_watching` entries; all 6 activities now have `requiredObject` field; `needsSatisfied` expanded; `user_interaction` marked `persistentEvent: true` |
+| **Wrapper lookAt fixed** | Now accepts and passes `reason` parameter through to `setTARSActivity()` instead of hardcoding `"autonomous_move"`; uses `.call()` instead of `.apply()` for cleaner signature |
+
+### Key design properties
+
+- **LLM is the intelligence layer, not the World Engine** — the World Engine remains authoritative over simulated world, internal state, available actions, and visual state
+- **All LLM actions flow through existing pipeline**: `handleIntent()` → `TARS_INTENT.parse()` → `TARS.setBehavior()` → `lookAt()` → `setTARSActivity()` → `WorldPersistence.save()`
+- **Autonomous behavior preserved when not interacting**: controlMode remains "autonomous" by default; LLM only takes control via `TARS.setBehavior()`
+- **World systems continue during conversation**: `updateNeeds()`, weather, time, persistence all run normally
+- **Invalid intents cannot crash the engine**: `validateIntent()` returns detailed errors; empty intents produce no action
+- **Interruptions respect priority**: HIGH-priority world events interrupt MEDIUM activities; LOW events drain silently during MEDIUM+ activities; all events deferred during LLM conversations
+
+### Validation tests executed
+
+| Test | Result |
+|------|--------|
+| Valid LLM intent (emotion+gaze+gesture+energy) → accepted | PASS |
+| Invalid emotion → rejected with error | PASS |
+| Invalid gaze target → rejected with error | PASS |
+| Null intent → rejected with error | PASS |
+| Energy clamped to [0,1] | PASS |
+| Priority ordering (HIGH > MEDIUM > LOW) | PASS |
+| Interruption only when event > current activity priority | PASS |
+| JavaScript syntax validation | PASS |
+| No duplicate declarations or undefined references | PASS |
+
+### Known limitations
+
+- No real external LLM connected yet (Phase 6 is the integration boundary, not the LLM itself)
+- `emitWorldEvent()` doesn't have autonomous environmental triggers yet (Phase 7)
+- No chat UI (Phase 7)
+- Interruption system uses a simple array queue — no dedup or cooldown yet
+
+## Phase 7 (Planned) — Environmental Events, Ambient Life & Chat UI
 
 ---
 
@@ -797,7 +845,7 @@ This project builds: Documentation, system design, information architecture, aut
 
 # Project Registry (Auto-Generated)
 
-**Last Updated:** 2026-07-27 21:21:30 UTC  
+**Last Updated:** 2026-07-27 21:30:14 UTC  
 **Status:** Active registry  
 **Purpose:** Consolidated inventory of all active, paused, and archived projects
 
@@ -842,55 +890,55 @@ M memory/PROJECT_REGISTRY.md
 
 ```diff
 diff --git a/memory/PROJECT_REGISTRY.md b/memory/PROJECT_REGISTRY.md
-index 5b98d6d..0581dcc 100644
+index 0581dcc..f55f73c 100644
 --- a/memory/PROJECT_REGISTRY.md
 +++ b/memory/PROJECT_REGISTRY.md
 @@ -1,6 +1,6 @@
  # Project Registry (Auto-Generated)
  
--**Last Updated:** 2026-07-27 21:14:22 UTC  
-+**Last Updated:** 2026-07-27 21:21:30 UTC  
+-**Last Updated:** 2026-07-27 21:21:30 UTC  
++**Last Updated:** 2026-07-27 21:30:14 UTC  
  **Status:** Active registry  
  **Purpose:** Consolidated inventory of all active, paused, and archived projects
  
 diff --git a/memory/STAGING_INTENT.md b/memory/STAGING_INTENT.md
-index e67b940..b7ea38a 100644
+index b7ea38a..f66d4c8 100644
 --- a/memory/STAGING_INTENT.md
 +++ b/memory/STAGING_INTENT.md
-@@ -401,10 +401,108 @@ Restore flow:
+@@ -502,7 +502,55 @@ Exposed as `window.getTARSContext`.
  
- ### Known limitations
+ - No active hunger restoration yet (no food activity available)
+ - Offline rates are linear per hour — no time-of-day variation yet
+-- No LLM actually reads the context API yet (Phase 6)
+-- Activity registry is minimal (5 entries) — needs expansion in Phase 6
  
--- No offline need decay yet (elapsed time is tracked but not applied to needs)
- - Single localStorage key — no migration path yet (version field is ready)
- - Runtime `activityLog` resets each session (intentional — reduces noise)
- - `beforeunload` save is best-effort (not guaranteed on crash/mobile kill)
- - No backup or redundancy for localStorage data
- 
--## Phase 5 (Planned) — Offline Simulation & Learning
+-## Phase 6 (Planned) — Environmental Events & Ambient Life
 \ No newline at end of file
-+## Phase 5 (Complete) — Internal State, Needs & Offline Continuity
++## Phase 6 (Complete) — LLM ↔ World Engine Integration
 +
-+**Objective:** Make TARS's persistent world state actually matter across time.
++**Objective:** Build the integration boundary that allows an LLM to observe and participate in the World Engine without creating a second behavior system.
 +
 +**Timestamp:** 2026-07-27
 +
-+### Phase 5A: Internal Needs System
++### What was built
 +
-+Added `hunger` need (0-1) to the existing needs array. Full need suite now:
++| System | Description |
++|--------|-------------|
++| **getTARSContext() enhanced** | Now includes `availableActions` (emotions, gestures, gaze targets, movements, activities), `locations` with coordinates, `isNight` |
++| **validateIntent()** | Public validation returning `{ valid, errors[], sanitized }` — safe for LLM intents, no mutation |
++| **TARS_INTENT.sanitize()** | Silently strips invalid fields from raw object input (replaces old `validate()` as the inner pipeline) |
++| **TARS_INTENT.parse() fixed** | Now returns `{ behavior, validation }` object instead of raw behavior; missing `.shift()` for log pruning fixed; `validateIntent` exposed publicly |
++| **TARS_LLM** | Clean entry point: `handleIntent(intent)` → validates → routes through existing `TARS.setBehavior()` pipeline; `endConversation()` → releases control; `getContext()` → structured snapshot; `isAvailable()` → checks controlMode |
++| **queueWorldEvent()** | External event queue with priority; events drain silently if below current activity priority |
++| **processWorldEvents()** | Called each frame in animate loop; compares event priority vs current activity priority; interrupts only if event > current; defers entirely when controlMode === "llm" |
++| **ACTIVITY_REGISTRY expanded** | Added `gaming`, `tv_watching` entries; all 6 activities now have `requiredObject` field; `needsSatisfied` expanded; `user_interaction` marked `persistentEvent: true` |
++| **Wrapper lookAt fixed** | Now accepts and passes `reason` parameter through to `setTARSActivity()` instead of hardcoding `"autonomous_move"`; uses `.call()` instead of `.apply()` for cleaner signature |
 +
-+| Need | Range | Decay (active) | Offline rate (/hr) | Satisfied by | High → |
-+|------|-------|----------------|-------------------|-------------|--------|
-+| energy | 0-1 | ~6%/min | +8% (recover) | desk, rack, user | seeks rest |
-+| curiosity | 0-1 | ~3.6%/min | +12% | windows (especially storms) | explores |
-+| social | 0-1 | ~4.8%/min | +15% | user interaction | seeks Amir |
-+| maintenance | 0-1 | ~2.4%/min | +6% | rack-a | checks servers |
-+| comfort | 0-1 | ~3.6%/min | +10% | windows (bridge view) | seeks cozy spot |
-+| hunger | 0-1 | ~1.8%/min | +20% | (future: food) | drawn to desk |
++### Key design properties
 +
-+Needs influences are multiplicative with deficit — no hard thresholds.
-+
-+### Phase 5B: Offline Elapsed-Time Processing
++- **LLM is the intelligence layer, not the World Engine** — the World Engine remains authoritative over simulated world, internal state, available actions, and visual state
++- **All LLM actions flow through existing pipeline**: `handleIntent()` → `TARS_INTENT.parse()` → `TARS.setBehavior()` → `lookAt()` → `setTARSActivity()` → `WorldPersistence.save()`
++- **Autonomous behavior preserved when not interacting**: controlMode remains "autonomous" by default; LLM only takes control via `TARS.setBehavior()`
 
 ... [DIFF TRUNCATED TO 50 LINES FOR BREVITY] ...
 ```

@@ -2299,37 +2299,63 @@ const ACTIVITY_REGISTRY = {
         priority: PRIORITY.LOW,
         interruptionOkay: true,
         resumable: true,
-        persistentEvent: false
+        persistentEvent: false,
+        requiredObject: null
     },
     computer_work: {
         id: "computer_work",
         label: "Working at Computer",
         location: ["desk"],
-        needsSatisfied: { energy: 0.001 },
+        needsSatisfied: { energy: 0.001, curiosity: 0.0005 },
         priority: PRIORITY.MEDIUM,
         interruptionOkay: true,
         resumable: true,
-        persistentEvent: false
+        persistentEvent: false,
+        requiredObject: null
     },
     server_check: {
         id: "server_check",
         label: "Checking Server Rack",
         location: ["rack-a"],
-        needsSatisfied: { maintenance: 0.002, energy: 0.0015 },
+        needsSatisfied: { maintenance: 0.002, energy: 0.0015, curiosity: 0.0005 },
         priority: PRIORITY.MEDIUM,
         interruptionOkay: true,
         resumable: true,
-        persistentEvent: false
+        persistentEvent: false,
+        requiredObject: null
     },
     user_interaction: {
         id: "user_interaction",
         label: "Interacting with Amir",
         location: ["user"],
-        needsSatisfied: { social: 0.003, energy: 0.0005 },
+        needsSatisfied: { social: 0.003 },
+        priority: PRIORITY.MEDIUM,
+        interruptionOkay: true,
+        resumable: true,
+        persistentEvent: true,
+        requiredObject: null
+    },
+    gaming: {
+        id: "gaming",
+        label: "Playing a Game",
+        location: ["desk"],
+        needsSatisfied: { curiosity: 0.002, comfort: 0.001 },
         priority: PRIORITY.LOW,
         interruptionOkay: true,
         resumable: true,
-        persistentEvent: false
+        persistentEvent: false,
+        requiredObject: "television"
+    },
+    tv_watching: {
+        id: "tv_watching",
+        label: "Watching TV",
+        location: ["user"],
+        needsSatisfied: { comfort: 0.002, curiosity: 0.0005 },
+        priority: PRIORITY.LOW,
+        interruptionOkay: true,
+        resumable: true,
+        persistentEvent: false,
+        requiredObject: "television"
     },
     idle: {
         id: "idle",
@@ -2339,13 +2365,21 @@ const ACTIVITY_REGISTRY = {
         priority: PRIORITY.LOW,
         interruptionOkay: true,
         resumable: true,
-        persistentEvent: false
+        persistentEvent: false,
+        requiredObject: null
     }
 };
 
 // LLM-ready context API
+const EMOTION_VALUES = ["idle", "listen", "think", "speak", "sarcastic", "amused", "confused", "serious", "warning", "critical", "celebrate", "chill", "disapproving", "excited"];
+const GESTURE_VALUES = ["nod", "shake", "pulse", "expand", "spin"];
+const TARGET_VALUES = ["window_left", "window_right", "desk", "rack-a", "user"];
+const MOVEMENT_VALUES = ["walk", "drift", "rush"];
+
 function getTARSContext() {
     const session = getSessionReturnContext();
+    const hour = new Date().getHours();
+    const isNight = hour < 6 || hour > 22;
     return {
         currentState: {
             location: worldState.tars.location,
@@ -2372,7 +2406,8 @@ function getTARSContext() {
         environment: {
             weather: worldState.environment.weather.condition,
             timeOfDay: worldState.environment.timeOfDay,
-            temperature: worldState.environment.temperature
+            temperature: worldState.environment.temperature,
+            isNight
         },
         sessionReturn: {
             awayDurationLabel: session.awayDurationLabel,
@@ -2383,7 +2418,17 @@ function getTARSContext() {
             } : null
         },
         preferences: worldState.tars.preferences,
-        controlMode: worldState.tars.controlMode
+        controlMode: worldState.tars.controlMode,
+        availableActions: {
+            emotions: EMOTION_VALUES,
+            gestures: GESTURE_VALUES,
+            gazeTargets: TARGET_VALUES,
+            movements: MOVEMENT_VALUES,
+            activities: Object.keys(ACTIVITY_REGISTRY)
+        },
+        locations: Object.fromEntries(
+            Object.entries(worldState.room?.locations || {}).map(([k, v]) => [k, { x: v.x, z: v.z }])
+        )
     };
 }
 
@@ -2392,6 +2437,72 @@ window.getTARSContext = getTARSContext;
 window.getSessionReturnContext = getSessionReturnContext;
 window.PRIORITY = PRIORITY;
 window.ACTIVITY_REGISTRY = ACTIVITY_REGISTRY;
+
+// Phase 6: Event interruption system — external events can queue to influence behavior
+const pendingEvents = [];
+
+function queueWorldEvent(label, priority, metadata = {}) {
+    const event = {
+        id: `evt_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+        label,
+        priority,
+        metadata,
+        queuedAt: Date.now()
+    };
+    pendingEvents.push(event);
+    console.log(`[WorldEvent] Queued: "${label}" (priority ${priority})`);
+    return event;
+}
+
+function processWorldEvents() {
+    if (pendingEvents.length === 0) return;
+    if (worldState.tars.controlMode === "llm") {
+        // LLM is active — queue events for later, don't interrupt
+        return;
+    }
+    // Sort by priority descending, take highest
+    pendingEvents.sort((a, b) => b.priority - a.priority);
+    const top = pendingEvents[pendingEvents.length - 1];
+    if (!top) return;
+
+    const currentActivity = ACTIVITY_REGISTRY[worldState.tars.activity];
+    const currentPriority = currentActivity ? currentActivity.priority : PRIORITY.LOW;
+
+    if (top.priority > currentPriority) {
+        console.log(`[WorldEvent] Interrupting for: "${top.label}" (pri ${top.priority} > ${currentPriority})`);
+        const evt = pendingEvents.pop();
+        persistWorldEvent({
+            eventType: "world_event",
+            label: evt.label,
+            priority: evt.priority,
+            metadata: evt.metadata,
+            timestamp: new Date().toISOString()
+        });
+        worldState.activityLog.push({
+            type: "interruption",
+            timestamp: Date.now(),
+            event: evt.label,
+            priority: evt.priority,
+            interruptedActivity: worldState.tars.activity
+        });
+        if (worldState.activityLog.length > worldState.maxActivityLogSize) {
+            worldState.activityLog.shift();
+        }
+        // Set TARS to investigate — gaze toward relevant location if specified
+        if (evt.metadata?.gazeTarget) {
+            window.TARS.lookAt(evt.metadata.gazeTarget, "environmental_event");
+        } else {
+            window.TARS.lookAt("user", "environmental_event");
+        }
+    } else {
+        // Event not important enough to interrupt — drain it silently
+        pendingEvents.pop();
+    }
+}
+
+// Expose for external systems
+window.queueWorldEvent = queueWorldEvent;
+window.pendingEvents = pendingEvents;
 
 // ============================================================
 
@@ -3373,9 +3484,9 @@ window.TARS = {
 
 // Hook into existing lookAt to log location changes
 const originalLookAt = window.TARS.lookAt;
-window.TARS.lookAt = function(targetKey) {
+window.TARS.lookAt = function(targetKey, reason) {
     const previousLocation = worldState.tars.location;
-    const result = originalLookAt.apply(this, arguments);
+    const result = originalLookAt.call(this, targetKey, reason);
     
     if (worldState.tars.location !== targetKey) {
         worldState.tars.location = targetKey;
@@ -3387,17 +3498,18 @@ window.TARS.lookAt = function(targetKey) {
             "user": "interacting_with_user"
         };
         const activity = activityMap[targetKey] || "idle";
-        setTARSActivity(activity, targetKey, "autonomous_move");
+        setTARSActivity(activity, targetKey, reason || "autonomous_move");
         worldState.activityLog.push({
             type: "activity",
             timestamp: Date.now(),
             activity: activity,
             location: targetKey,
-            previousLocation: previousLocation
+            previousLocation: previousLocation,
+            reason: reason || "autonomous_move"
         });
         if (worldState.activityLog.length > 50) worldState.activityLog.shift();
         updateActivityDisplay();
-        console.log(`[TARS Activity] ${activity} at ${targetKey}`);
+        console.log(`[TARS Activity] ${activity} at ${targetKey} (reason: ${reason || "autonomous_move"})`);
     }
     return result;
 };
@@ -3958,24 +4070,62 @@ window.TARS_CONTROL = {
 window.TARS_INTENT = {
     parse(intent) {
         let behavior = {};
+        const validation = this.validate(intent, true);
 
         if (typeof intent === 'string') {
             behavior = this.keywordParse(intent);
         } else if (typeof intent === 'object' && intent !== null) {
-            behavior = this.validate(intent);
+            behavior = this.sanitize(intent);
         }
 
-        console.log(`[TARS INTENT] Raw:`, intent, `Parsed:`, behavior);
+        console.log(`[TARS INTENT] Raw:`, intent, `Parsed:`, behavior, `Valid:`, validation.valid);
         if (Object.keys(behavior).length > 0) {
             window.TARS.setBehavior(behavior);
             worldState.activityLog.push({
                 type: "intent",
                 timestamp: Date.now(),
                 raw: typeof intent === 'string' ? intent : JSON.stringify(intent),
-                parsed: behavior
+                parsed: behavior,
+                valid: validation.valid
             });
+            if (worldState.activityLog.length > worldState.maxActivityLogSize) {
+                worldState.activityLog.shift();
+            }
         }
-        return behavior;
+        return { behavior, validation };
+    },
+
+    // Public validation that returns detailed result (does not mutate input)
+    validateIntent(intent) {
+        if (!intent || typeof intent !== 'object') {
+            return { valid: false, errors: ["Intent must be a non-null object"], sanitized: {} };
+        }
+        const errors = [];
+        const sanitized = {};
+        if (intent.emotion !== undefined) {
+            if (EMOTION_VALUES.includes(intent.emotion)) sanitized.emotion = intent.emotion;
+            else errors.push(`Invalid emotion "${intent.emotion}" — must be one of: ${EMOTION_VALUES.join(", ")}`);
+        }
+        if (intent.gesture !== undefined) {
+            if (GESTURE_VALUES.includes(intent.gesture)) sanitized.gesture = intent.gesture;
+            else errors.push(`Invalid gesture "${intent.gesture}"`);
+        }
+        if (intent.gaze !== undefined) {
+            if (TARGET_VALUES.includes(intent.gaze)) sanitized.gaze = intent.gaze;
+            else errors.push(`Invalid gaze "${intent.gaze}"`);
+        }
+        if (intent.target !== undefined) {
+            if (TARGET_VALUES.includes(intent.target)) sanitized.target = intent.target;
+            else errors.push(`Invalid target "${intent.target}"`);
+        }
+        if (intent.movement !== undefined) {
+            if (MOVEMENT_VALUES.includes(intent.movement)) sanitized.movement = intent.movement;
+            else errors.push(`Invalid movement "${intent.movement}"`);
+        }
+        if (intent.energy !== undefined) sanitized.energy = Math.max(0, Math.min(1, intent.energy));
+        if (intent.intensity !== undefined) sanitized.intensity = Math.max(0, Math.min(1, intent.intensity));
+        if (intent.urgency !== undefined) sanitized.urgency = Math.max(0, Math.min(1, intent.urgency));
+        return { valid: errors.length === 0, errors, sanitized };
     },
 
     keywordParse(input) {
@@ -4017,6 +4167,10 @@ window.TARS_INTENT = {
     },
 
     validate(obj) {
+        return this.validateIntent(obj);
+    },
+
+    sanitize(obj) {
         const emotionValues = ["idle", "listen", "think", "speak", "sarcastic", "amused", "confused", "serious", "warning", "critical", "celebrate", "chill", "disapproving", "excited"];
         const gestureValues = ["nod", "shake", "pulse", "expand", "spin"];
         const targetValues = ["window_left", "window_right", "desk", "rack-a", "user"];
@@ -4052,6 +4206,36 @@ window.TARS_INTENT = {
         const pick = intents[Math.floor(Math.random() * intents.length)];
         console.log(`[TARS INTENT] Mock: "${pick}"`);
         return this.parse(pick);
+    }
+};
+
+// Phase 6: LLM integration boundary — clean entry point for external LLM
+window.TARS_LLM = {
+    // Accept behavioral JSON from real LLM, validate, route through World Engine
+    handleIntent(intent) {
+        const result = window.TARS_INTENT.parse(intent);
+        if (!result.behavior || Object.keys(result.behavior).length === 0) {
+            console.warn(`[TARS_LLM] Empty intent — no action taken`);
+            return { success: false, reason: "Empty intent after validation", errors: result.validation?.errors || [] };
+        }
+        console.log(`[TARS_LLM] Intent executed:`, result.behavior);
+        return { success: true, behavior: result.behavior, validation: result.validation };
+    },
+
+    // End LLM conversation — release control back to autonomous
+    endConversation() {
+        window.TARS.releaseControl();
+        console.log(`[TARS_LLM] Conversation ended — control released`);
+    },
+
+    // Get current context for LLM prompt
+    getContext() {
+        return getTARSContext();
+    },
+
+    // Check if TARS is currently available for interaction
+    isAvailable() {
+        return worldState.tars.controlMode !== "llm";
     }
 };
 
@@ -4110,6 +4294,9 @@ function animate() {
     // 2b. Autonomous Needs & Decision Making
     updateNeeds(dt);
     makeAutonomousDecision();
+
+    // 2c. Process queued world events (interruption system)
+    processWorldEvents();
 
     // Refresh activity log display (called periodically, not just on change)
     displayAccum += dt;

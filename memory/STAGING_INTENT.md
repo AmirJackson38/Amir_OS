@@ -502,7 +502,55 @@ Exposed as `window.getTARSContext`.
 
 - No active hunger restoration yet (no food activity available)
 - Offline rates are linear per hour — no time-of-day variation yet
-- No LLM actually reads the context API yet (Phase 6)
-- Activity registry is minimal (5 entries) — needs expansion in Phase 6
 
-## Phase 6 (Planned) — Environmental Events & Ambient Life
+## Phase 6 (Complete) — LLM ↔ World Engine Integration
+
+**Objective:** Build the integration boundary that allows an LLM to observe and participate in the World Engine without creating a second behavior system.
+
+**Timestamp:** 2026-07-27
+
+### What was built
+
+| System | Description |
+|--------|-------------|
+| **getTARSContext() enhanced** | Now includes `availableActions` (emotions, gestures, gaze targets, movements, activities), `locations` with coordinates, `isNight` |
+| **validateIntent()** | Public validation returning `{ valid, errors[], sanitized }` — safe for LLM intents, no mutation |
+| **TARS_INTENT.sanitize()** | Silently strips invalid fields from raw object input (replaces old `validate()` as the inner pipeline) |
+| **TARS_INTENT.parse() fixed** | Now returns `{ behavior, validation }` object instead of raw behavior; missing `.shift()` for log pruning fixed; `validateIntent` exposed publicly |
+| **TARS_LLM** | Clean entry point: `handleIntent(intent)` → validates → routes through existing `TARS.setBehavior()` pipeline; `endConversation()` → releases control; `getContext()` → structured snapshot; `isAvailable()` → checks controlMode |
+| **queueWorldEvent()** | External event queue with priority; events drain silently if below current activity priority |
+| **processWorldEvents()** | Called each frame in animate loop; compares event priority vs current activity priority; interrupts only if event > current; defers entirely when controlMode === "llm" |
+| **ACTIVITY_REGISTRY expanded** | Added `gaming`, `tv_watching` entries; all 6 activities now have `requiredObject` field; `needsSatisfied` expanded; `user_interaction` marked `persistentEvent: true` |
+| **Wrapper lookAt fixed** | Now accepts and passes `reason` parameter through to `setTARSActivity()` instead of hardcoding `"autonomous_move"`; uses `.call()` instead of `.apply()` for cleaner signature |
+
+### Key design properties
+
+- **LLM is the intelligence layer, not the World Engine** — the World Engine remains authoritative over simulated world, internal state, available actions, and visual state
+- **All LLM actions flow through existing pipeline**: `handleIntent()` → `TARS_INTENT.parse()` → `TARS.setBehavior()` → `lookAt()` → `setTARSActivity()` → `WorldPersistence.save()`
+- **Autonomous behavior preserved when not interacting**: controlMode remains "autonomous" by default; LLM only takes control via `TARS.setBehavior()`
+- **World systems continue during conversation**: `updateNeeds()`, weather, time, persistence all run normally
+- **Invalid intents cannot crash the engine**: `validateIntent()` returns detailed errors; empty intents produce no action
+- **Interruptions respect priority**: HIGH-priority world events interrupt MEDIUM activities; LOW events drain silently during MEDIUM+ activities; all events deferred during LLM conversations
+
+### Validation tests executed
+
+| Test | Result |
+|------|--------|
+| Valid LLM intent (emotion+gaze+gesture+energy) → accepted | PASS |
+| Invalid emotion → rejected with error | PASS |
+| Invalid gaze target → rejected with error | PASS |
+| Null intent → rejected with error | PASS |
+| Energy clamped to [0,1] | PASS |
+| Priority ordering (HIGH > MEDIUM > LOW) | PASS |
+| Interruption only when event > current activity priority | PASS |
+| JavaScript syntax validation | PASS |
+| No duplicate declarations or undefined references | PASS |
+
+### Known limitations
+
+- No real external LLM connected yet (Phase 6 is the integration boundary, not the LLM itself)
+- `emitWorldEvent()` doesn't have autonomous environmental triggers yet (Phase 7)
+- No chat UI (Phase 7)
+- Interruption system uses a simple array queue — no dedup or cooldown yet
+
+## Phase 7 (Planned) — Environmental Events, Ambient Life & Chat UI
