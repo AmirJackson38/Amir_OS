@@ -1,5 +1,5 @@
 # Amir OS Session Resume Bootstrap (v2 Fast-Boot)
-> Generated: 2026-07-27 21:14:23 UTC
+> Generated: 2026-07-27 21:21:30 UTC
 > Amir OS Version: v0.8.0 (Single-File Fast-Boot Engine)
 > Memory Efficiency: 4833 / 5,500 chars used
 
@@ -433,13 +433,111 @@ Restore flow:
 
 ### Known limitations
 
-- No offline need decay yet (elapsed time is tracked but not applied to needs)
 - Single localStorage key — no migration path yet (version field is ready)
 - Runtime `activityLog` resets each session (intentional — reduces noise)
 - `beforeunload` save is best-effort (not guaranteed on crash/mobile kill)
 - No backup or redundancy for localStorage data
 
-## Phase 5 (Planned) — Offline Simulation & Learning
+## Phase 5 (Complete) — Internal State, Needs & Offline Continuity
+
+**Objective:** Make TARS's persistent world state actually matter across time.
+
+**Timestamp:** 2026-07-27
+
+### Phase 5A: Internal Needs System
+
+Added `hunger` need (0-1) to the existing needs array. Full need suite now:
+
+| Need | Range | Decay (active) | Offline rate (/hr) | Satisfied by | High → |
+|------|-------|----------------|-------------------|-------------|--------|
+| energy | 0-1 | ~6%/min | +8% (recover) | desk, rack, user | seeks rest |
+| curiosity | 0-1 | ~3.6%/min | +12% | windows (especially storms) | explores |
+| social | 0-1 | ~4.8%/min | +15% | user interaction | seeks Amir |
+| maintenance | 0-1 | ~2.4%/min | +6% | rack-a | checks servers |
+| comfort | 0-1 | ~3.6%/min | +10% | windows (bridge view) | seeks cozy spot |
+| hunger | 0-1 | ~1.8%/min | +20% | (future: food) | drawn to desk |
+
+Needs influences are multiplicative with deficit — no hard thresholds.
+
+### Phase 5B: Offline Elapsed-Time Processing
+
+`processOfflineElapsed()` called after state restoration at startup:
+- Computes elapsed hours from saved `previousSessionEnd`
+- Applies compressed need changes using `OFFLINE_NEED_RATES_PER_HOUR`
+- Caps offline simulation at 168 hours (1 week)
+- Energy recovers offline (resting), all other needs increase
+- Records `_offlineEvent` with previous/resulting needs
+- Offline event persisted to `worldMemory`
+
+### Phase 5C: Session Return Context
+
+`getSessionReturnContext()` returns structured snapshot:
+- awayDurationMs, awayDurationLabel, absenceCategory
+- absence categories: first_session, brief, moderate, extended, long_absence
+- Current needs, previous activity, location, environment
+- Offline event details
+
+### Phase 5D: Activity Scoring
+
+- Hunger pressure added to `scoreLocation()`:
+  - hunger > 0.5: desk gets +(hunger-0.5)*40 bonus
+  - hunger > 0.8: +20 urgency bonus (any location change better)
+- Scoring continues to use need deficit × restoration × 100 as primary driver
+- All existing factors preserved: preference, weather, routine, recency, distance, randomness
+
+### Phase 5E: Priority/Interruption Structure
+
+`PRIORITY` enum: LOW(1), MEDIUM(2), HIGH(3), CRITICAL(4)
+Used in `ACTIVITY_REGISTRY` to classify each activity's interruption tolerance.
+Phase 3b `controlMode` preserved unchanged — autonomy defers when "llm".
+
+### Phase 5F: Future-Ready Activity Context
+
+`ACTIVITY_REGISTRY` — lightweight metadata per activity:
+- id, label, location, needsSatisfied, priority, interruptionOkay, resumable, persistentEvent
+- Covers: weather_observation, computer_work, server_check, user_interaction, idle
+- Extensible — new activities register by adding entry
+
+### Phase 5G: Persistence Integration
+
+- `hunger` automatically persists via spread needs in WorldPersistence.capture()
+- Offline events stored in worldMemory via persistWorldEvent()
+- All existing validation, save triggers, and restore flow unchanged
+
+### Phase 5H: LLM-Ready Context API
+
+`getTARSContext()` returns compact agent-readable snapshot:
+- currentState (location, activity, mood, energy, controlMode)
+- internalNeeds (all 6 needs with values)
+- currentActivity (id, location, duration, reason)
+- recentEvents (last 10 activity log entries)
+- environment (weather, timeOfDay, temperature)
+- sessionReturn (awayDuration, absenceCategory, offlineNeedsChange)
+- preferences
+- controlMode
+
+Exposed as `window.getTARSContext`.
+
+### Tests performed
+
+| Test | Result |
+|------|--------|
+| No elapsed time → skip offline processing | PASS |
+| 10h offline → needs change correctly | PASS |
+| 1-week cap prevents absurd values | PASS |
+| Session return context categories (extended) | PASS |
+| Context API shape (has all required fields) | PASS |
+| hunger in needs output | PASS |
+| All needs stay in [0,1] range | PASS |
+
+### Known limitations
+
+- No active hunger restoration yet (no food activity available)
+- Offline rates are linear per hour — no time-of-day variation yet
+- No LLM actually reads the context API yet (Phase 6)
+- Activity registry is minimal (5 entries) — needs expansion in Phase 6
+
+## Phase 6 (Planned) — Environmental Events & Ambient Life
 
 ---
 
@@ -699,7 +797,7 @@ This project builds: Documentation, system design, information architecture, aut
 
 # Project Registry (Auto-Generated)
 
-**Last Updated:** 2026-07-27 21:14:22 UTC  
+**Last Updated:** 2026-07-27 21:21:30 UTC  
 **Status:** Active registry  
 **Purpose:** Consolidated inventory of all active, paused, and archived projects
 
@@ -744,55 +842,55 @@ M memory/PROJECT_REGISTRY.md
 
 ```diff
 diff --git a/memory/PROJECT_REGISTRY.md b/memory/PROJECT_REGISTRY.md
-index b716a09..5b98d6d 100644
+index 5b98d6d..0581dcc 100644
 --- a/memory/PROJECT_REGISTRY.md
 +++ b/memory/PROJECT_REGISTRY.md
 @@ -1,6 +1,6 @@
  # Project Registry (Auto-Generated)
  
--**Last Updated:** 2026-07-27 21:01:07 UTC  
-+**Last Updated:** 2026-07-27 21:14:22 UTC  
+-**Last Updated:** 2026-07-27 21:14:22 UTC  
++**Last Updated:** 2026-07-27 21:21:30 UTC  
  **Status:** Active registry  
  **Purpose:** Consolidated inventory of all active, paused, and archived projects
  
 diff --git a/memory/STAGING_INTENT.md b/memory/STAGING_INTENT.md
-index 3bbe8ea..e67b940 100644
+index e67b940..b7ea38a 100644
 --- a/memory/STAGING_INTENT.md
 +++ b/memory/STAGING_INTENT.md
-@@ -322,4 +322,89 @@ Autonomy → makeAutonomousDecision()
- - Wrapper `lookAt()` has dead activity map code — unreachable because original `lookAt()` already sets `worldState.tars.location`
- - `deskWiggle` global initialized but shadowed by inner-scope `let deskWiggle` — harmless
+@@ -401,10 +401,108 @@ Restore flow:
  
--## Phase 4 (Planned) — Cross-Session Persistence
+ ### Known limitations
+ 
+-- No offline need decay yet (elapsed time is tracked but not applied to needs)
+ - Single localStorage key — no migration path yet (version field is ready)
+ - Runtime `activityLog` resets each session (intentional — reduces noise)
+ - `beforeunload` save is best-effort (not guaranteed on crash/mobile kill)
+ - No backup or redundancy for localStorage data
+ 
+-## Phase 5 (Planned) — Offline Simulation & Learning
 \ No newline at end of file
-+## Phase 4 (Complete) — Cross-Session World Persistence
++## Phase 5 (Complete) — Internal State, Needs & Offline Continuity
 +
-+**Objective:** Give the TARS World Engine persistent state across browser sessions/restarts.
++**Objective:** Make TARS's persistent world state actually matter across time.
 +
 +**Timestamp:** 2026-07-27
 +
-+### Architecture
++### Phase 5A: Internal Needs System
 +
-+**Storage:** `localStorage` with key `tars_world_state_v1`, versioned schema (`TARS_SAVE_VERSION = 1`)
++Added `hunger` need (0-1) to the existing needs array. Full need suite now:
 +
-+```
-+Save triggers:
-+  - setTARSActivity() — every meaningful activity change
-+  - beforeunload — tab/window close
-+  - setInterval every 30s — periodic checkpoint
++| Need | Range | Decay (active) | Offline rate (/hr) | Satisfied by | High → |
++|------|-------|----------------|-------------------|-------------|--------|
++| energy | 0-1 | ~6%/min | +8% (recover) | desk, rack, user | seeks rest |
++| curiosity | 0-1 | ~3.6%/min | +12% | windows (especially storms) | explores |
++| social | 0-1 | ~4.8%/min | +15% | user interaction | seeks Amir |
++| maintenance | 0-1 | ~2.4%/min | +6% | rack-a | checks servers |
++| comfort | 0-1 | ~3.6%/min | +10% | windows (bridge view) | seeks cozy spot |
++| hunger | 0-1 | ~1.8%/min | +20% | (future: food) | drawn to desk |
 +
-+Restore flow:
-+  beforeunload → WorldPersistence.load()
-+    ├── validate() checks version, required fields
-+    ├── applyToState() writes into worldState
-+    │     ├── tars: location, activity, reason, previousActivity, mood, energy, needs, preferences
-+    │     ├── environment: weather, timeOfDay, temperature
-+    │     └── worldMemory: curated persistent events
-+    └── fallback to defaults if missing/corrupt
-+```
++Needs influences are multiplicative with deficit — no hard thresholds.
 +
-+### What is persisted
-+
++### Phase 5B: Offline Elapsed-Time Processing
 
 ... [DIFF TRUNCATED TO 50 LINES FOR BREVITY] ...
 ```

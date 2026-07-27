@@ -2031,11 +2031,12 @@ const worldState = {
         mood: "neutral",                 // current mood
         energy: 0.7,                     // 0-1 energy level
         needs: {
-            energy: 0.6,
-            curiosity: 0.4,
-            social: 0.2,
-            maintenance: 0.3,
-            comfort: 0.5
+            energy: 0.6,         // Physical energy (0=exhausted, 1=fully rested)
+            curiosity: 0.4,      // Desire for novelty/exploration (0=indifferent, 1=highly curious)
+            social: 0.2,         // Need for interaction (0=content alone, 1=desperate for company)
+            maintenance: 0.3,    // Urge to check/maintain systems (0=satisfied, 1=compelled)
+            comfort: 0.5,        // Physical/environmental comfort (0=uncomfortable, 1=perfectly cozy)
+            hunger: 0.3          // Sustenance need (0=full, 1=starving)
         },
         preferences: {
             activities: {
@@ -2193,6 +2194,204 @@ function logWorldEvent(eventType, activity, location, reason, metadata = {}) {
     persistWorldEvent(event);
     return event;
 }
+
+// ============================================================
+// PHASE 5: INTERNAL STATE & OFFLINE CONTINUITY
+// ============================================================
+
+// Offline need change rates (compressed — per hour of elapsed time, not per frame)
+const OFFLINE_NEED_RATES_PER_HOUR = {
+    energy: 0.08,        // recovers ~8%/hour while offline (resting)
+    curiosity: 0.12,     // rises ~12%/hour (misses stimulation)
+    social: 0.15,        // rises ~15%/hour (misses interaction)
+    maintenance: 0.06,   // rises ~6%/hour
+    comfort: 0.10,       // rises ~10%/hour
+    hunger: 0.20         // rises ~20%/hour (no food source offline)
+};
+
+function processOfflineElapsed() {
+    const elapsedMs = worldState.session.totalElapsed;
+    if (!elapsedMs || elapsedMs < 60000) return; // skip if <1 min
+
+    const hours = elapsedMs / 3600000;
+    const clampedHours = Math.min(hours, 168); // cap at 1 week
+
+    const previousNeeds = { ...worldState.tars.needs };
+    const needs = worldState.tars.needs;
+
+    for (const [need, ratePerHour] of Object.entries(OFFLINE_NEED_RATES_PER_HOUR)) {
+        const delta = ratePerHour * clampedHours;
+        if (need === "energy") {
+            needs[need] = Math.min(1, (needs[need] || 0.5) + delta);
+        } else {
+            needs[need] = Math.max(0, Math.min(1, (needs[need] || 0.5) + delta));
+        }
+    }
+
+    const durationStr = hours >= 24
+        ? `${(hours / 24).toFixed(1)}d`
+        : `${hours.toFixed(1)}h`;
+
+    console.log(`[Offline] ${durationStr} elapsed:`, Object.entries(needs).map(([k, v]) =>
+        `${k}:${(v * 100).toFixed(0)}% (was ${(previousNeeds[k] * 100).toFixed(0)}%)`
+    ).join(" "));
+
+    worldState._offlineEvent = {
+        eventType: "offline_elapsed",
+        durationMs: elapsedMs,
+        durationHours: hours,
+        durationLabel: durationStr,
+        previousNeeds,
+        resultingNeeds: { ...needs }
+    };
+}
+
+// Session return context
+function getSessionReturnContext() {
+    const elapsed = worldState.session.totalElapsed || 0;
+    const prevEnd = worldState.session.previousSessionEnd;
+    const hours = elapsed / 3600000;
+
+    let absenceCategory = "first_session";
+    if (prevEnd) {
+        if (hours < 0.5) absenceCategory = "brief";
+        else if (hours < 4) absenceCategory = "moderate";
+        else if (hours < 24) absenceCategory = "extended";
+        else absenceCategory = "long_absence";
+    }
+
+    return {
+        sessionId: worldState.session.id,
+        previousSessionEnd: prevEnd ? new Date(prevEnd).toISOString() : null,
+        awayDurationMs: elapsed,
+        awayDurationLabel: hours >= 24
+            ? `${(hours / 24).toFixed(1)} days`
+            : `${hours.toFixed(1)} hours`,
+        absenceCategory,
+        needs: { ...worldState.tars.needs },
+        previousActivity: worldState.tars.previousActivity,
+        currentLocation: worldState.tars.location,
+        currentActivity: worldState.tars.activity,
+        environment: {
+            weather: worldState.environment.weather.condition,
+            timeOfDay: worldState.environment.timeOfDay
+        },
+        offlineEvent: worldState._offlineEvent || null
+    };
+}
+
+// Priority levels for future event/interruption system
+const PRIORITY = Object.freeze({
+    LOW: 1,
+    MEDIUM: 2,
+    HIGH: 3,
+    CRITICAL: 4
+});
+
+// Lightweight activity registry — metadata for all known activities
+// Used by scoring engine and future LLM context
+const ACTIVITY_REGISTRY = {
+    weather_observation: {
+        id: "weather_observation",
+        label: "Observing Weather",
+        location: ["window_left", "window_right"],
+        needsSatisfied: { curiosity: 0.002, comfort: 0.001 },
+        priority: PRIORITY.LOW,
+        interruptionOkay: true,
+        resumable: true,
+        persistentEvent: false
+    },
+    computer_work: {
+        id: "computer_work",
+        label: "Working at Computer",
+        location: ["desk"],
+        needsSatisfied: { energy: 0.001 },
+        priority: PRIORITY.MEDIUM,
+        interruptionOkay: true,
+        resumable: true,
+        persistentEvent: false
+    },
+    server_check: {
+        id: "server_check",
+        label: "Checking Server Rack",
+        location: ["rack-a"],
+        needsSatisfied: { maintenance: 0.002, energy: 0.0015 },
+        priority: PRIORITY.MEDIUM,
+        interruptionOkay: true,
+        resumable: true,
+        persistentEvent: false
+    },
+    user_interaction: {
+        id: "user_interaction",
+        label: "Interacting with Amir",
+        location: ["user"],
+        needsSatisfied: { social: 0.003, energy: 0.0005 },
+        priority: PRIORITY.LOW,
+        interruptionOkay: true,
+        resumable: true,
+        persistentEvent: false
+    },
+    idle: {
+        id: "idle",
+        label: "Idle / Wandering",
+        location: [],
+        needsSatisfied: {},
+        priority: PRIORITY.LOW,
+        interruptionOkay: true,
+        resumable: true,
+        persistentEvent: false
+    }
+};
+
+// LLM-ready context API
+function getTARSContext() {
+    const session = getSessionReturnContext();
+    return {
+        currentState: {
+            location: worldState.tars.location,
+            activity: worldState.tars.activity,
+            activityReason: worldState.tars.activityReason,
+            mood: worldState.tars.mood,
+            energy: worldState.tars.energy,
+            controlMode: worldState.tars.controlMode
+        },
+        internalNeeds: { ...worldState.tars.needs },
+        currentActivity: {
+            id: worldState.tars.activity,
+            location: worldState.tars.location,
+            startedAt: worldState.tars.activityStartedAt,
+            reason: worldState.tars.activityReason,
+            duration: Date.now() - worldState.tars.activityStartedAt
+        },
+        recentEvents: (worldState.activityLog || []).slice(-10).reverse().map(e => ({
+            activity: e.activity || e.type,
+            location: e.location,
+            reason: e.reason,
+            time: e.timestamp
+        })),
+        environment: {
+            weather: worldState.environment.weather.condition,
+            timeOfDay: worldState.environment.timeOfDay,
+            temperature: worldState.environment.temperature
+        },
+        sessionReturn: {
+            awayDurationLabel: session.awayDurationLabel,
+            absenceCategory: session.absenceCategory,
+            offlineNeedsChange: session.offlineEvent ? {
+                previous: session.offlineEvent.previousNeeds,
+                resulting: session.offlineEvent.resultingNeeds
+            } : null
+        },
+        preferences: worldState.tars.preferences,
+        controlMode: worldState.tars.controlMode
+    };
+}
+
+// Expose Phase 5 APIs
+window.getTARSContext = getTARSContext;
+window.getSessionReturnContext = getSessionReturnContext;
+window.PRIORITY = PRIORITY;
+window.ACTIVITY_REGISTRY = ACTIVITY_REGISTRY;
 
 // ============================================================
 
@@ -2403,6 +2602,8 @@ worldState.environment.timeOfDay = new Date().getHours() + new Date().getMinutes
 const savedData = WorldPersistence.load();
 if (savedData) {
     WorldPersistence.applyToState(savedData);
+    // Phase 5: process offline elapsed time on restored state
+    processOfflineElapsed();
 } else {
     worldState.tars.location = "spawn";
     worldState.tars.activity = "idle";
@@ -2419,6 +2620,12 @@ window.logActivityEvent = logActivityEvent;
 window.setTARSActivity = setTARSActivity;
 window.getTARSActivitySummary = getTARSActivitySummary;
 window.getPreference = getPreference;
+
+// Log offline event and session return
+if (worldState._offlineEvent) {
+    persistWorldEvent(worldState._offlineEvent);
+    console.log(`[SessionReturn]`, JSON.stringify(getSessionReturnContext(), null, 2));
+}
 
 // ============================================================
 // ROOM BOUNDS & GAZE TARGET REFERENCE MATRIX
@@ -3546,19 +3753,28 @@ if (worldState.tars.location === "spawn") {
     worldState.tars.activityStartedAt = Date.now();
 }
 
+// Need definitions:
+//   energy:     0-1, decays ~6%/min active, recovers at desk/rack. Low→rest seeks desk. Persists.
+//   curiosity:  0-1, decays ~3.6%/min, spikes on weather events. Low→boredom, seeks windows. Persists.
+//   social:     0-1, decays ~4.8%/min, recovers near user. High→seeks Amir. Persists.
+//   maintenance:0-1, decays ~2.4%/min, recovers at rack. High→racks. Persists.
+//   comfort:    0-1, decays ~3.6%/min, recovers at windows. Low→avoids storms. Persists.
+//   hunger:     0-1, decays ~1.8%/min (slow), no active restoration yet (future: food). Persists.
+
 const NEED_DECAY_RATES = {
     energy: 0.00005,        // ~6%/min - faster drain to drive movement
-    curiosity: 0.00003,
-    social: 0.00004,
-    maintenance: 0.00002,
-    comfort: 0.00003
+    curiosity: 0.00003,     // ~3.6%/min
+    social: 0.00004,        // ~4.8%/min
+    maintenance: 0.00002,   // ~2.4%/min
+    comfort: 0.00003,       // ~3.6%/min
+    hunger: 0.000015        // ~1.8%/min - slow, no active food source yet
 };
 
 const NEED_RESTORATION = {
     desk: { energy: 0.001, curiosity: 0.0005 },
     "rack-a": { energy: 0.0015, maintenance: 0.002 },
     "window_right": { curiosity: 0.002, comfort: 0.001 },
-    "window_left": { curiosity: 0.0025, comfort: 0.0015 }, // Bridge view more interesting
+    "window_left": { curiosity: 0.0025, comfort: 0.0015 },
     user: { social: 0.003, energy: 0.0005 }
 };
 
@@ -3605,6 +3821,14 @@ function scoreLocation(location) {
     for (const [need, amount] of Object.entries(restoration)) {
         const deficit = 1 - needs[need];
         score += deficit * amount * 100;
+    }
+    
+    // Hunger pressure — high hunger draws toward desk (future food proxy)
+    if (needs.hunger > 0.5 && location === "desk") {
+        score += (needs.hunger - 0.5) * 40;
+    }
+    if (needs.hunger > 0.8) {
+        score += 20; // Urgency bonus when starving — any location change is better
     }
     
     // Location preference
