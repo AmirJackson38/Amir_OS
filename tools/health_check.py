@@ -32,8 +32,10 @@ CORE_TOOLS = [
     "continuity_bootstrap_v2.py",
     "memory_compactor.py",
     "project_autodiscovery.py",
-    "health_check.py"
+    "health_check.py",
+    "auto_heal.py"
 ]
+
 
 def get_repo_root():
     return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -112,8 +114,9 @@ def audit_git_status(root):
 def main():
     root = get_repo_root()
     print(f"\n{CYAN}{BOLD}===================================================={RESET}")
-    print(f"{CYAN}{BOLD}       Amir OS v0.8.0 Health & Diagnostics Audit     {RESET}")
+    print(f"{CYAN}{BOLD}       Amir OS v0.9.0 Health & Diagnostics Audit     {RESET}")
     print(f"{CYAN}{BOLD}===================================================={RESET}\n")
+
 
     # 1. Audit Memory Files
     print(f"{BOLD}[1/3] Memory Character Budget Audit:{RESET}")

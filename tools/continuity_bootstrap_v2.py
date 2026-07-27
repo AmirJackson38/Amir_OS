@@ -38,6 +38,20 @@ def run_git_command(args, cwd):
     except Exception as e:
         return f"Error: {str(e)}"
 
+def sanitize_secrets(text):
+    """
+    Mask sensitive secret patterns (PAT tokens, API keys, JWTs) ONLY when rendering git diffs 
+    or bootstrap summaries for public export. NEVER touches original local files or user secret stores.
+    """
+    if not text:
+        return text
+    text = re.sub(r'(gh[pousr]_[A-Za-z0-9_]{36,255})', '[REDACTED_GITHUB_TOKEN]', text)
+    text = re.sub(r'(sk-[A-Za-z0-9_-]{32,})', '[REDACTED_API_KEY]', text)
+    text = re.sub(r'eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}', '[REDACTED_JWT_TOKEN]', text)
+    text = re.sub(r'https?://([^:]+):([^@]+)@', r'https://\1:[REDACTED_PASSWORD]@', text)
+    return text
+
+
 def extract_section(file_path, header_pattern, next_header_pattern=r'^#+ '):
     """Extract a markdown section from a file."""
     if not os.path.exists(file_path):
@@ -102,11 +116,13 @@ def main():
     print("Gathering Git diff...")
     git_diff = run_git_command(["diff"], root)
     if git_diff and "Error" not in git_diff:
+        git_diff = sanitize_secrets(git_diff)
         lines = git_diff.split('\n')
         if len(lines) > 50:
             git_diff = '\n'.join(lines[:50]) + "\n\n... [DIFF TRUNCATED TO 50 LINES FOR BREVITY] ..."
     elif not git_diff or "Error" in git_diff:
         git_diff = "No active diff or diff unavailable."
+
     
     # 2. Load v2 Memory Files & Staging Intent
     print("Loading v2 memory files...")

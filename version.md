@@ -1,20 +1,20 @@
 # Amir OS Version
 
 ## Current Version
-**v0.8.0**
+**v0.9.0**
 
 ---
 
 ## Status
-**v0.8.0 Memory Architecture Consolidation & Hard Limits**
+**v0.9.0 T.A.R.S. Autonomous Cognitive Kernel Engine**
 
 The operating environment features:
-- Hard character limits enforced on all memory files (1,500-2,500 chars)
-- Single-file Fast Boot via `BOOTSTRAP_v2.md`
-- Explicit bootstrap precedence rules (`BOOT_PRECEDENCE.md`)
-- Project auto-discovery and registry (`PROJECT_REGISTRY.md`)
-- System File Index (Memory Map) for on-demand lazy loading
-- TSE-Production-Lab properly documented in memory
+- Self-remediating engine via `tools/auto_heal.py`
+- Sub-second diagnostic audit via `tools/health_check.py`
+- Dynamic secret shielding for public Git exports
+- Integrated project autodiscovery inside continuity compilation
+- Hardcoded slash command behaviors (`/plan`, `/grill-me`, `/learn`, `/goal`)
+- Pre-Execution Write-Ahead Intent WAL (`STAGING_INTENT.md`)
 
 ---
 
@@ -24,7 +24,7 @@ Create a portable AI operating environment that preserves continuity across AI m
 ---
 
 ## Historical Releases
-For full release history and milestone details (v0.1.0 – v0.7.0), see: [docs/CHANGELOG.md](file:///C:/Users/Admin/Documents/Amir_OS/docs/CHANGELOG.md)
+For full release history and milestone details (v0.1.0 – v0.8.0), see: [docs/CHANGELOG.md](file:///C:/Users/Admin/Documents/Amir_OS/docs/CHANGELOG.md)
 
 ---
 

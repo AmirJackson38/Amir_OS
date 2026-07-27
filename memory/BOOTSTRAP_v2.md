@@ -1,5 +1,5 @@
 # Amir OS Session Resume Bootstrap (v2 Fast-Boot)
-> Generated: 2026-07-27 00:19:05 UTC
+> Generated: 2026-07-27 00:28:26 UTC
 > Amir OS Version: v0.8.0 (Single-File Fast-Boot Engine)
 > Memory Efficiency: 4416 / 5,500 chars used
 
@@ -40,8 +40,8 @@ Single-File Fast Boot: Reading this file provides 100% of the active context in 
 ## Active Staged Action
 
 - **Timestamp:** 2026-07-26 23:59:00 UTC
-- **Target Component:** System Health Diagnostics & Governance Rule Hardening
-- **Planned Action:** Created `tools/health_check.py`, integrated project auto-discovery, verified session log auto-archiving, updated `.agents/AGENTS.md` & `AGENT_RULES.md` with mandatory pre-execution STAGING_INTENT logging + slash command behavioral triggers.
+- **Target Component:** Amir OS v0.9.0 — T.A.R.S. Cognitive Kernel Engine
+- **Planned Action:** Implemented `tools/auto_heal.py` (self-remediating engine), dynamic secret shielding for git diffs/summaries, updated `version.md` and `docs/CHANGELOG.md` to v0.9.0.
 - **Status:** Completed
 
 ---
@@ -54,20 +54,20 @@ Single-File Fast Boot: Reading this file provides 100% of the active context in 
 # Amir OS Version
 
 ## Current Version
-**v0.8.0**
+**v0.9.0**
 
 ---
 
 ## Status
-**v0.8.0 Memory Architecture Consolidation & Hard Limits**
+**v0.9.0 T.A.R.S. Autonomous Cognitive Kernel Engine**
 
 The operating environment features:
-- Hard character limits enforced on all memory files (1,500-2,500 chars)
-- Single-file Fast Boot via `BOOTSTRAP_v2.md`
-- Explicit bootstrap precedence rules (`BOOT_PRECEDENCE.md`)
-- Project auto-discovery and registry (`PROJECT_REGISTRY.md`)
-- System File Index (Memory Map) for on-demand lazy loading
-- TSE-Production-Lab properly documented in memory
+- Self-remediating engine via `tools/auto_heal.py`
+- Sub-second diagnostic audit via `tools/health_check.py`
+- Dynamic secret shielding for public Git exports
+- Integrated project autodiscovery inside continuity compilation
+- Hardcoded slash command behaviors (`/plan`, `/grill-me`, `/learn`, `/goal`)
+- Pre-Execution Write-Ahead Intent WAL (`STAGING_INTENT.md`)
 
 ---
 
@@ -77,7 +77,7 @@ Create a portable AI operating environment that preserves continuity across AI m
 ---
 
 ## Historical Releases
-For full release history and milestone details (v0.1.0 – v0.7.0), see: [docs/CHANGELOG.md](file:///C:/Users/Admin/Documents/Amir_OS/docs/CHANGELOG.md)
+For full release history and milestone details (v0.1.0 – v0.8.0), see: [docs/CHANGELOG.md](file:///C:/Users/Admin/Documents/Amir_OS/docs/CHANGELOG.md)
 
 ---
 
@@ -239,7 +239,7 @@ This project builds: Documentation, system design, information architecture, aut
 
 # Project Registry (Auto-Generated)
 
-**Last Updated:** 2026-07-27 00:19:05 UTC  
+**Last Updated:** 2026-07-27 00:28:25 UTC  
 **Status:** Active registry  
 **Purpose:** Consolidated inventory of all active, paused, and archived projects
 
@@ -273,18 +273,14 @@ This project builds: Documentation, system design, information architecture, aut
 ## 6. Active Workspace Changes (Git Status)
 
 ```
-M AGENT_RULES.md
+M docs/CHANGELOG.md
+ M memory/BOOTSTRAP_v2.md
  M memory/PROJECT_REGISTRY.md
- M memory/SESSION_LOG_v2.md
  M memory/STAGING_INTENT.md
  M tools/continuity_bootstrap_v2.py
- M tools/memory_compactor.py
-?? memory/SESSION_LOG_ARCHIVE.md
-?? tools/__pycache__/continuity_bootstrap_v2.cpython-312.pyc
-?? tools/__pycache__/health_check.cpython-312.pyc
-?? tools/__pycache__/memory_compactor.cpython-312.pyc
-?? tools/__pycache__/project_autodiscovery.cpython-312.pyc
-?? tools/health_check.py
+ M tools/health_check.py
+ M version.md
+?? tools/auto_heal.py
 ```
 
 ---
@@ -292,58 +288,7 @@ M AGENT_RULES.md
 ## 7. Current Code Diffs (Capped at 50 Lines)
 
 ```diff
-diff --git a/AGENT_RULES.md b/AGENT_RULES.md
-index 3b6bd65..edb3f19 100644
---- a/AGENT_RULES.md
-+++ b/AGENT_RULES.md
-@@ -171,9 +171,11 @@ Capture:
- The system should make future continuation easier.
- 
- To ensure resilience against unexpected cutoffs:
--1. Log progress incrementally in `memory/SESSION_LOG_v2.md` (the flight recorder).
--2. Periodically run the `tools/continuity_bootstrap_v2.py` compiler to refresh the `memory/BOOTSTRAP_v2.md` write-ahead log.
--3. If rate limits or session drops occur, the next session can immediately boot using `memory/BOOTSTRAP_v2.md`.
-+1. BEFORE major multi-step execution, write `Status: In-Progress` to `memory/STAGING_INTENT.md` (the Write-Ahead Log).
-+2. Log progress incrementally in `memory/SESSION_LOG_v2.md` (the flight recorder).
-+3. Run `tools/continuity_bootstrap_v2.py` compiler to refresh `memory/BOOTSTRAP_v2.md`.
-+4. Upon successful completion, update `STAGING_INTENT.md` to `Status: Completed`.
-+5. If rate limits or session drops occur, the next session will read `BOOTSTRAP_v2.md` and immediately resume in-flight work.
- 
- ---
- 
-@@ -189,6 +191,17 @@ The best answer creates understanding, skill, and independence.
- 
- ---
- 
-+# Rule 11 — Internalize Command Behaviors
-+
-+The AI internalizes key workflow commands natively:
-+
-+* **/plan**: Generate an explicit architectural design and edge-case assessment before executing complex code changes.
-+* **/grill-me**: Interview Amir with targeted engineering questions when requirements or trade-offs are ambiguous.
-+* **/learn**: Save non-trivial bugs, troubleshooting steps, or Networking/Security insights to `memory/LESSONS_v2.md`.
-+* **/goal**: Execute long-running tasks autonomously, validating all outputs via `health_check.py` before declaring success.
-+
-+---
-+
- # Agent Behavior Summary
- 
- A successful Amir OS agent should be:
-@@ -200,3 +213,4 @@ A successful Amir OS agent should be:
- * A knowledge organizer.
- 
- The AI should make Amir more capable over time.
-+
-diff --git a/memory/PROJECT_REGISTRY.md b/memory/PROJECT_REGISTRY.md
-index 1c0e78b..1635de0 100644
---- a/memory/PROJECT_REGISTRY.md
-+++ b/memory/PROJECT_REGISTRY.md
-@@ -1,6 +1,6 @@
- # Project Registry (Auto-Generated)
- 
--**Last Updated:** 2026-07-26 23:10:46 UTC  
-
-... [DIFF TRUNCATED TO 50 LINES FOR BREVITY] ...
+No active diff or diff unavailable.
 ```
 
 ---

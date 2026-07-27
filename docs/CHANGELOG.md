@@ -5,7 +5,20 @@ For current version status, see `version.md`.
 
 ---
 
+## v0.9.0 — T.A.R.S. Autonomous Cognitive Kernel Engine
+**Date:** July 26, 2026
+
+- **Self-Healing Engine:** Created `tools/auto_heal.py` for automated error detection & remediation.
+- **Diagnostic Audit:** Created `tools/health_check.py` for 1-second system health checks.
+- **Dynamic Secret Shielding:** Added secret sanitization to `continuity_bootstrap_v2.py` for Git exports (preserving local files).
+- **Embedded Auto-Discovery:** Integrated `project_autodiscovery.py` inside continuity compilation.
+- **Command Behaviors:** Hardcoded `/plan`, `/grill-me`, `/learn`, `/goal` triggers into system rules.
+- **Pre-Execution WAL Protocol:** Enforced `STAGING_INTENT.md` intent tracking across all operations.
+
+---
+
 ## v0.8.0 — Memory Architecture Consolidation & Hard Limits
+
 **Date:** July 26, 2026
 
 - Enforced hard character limits on all memory files (1,500-2,500 chars).
