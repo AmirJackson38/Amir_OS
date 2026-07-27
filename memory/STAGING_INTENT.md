@@ -8,8 +8,8 @@
 ## Active Staged Action
 
 - **Timestamp:** 2026-07-26 23:59:00 UTC
-- **Target Component:** Amir OS v0.9.0 — T.A.R.S. Cognitive Kernel Engine
-- **Planned Action:** Implemented `tools/auto_heal.py` (self-remediating engine), dynamic secret shielding for git diffs/summaries, updated `version.md` and `docs/CHANGELOG.md` to v0.9.0.
-- **Status:** Completed
+- **Target Component:** T.A.R.S. Embodiment System (v0.3 Frontend ➡️ Emotion-Driven Digital Entity Engine)
+- **Planned Action:** Implement procedural T.A.R.S. entity (energy core, translucent body, deforming surface, particles, gaze/attention), behavior presets engine, emotion mixer, speech-reactive hooks, and test controls without altering room baseline.
+- **Status:** In-Progress
 
 ---
