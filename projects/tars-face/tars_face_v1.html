@@ -180,7 +180,8 @@
             <button class="btn" onclick="window.TARS.lookAt('user')">USER</button>
             <button class="btn" onclick="window.TARS.lookAt('desk')">DESK</button>
             <button class="btn" onclick="window.TARS.lookAt('rack-a')">RACK A</button>
-            <button class="btn" onclick="window.TARS.lookAt('window')">WINDOW</button>
+            <button class="btn" onclick="window.TARS.lookAt('window_left')">WINDOW LEFT</button>
+            <button class="btn" onclick="window.TARS.lookAt('window_right')">WINDOW RIGHT</button>
         </div>
     </div>
 
@@ -363,6 +364,13 @@ const winRight = WIN_X + WIN_W / 2;
 const winTop = WIN_Y + WIN_H / 2;
 const winBottom = WIN_Y - WIN_H / 2;
 
+// Left window constants
+const LWIN_X = -7.5, LWIN_Y = 4.2, LWIN_W = 6, LWIN_H = 4;
+const lwinLeft = LWIN_X - LWIN_W / 2;
+const lwinRight = LWIN_X + LWIN_W / 2;
+const lwinTop = LWIN_Y + LWIN_H / 2;
+const lwinBottom = LWIN_Y - LWIN_H / 2;
+
 const wallLeftSeg = new THREE.Mesh(new THREE.BoxGeometry(winLeft - (-8), 8, WALL_THICK), backWallMat);
 wallLeftSeg.position.set((-8 + winLeft) / 2, 4, WALL_Z);
 wallLeftSeg.receiveShadow = true;
@@ -427,6 +435,159 @@ windowFrame.add(trimLeft);
 const trimRight = trimLeft.clone();
 trimRight.position.x = WIN_W / 2 + 0.1;
 windowFrame.add(trimRight);
+
+// ============================================================
+// LEFT WALL WINDOW (window_left)
+// ============================================================
+
+// Left wall has a window opening - create wall segments around it
+const lwallLeftSeg = new THREE.Mesh(new THREE.BoxGeometry(-8 - lwinLeft, 8, LEFT_WALL_THICK), backWallMat);
+lwallLeftSeg.position.set((-8 + lwinLeft) / 2, 4, LEFT_WALL_X);
+lwallLeftSeg.receiveShadow = true;
+room.add(lwallLeftSeg);
+
+const lwallRightSeg = new THREE.Mesh(new THREE.BoxGeometry(0 - lwinRight, 8, LEFT_WALL_THICK), backWallMat);
+lwallRightSeg.position.set((lwinRight + 0) / 2, 4, LEFT_WALL_X);
+lwallRightSeg.receiveShadow = true;
+room.add(lwallRightSeg);
+
+const lwallTopSeg = new THREE.Mesh(new THREE.BoxGeometry(LEFT_WIN_W, 8 - lwinTop, LEFT_WALL_THICK), backWallMat);
+lwallTopSeg.position.set(LEFT_WIN_X, (lwinTop + 8) / 2, LEFT_WALL_X);
+lwallTopSeg.receiveShadow = true;
+room.add(lwallTopSeg);
+
+const lwallBottomSeg = new THREE.Mesh(new THREE.BoxGeometry(LEFT_WIN_W, lwinBottom, LEFT_WALL_THICK), backWallMat);
+lwallBottomSeg.position.set(LEFT_WIN_X, lwinBottom / 2, LEFT_WALL_X);
+lwallBottomSeg.receiveShadow = true;
+room.add(lwallBottomSeg);
+
+// Left window frame + glass
+const lwindowFrame = new THREE.Group();
+lwindowFrame.position.set(LEFT_WIN_X, LEFT_WIN_Y, LEFT_WALL_X + 0.22);
+room.add(lwindowFrame);
+
+const lglass = new THREE.Mesh(
+    new THREE.PlaneGeometry(LEFT_WIN_W, LEFT_WIN_H),
+    new THREE.MeshPhysicalMaterial({
+        color: 0x0b2233,
+        transparent: true,
+        opacity: 0.12,
+        roughness: 0.03,
+        metalness: 0.05,
+        transmission: 0.9,
+        side: THREE.DoubleSide
+    })
+);
+lwindowFrame.add(lglass);
+
+const lwindowGlow = new THREE.PointLight(0x1679c9, 10, 15);
+lwindowGlow.position.set(LEFT_WIN_X, LEFT_WIN_Y - 0.2, LEFT_WALL_X + 1);
+scene.add(lwindowGlow);
+
+const lframeMaterial = material(0x101820, 0.6, 0.5);
+const lvFrame = new THREE.Mesh(new THREE.BoxGeometry(0.12, LEFT_WIN_H + 0.3, 0.2), lframeMaterial);
+lwindowFrame.add(lvFrame);
+const lhFrame = new THREE.Mesh(new THREE.BoxGeometry(LEFT_WIN_W + 0.3, 0.12, 0.2), lframeMaterial);
+lwindowFrame.add(lhFrame);
+const ltrimMat = material(0x0d151c, 0.55, 0.4);
+const ltrimTop = new THREE.Mesh(new THREE.BoxGeometry(LEFT_WIN_W + 0.4, 0.15, 0.25), ltrimMat);
+ltrimTop.position.y = LEFT_WIN_H / 2 + 0.1;
+lwindowFrame.add(ltrimTop);
+const ltrimBottom = ltrimTop.clone();
+ltrimBottom.position.y = -LEFT_WIN_H / 2 - 0.1;
+lwindowFrame.add(ltrimBottom);
+const ltrimLeft = new THREE.Mesh(new THREE.BoxGeometry(0.15, LEFT_WIN_H + 0.4, 0.25), ltrimMat);
+ltrimLeft.position.x = -LEFT_WIN_W / 2 - 0.1;
+lwindowFrame.add(ltrimLeft);
+const ltrimRight = ltrimLeft.clone();
+ltrimRight.position.x = LEFT_WIN_W / 2 + 0.1;
+lwindowFrame.add(ltrimRight);
+
+// Left window exterior (shares the same exterior group)
+const lexterior = new THREE.Group();
+lexterior.position.set(0, 0, LEFT_WALL_X - 3);
+scene.add(lexterior);
+
+const lskyPlane = new THREE.Mesh(
+    new THREE.PlaneGeometry(30, 20),
+    new THREE.MeshBasicMaterial({ color: 0x04070c, fog: false })
+);
+lskyPlane.position.set(0, 6, -10);
+lexterior.add(lskyPlane);
+
+const lcelestial = new THREE.Mesh(
+    new THREE.CircleGeometry(0.5, 32),
+    new THREE.MeshBasicMaterial({ color: 0xfff3d6, toneMapped: false, transparent: true })
+);
+lcelestial.position.set(0, 5, -9.5);
+lexterior.add(lcelestial);
+
+const lstarGeometry = new THREE.BufferGeometry();
+const lstarCount = 100;
+const lstarPositions = new Float32Array(lstarCount * 3);
+for (let i = 0; i < lstarCount; i++) {
+    lstarPositions[i * 3] = (Math.random() - 0.5) * 26;
+    lstarPositions[i * 3 + 1] = 2 + Math.random() * 14;
+    lstarPositions[i * 3 + 2] = -9.8 - Math.random() * 2;
+}
+lstarGeometry.setAttribute("position", new THREE.BufferAttribute(lstarPositions, 3));
+const lstars = new THREE.Points(lstarGeometry, new THREE.PointsMaterial({
+    color: 0xffffff, size: 0.045, map: dotSprite, transparent: true, opacity: 0.8, depthWrite: false
+}));
+lexterior.add(lstars);
+
+function lbuildingWindowTex() {
+    return canvasTexture((ctx, w, h) => {
+        ctx.fillStyle = "#050a10";
+        ctx.fillRect(0, 0, w, h);
+        for (let y = 8; y < h; y += 14) {
+            for (let x = 6; x < w; x += 14) {
+                if (Math.random() > 0.5) {
+                    ctx.fillStyle = Math.random() > 0.5 ? "#ffcd8a" : "#8fd0ff";
+                    ctx.fillRect(x, y, 6, 8);
+                }
+            }
+        }
+    }, 128, 256);
+}
+
+const lbuildings = [];
+for (let i = 0; i < 9; i++) {
+    const bw = 1.2 + Math.random() * 1.6;
+    const bh = 3 + Math.random() * 7;
+    const bd = 1.2 + Math.random() * 1.6;
+    const bx = -3 + i * 1.3 + (Math.random() - 0.5) * 0.6;
+    const tex = lbuildingWindowTex();
+    const buildingMat = new THREE.MeshStandardMaterial({
+        map: tex, color: 0x2a3a4c, roughness: 0.9,
+        emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.6
+    });
+    const buildingMesh = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), buildingMat);
+    buildingMesh.position.set(bx, bh / 2 - 0.1, -Math.random() * 4);
+    lexterior.add(buildingMesh);
+    lbuildings.push(buildingMat);
+}
+
+// Left window rain
+const lrainGroup = new THREE.Group();
+lrainGroup.position.set(0, 0, LEFT_WALL_X - 0.6);
+scene.add(lrainGroup);
+
+const lrainCount = 200;
+const lrainGeometry = new THREE.BufferGeometry();
+const lrainPositions = new Float32Array(lrainCount * 3);
+const lrainSpeeds = new Float32Array(lrainCount);
+for (let i = 0; i < lrainCount; i++) {
+    lrainPositions[i * 3] = lwinLeft + Math.random() * LEFT_WIN_W;
+    lrainPositions[i * 3 + 1] = lwinBottom + Math.random() * (LEFT_WIN_H + 2);
+    lrainPositions[i * 3 + 2] = -Math.random() * 2.5;
+    lrainSpeeds[i] = 0.04 + Math.random() * 0.05;
+}
+lrainGeometry.setAttribute("position", new THREE.BufferAttribute(lrainPositions, 3));
+const lrain = new THREE.Points(lrainGeometry, new THREE.PointsMaterial({
+    color: 0x9fd4ef, size: 0.035, map: dotSprite, transparent: true, opacity: 0.7, depthWrite: false
+}));
+lrainGroup.add(lrain);
 
 // ============================================================
 // EXTERIOR: SKYLINE + SKY + SUN/MOON + STARS + RAIN
@@ -1570,6 +1731,315 @@ const dust = new THREE.Points(dustGeometry, new THREE.PointsMaterial({ color: 0x
 scene.add(dust);
 
 // ============================================================
+// WORLD STATE & ENVIRONMENT STATE (Phase 1 Foundation)
+// ============================================================
+
+// Centralized World State - single authoritative source
+const worldState = {
+    room: {
+        currentRoom: "main_room",
+        locations: {
+            workstation: { x: 1.7, y: 2.3, z: -2.2, radius: 1.5 },
+            window_left: { x: -7.5, y: 4.2, z: 0, radius: 1.5 },
+            window_right: { x: 2.5, y: 4.2, z: -6, radius: 1.5 },
+            server_rack: { x: -4.7, y: 2.5, z: -4, radius: 1.5 }
+        }
+    },
+    environment: {
+        weather: {
+            condition: "rain",           // clear, cloudy, overcast, rain, thunderstorm, snow, fog
+            intensity: "moderate",       // light, moderate, heavy, severe
+            precipitation: "rain",       // rain, snow, sleet, none
+            wind: { intensity: "moderate", direction: 270, speed: 15 },
+            lightning: false,
+            visibility: "normal",        // clear, reduced, poor
+            cloudCover: 0.7
+        },
+        temperature: 22,
+        timeOfDay: null, // populated by updateDayNight
+        lastWeatherChange: Date.now()
+    },
+    tars: {
+        location: "spawn",               // current location key
+        activity: "idle",                // current activity
+        activityStartedAt: Date.now(),   // timestamp when current activity started
+        activityReason: "spawn",         // why TARS started this activity
+        previousActivity: null,          // { activity, location, duration, endedAt }
+        mood: "neutral",                 // current mood
+        energy: 0.7,                     // 0-1 energy level
+        preferences: {
+            activities: {
+                gaming: 0.8,
+                computer_work: 0.7,
+                server_check: 0.9,
+                weather_observation: 0.6,
+                idle: 0.3
+            },
+            locations: {
+                window_right: 0.9,
+                window_left: 0.5,
+                workstation: 0.8,
+                server_rack: 0.85
+            },
+            objects: {
+                computer: 0.8,
+                television: 0.6,
+                radio: 0.7,
+                server_equipment: 0.85
+            },
+            conditions: {
+                thunderstorm: 0.8,
+                rain: 0.6,
+                clear: 0.4,
+                night: 0.7,
+                overcast: 0.5
+            },
+            routines: {
+                morning_check: 0.7,
+                evening_wind_down: 0.6,
+                storm_watch: 0.85
+            }
+        }
+    },
+    activityLog: [],          // Rolling log of meaningful events
+    maxActivityLogSize: 50    // Maximum events to keep
+};
+
+// Helper: Log a meaningful activity event
+function logActivityEvent(eventType, activity, location, reason, metadata = {}) {
+    const event = {
+        id: `evt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        timestamp: new Date().toISOString(),
+        eventType,
+        activity,
+        location,
+        reason,
+        metadata
+    };
+    worldState.activityLog.push(event);
+    if (worldState.activityLog.length > worldState.maxActivityLogSize) {
+        worldState.activityLog.shift();
+    }
+    console.log(`[ActivityLog] ${eventType}: ${activity} at ${location} (${reason})`, metadata);
+    return event;
+}
+
+// Helper: Update TARS activity state
+function setTARSActivity(activity, location, reason, metadata = {}) {
+    const now = Date.now();
+    if (worldState.tars.activity !== "idle" && worldState.tars.activity !== activity) {
+        worldState.tars.previousActivity = {
+            activity: worldState.tars.activity,
+            location: worldState.tars.location,
+            duration: now - worldState.tars.activityStartedAt,
+            endedAt: now
+        };
+    }
+    worldState.tars.activity = activity;
+    worldState.tars.location = location;
+    worldState.tars.activityStartedAt = now;
+    worldState.tars.activityReason = reason;
+    logActivityEvent("activity_started", activity, location, reason, metadata);
+}
+
+// Helper: Get current activity summary for LLM queries
+function getTARSActivitySummary() {
+    return {
+        location: worldState.tars.location,
+        activity: worldState.tars.activity,
+        activityStartedAt: new Date(worldState.tars.activityStartedAt).toISOString(),
+        activityReason: worldState.tars.activityReason,
+        mood: worldState.tars.mood,
+        energy: worldState.tars.energy,
+        previousActivity: worldState.tars.previousActivity,
+        environment: {
+            weather: worldState.environment.weather,
+            timeOfDay: worldState.environment.timeOfDay
+        }
+    };
+}
+
+// Helper: Get preference for a category/target
+function getPreference(category, target) {
+    return worldState.tars.preferences[category]?.[target] ?? 0.5;
+}
+
+// ============================================================
+// ENVIRONMENT / WEATHER VISUAL ENGINE
+// ============================================================
+
+const weatherVisualEngine = {
+    currentCondition: "rain",
+    activeEffects: [],
+    
+    // Map weather conditions to visual effect configurations
+    effectConfigs: {
+        clear: { rain: false, snow: false, fog: false, lightning: false, wind: false },
+        sunny: { rain: false, snow: false, fog: false, lightning: false, wind: { intensity: "light" } },
+        cloudy: { rain: false, snow: false, fog: { density: 0.3 }, lightning: false, wind: { intensity: "light" } },
+        overcast: { rain: false, snow: false, fog: { density: 0.5 }, lightning: false, wind: { intensity: "moderate" } },
+        rain: { rain: { intensity: "moderate" }, snow: false, fog: { density: 0.2 }, lightning: false, wind: { intensity: "moderate" } },
+        heavy_rain: { rain: { intensity: "heavy" }, snow: false, fog: { density: 0.3 }, lightning: false, wind: { intensity: "strong" } },
+        thunderstorm: { rain: { intensity: "heavy" }, snow: false, fog: { density: 0.3 }, lightning: true, wind: { intensity: "strong" } },
+        snow: { rain: false, snow: { intensity: "moderate" }, fog: { density: 0.4 }, lightning: false, wind: { intensity: "light" } },
+        fog: { rain: false, snow: false, fog: { density: 0.8 }, lightning: false, wind: { intensity: "light" } },
+        foggy: { rain: false, snow: false, fog: { density: 0.6 }, lightning: false, wind: { intensity: "light" } },
+        windy: { rain: false, snow: false, fog: false, lightning: false, wind: { intensity: "strong" } },
+        storm: { rain: { intensity: "heavy" }, snow: false, fog: { density: 0.4 }, lightning: true, wind: { intensity: "severe" } }
+    },
+    
+    updateFromWeatherState() {
+        const weather = worldState.environment.weather;
+        const conditionKey = weather.condition === "thunderstorm" ? "thunderstorm" :
+                            weather.condition === "heavy_rain" ? "heavy_rain" :
+                            weather.condition;
+        this.currentCondition = conditionKey;
+        this.applyEffects(this.effectConfigs[conditionKey] || this.effectConfigs.clear);
+    },
+    
+    applyEffects(config) {
+        // Rain
+        if (config.rain) {
+            rainGroup.visible = true;
+            rainCount = config.rain.intensity === "heavy" ? 500 : 200;
+            rainSpeeds = new Float32Array(rainCount);
+            const positions = rain.geometry.attributes.position.array;
+            for (let i = 0; i < rainCount; i++) {
+                positions[i * 3] = winLeft + Math.random() * WIN_W;
+                positions[i * 3 + 1] = winBottom + Math.random() * (WIN_H + 2);
+                positions[i * 3 + 2] = -Math.random() * 2.5;
+                rainSpeeds[i] = (config.rain.intensity === "heavy" ? 0.06 : 0.04) + Math.random() * 0.03;
+            }
+            rain.geometry.attributes.position.needsUpdate = true;
+            rain.material.opacity = config.rain.intensity === "heavy" ? 0.8 : 0.7;
+        } else {
+            rainGroup.visible = false;
+        }
+        
+        // Fog (adjust scene fog)
+        if (config.fog) {
+            scene.fog.density = config.fog.density * 0.035;
+            scene.fog.color = new THREE.Color(0x05080c);
+        } else {
+            scene.fog.density = 0.035;
+        }
+        
+        // Lightning
+        if (config.lightning) {
+            this.startLightning();
+        } else {
+            this.stopLightning();
+        }
+        
+        // Wind (affects rain angle, particles, etc.)
+        if (config.wind) {
+            this.applyWind(config.wind.intensity);
+        }
+    },
+    
+    lightningInterval: null,
+    startLightning() {
+        if (this.lightningInterval) return;
+        this.lightningInterval = setInterval(() => {
+            if (Math.random() < 0.3) {
+                const flashIntensity = 30 + Math.random() * 40;
+                windowGlow.intensity = flashIntensity;
+                setTimeout(() => { windowGlow.intensity = 10; }, 50);
+                // Brief ambient flash
+                ambientLight.intensity = 3;
+                setTimeout(() => { ambientLight.intensity = 1.2; }, 100);
+            }
+        }, 2000 + Math.random() * 3000);
+    },
+    
+    stopLightning() {
+        if (this.lightningInterval) {
+            clearInterval(this.lightningInterval);
+            this.lightningInterval = null;
+        }
+    },
+    
+    applyWind(intensity) {
+        const windStrength = { light: 0.5, moderate: 1.0, strong: 2.0, severe: 3.0 }[intensity] || 1.0;
+        // Wind affects rain angle - handled in rain update
+        this.windStrength = windStrength;
+    }
+};
+
+// Initialize weather visual engine
+weatherVisualEngine.updateFromWeatherState();
+
+// ============================================================
+// ACTIVITY LOGGING INTEGRATION
+// ============================================================
+
+// Hook into existing lookAt to log location changes
+const originalLookAt = window.TARS.lookAt;
+window.TARS.lookAt = function(targetKey) {
+    const previousLocation = worldState.tars.location;
+    const result = originalLookAt.apply(this, arguments);
+    
+    if (worldState.tars.location !== targetKey) {
+        worldState.tars.location = targetKey;
+        const activityMap = {
+            "window_left": "observing_weather",
+            "window_right": "observing_weather",
+            "desk": "computer_work",
+            "rack-a": "server_check",
+            "user": "interacting_with_user"
+        };
+        const activity = activityMap[targetKey] || "idle";
+        setTARSActivity(activity, targetKey, `navigated_to_${targetKey}`);
+    }
+    return result;
+};
+
+// Hook into triggerLocationBehavior to log activity starts
+const originalTriggerLocationBehavior = window.triggerLocationBehavior;
+window.triggerLocationBehavior = function(locationKey) {
+    const result = originalTriggerLocationBehavior.apply(this, arguments);
+    
+    const activityMap = {
+        "window_left": "weather_observation",
+        "window_right": "weather_observation",
+        "desk": "computer_work",
+        "rack-a": "server_check",
+        "user": "user_interaction"
+    };
+    const reasonMap = {
+        "window_left": "weather_observation",
+        "window_right": "storm_watch",
+        "desk": "computer_work",
+        "rack-a": "server_maintenance",
+        "user": "user_interaction"
+    };
+    
+    if (activityMap[locationKey]) {
+        setTARSActivity(activityMap[locationKey], locationKey, reasonMap[locationKey] || "autonomous_choice", {
+            weather: worldState.environment.weather
+        });
+    }
+    return result;
+};
+
+// Initialize TARS state
+worldState.tars.location = "spawn";
+worldState.tars.activity = "idle";
+worldState.tars.activityStartedAt = Date.now();
+worldState.tars.activityReason = "spawn";
+worldState.environment.timeOfDay = new Date().getHours() + new Date().getMinutes() / 60;
+
+// Expose for debugging/LLM access
+window.TARS_WORLD_STATE = worldState;
+window.TARS_ACTIVITY_LOG = worldState.activityLog;
+window.TARS_WEATHER = worldState.environment.weather;
+window.TARS_PREFERENCES = worldState.tars.preferences;
+window.logActivityEvent = logActivityEvent;
+window.setTARSActivity = setTARSActivity;
+window.getTARSActivitySummary = getTARSActivitySummary;
+window.getPreference = getPreference;
+
+// ============================================================
 // ROOM BOUNDS & GAZE TARGET REFERENCE MATRIX
 // ============================================================
 
@@ -1585,7 +2055,8 @@ const TARGET_POSITIONS = {
     "user": new THREE.Vector3(0, 2.7, 0),    // Center of room (where user appears to be)
     "desk": new THREE.Vector3(1.7, 2.3, -2.2),
     "rack-a": new THREE.Vector3(-4.7, 2.5, -4),
-    "window": new THREE.Vector3(WIN_X, WIN_Y, WALL_Z)
+    "window_right": new THREE.Vector3(WIN_X, WIN_Y, WALL_Z),
+    "window_left": new THREE.Vector3(-7.5, 4.2, 0)
 };
 
 // ============================================================
@@ -2151,6 +2622,7 @@ const currentState = {
     atDesk: false,
     atRack: false,
     atWindow: false,
+    atWindowSide: null,
     
     // Lerped visual channels (driven by EmotionMixer)
     currentColor: new THREE.Color(0x5fd0ff),
@@ -2685,6 +3157,7 @@ function animate() {
     rgbLight.intensity = 5 + Math.sin(time * 3) * 1.2;
 
     // 5. Rain & Dust
+    // Right window rain
     const positions = rain.geometry.attributes.position.array;
     for (let i = 0; i < rainCount; i++) {
         positions[i * 3 + 1] -= rainSpeeds[i];
@@ -2694,6 +3167,22 @@ function animate() {
         }
     }
     rain.geometry.attributes.position.needsUpdate = true;
+
+    // Left window rain
+    const lwinLeft = -7.5 - 3;  // WIN_X = -7.5, WIN_W = 6
+    const lwinRight = -7.5 + 3;
+    const lwinTop = 4.2 + 2;
+    const lwinBottom = 4.2 - 2;
+    const lpositions = lrain.geometry.attributes.position.array;
+    for (let i = 0; i < lrainCount; i++) {
+        lpositions[i * 3 + 1] -= lrainSpeeds[i];
+        if (lpositions[i * 3 + 1] < lwinBottom - 1.5) {
+            lpositions[i * 3 + 1] = lwinTop + 1.5;
+            lpositions[i * 3] = lwinLeft + Math.random() * 6;
+        }
+    }
+    lrain.geometry.attributes.position.needsUpdate = true;
+
     dust.rotation.y = time * 0.015;
 
     // 6. Lights
@@ -2836,7 +3325,9 @@ function animate() {
     const pos = tarsEntityGroup.position;
     const atDesk = pos.distanceTo(new THREE.Vector3(1.7, 2.3, -2.2)) < 1.5;
     const atRack = pos.distanceTo(new THREE.Vector3(-4.7, 2.5, -4)) < 1.5;
-    const atWindow = pos.distanceTo(new THREE.Vector3(WIN_X, WIN_Y, WALL_Z)) < 2.0;
+    const atWindowLeft = pos.distanceTo(new THREE.Vector3(-7.5, 4.2, 0)) < 2.0;
+    const atWindowRight = pos.distanceTo(new THREE.Vector3(WIN_X, WIN_Y, WALL_Z)) < 2.0;
+    const atWindow = atWindowLeft || atWindowRight;
     
     // Desk interaction - switch monitor to TARS OS
     if (atDesk && !currentState.atDesk) {
@@ -2876,9 +3367,11 @@ function animate() {
     // Window interaction - scan outside
     if (atWindow && !currentState.atWindow) {
         currentState.atWindow = true;
-        console.log("[TARS] At window - scanning exterior");
+        currentState.atWindowSide = atWindowLeft ? "left" : "right";
+        console.log("[TARS] At window - scanning exterior", currentState.atWindowSide);
     } else if (!atWindow && currentState.atWindow) {
         currentState.atWindow = false;
+        currentState.atWindowSide = null;
     }
 
     // 8. T.A.R.S. EMBODIMENT PROCEDURAL SHADER & MESH ANIMATION

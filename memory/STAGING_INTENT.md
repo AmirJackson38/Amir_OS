@@ -7,45 +7,157 @@
 
 ## Active Staged Action
 
-- **Timestamp:** 2026-07-27 12:00:00 UTC
-- **Target Component:** T.A.R.S. Embodiment System v1.1 — Polish & Collision
-- **Planned Action:** 
-  1. Fix location behavior triggers (server/window not firing)
-  2. Add 5 distinct behaviors per station (currently 3)
-  3. Window station: birds, wind gust, window open/close, stargazing, weather reaction
-  4. Desk: more monitor modes (dual-monitor span, screensavers, code/matrix/logs)
-  5. Collision system: obstacle avoidance (A* or steering), desk/rack as solid bodies, table wiggle on impact, pathfinding around obstacles
+- **Timestamp:** 2026-07-27 23:30:00 UTC
+- **Target Component:** T.A.R.S. World Engine — Phase 1 Foundation Layer
+- **Planned Action:** Phase 1 Implementation — World State, Environment, Weather, Dual Windows, Preferences & Visual Activity Foundation
 - **Status:** In-Progress
 
 ---
 
-## Summary of Completed Work (v1.0)
+## Phase 1 Objective
 
-**File:** `projects/tars-face/tars_face_v1.html`
+Build the foundation layer for the TARS World Engine. Establish a clean separation between:
+- TARS LLM / Agent (queries World State)
+- World State Interface (centralized authoritative state)
+- Autonomy / World Simulation Layer (Environment, Weather, TARS State, Activity State, Preferences, Event Logging)
+- Existing Three.js / Visual Frontend (Room, TARS, Windows, Weather Visuals, Animations, Objects)
 
-### Core Entity
-- Procedural T.A.R.S. entity: energy core, deforming body (icosahedron L3), wireframe shell, orbiting particle field (30 particles)
-- **Expressive Face System** (256x256 canvas): animated eyes with pupils/highlights/blinks/squint/look-tracking, dynamic eyebrows per emotion, expressive mouth (speaking sync, smiles, grimaces, smirks, wavy), cheek blush, forehead wrinkles
+The system should be designed so the visual world can eventually run autonomously without requiring constant LLM calls.
 
-### Behavior Engine
-- **14 Behavior Presets**: idle, listen, think, speak, sarcastic, amused, confused, serious, warning, critical, celebrate, chill, disapproving, excited
-- **EmotionMixer**: Smooth lerp transitions with intensity scaling
-- **FX System**: Distinct animations per state (strobe_orange, strobe_red, expansive burst+rainbow, strobe, bounce, scan, wobble, flicker, steady, slow_pulse)
-- **Speech Reactivity**: `onSpeechStart/End`, `setSpeechAmplitude/Pitch` drives mouth + core pulse + deformation
+---
 
-### Movement & Interaction
-- **Gaze → Movement**: Click gaze buttons → TARS physically flies to location (smooth spring)
-- **Location Behaviors** (3 random per station):
-  - **Desk**: BIOS boot→TARS OS | Linux hacking overlay | Neural calibration
-  - **Rack**: Data transfer (orange sparks + strobe) | Diagnostic scroll | Firmware update (blue→green)
-  - **Window**: Chill morph | Amused shape-shift | Blinds pulse
-  - **User**: Close inspect (flies to camera, scale 1.4, dilated pupils) | Face tracking | Playful nod+shake+pulse
-- **Spark Particles**: Physics-based (gravity, fade, color decay) from rack
+## Phase 1 Scope (Implementation Order)
 
-### API
-- `window.TARS.setBehavior({emotion, intensity, energy, urgency, gaze, movement, target, gesture})` - LLM intent JSON
-- `window.TARS.lookAt(target)` / `moveTo(pos)` / `triggerGesture(name)` / speech hooks
-- Console logging for all actions
+1. **Generalized World State** - Centralized world-state representation
+2. **Two Windows** - Add left-side window (`window_left`), keep existing as `window_right`
+3. **Window Navigation** - TARS can navigate to either window, location tracked in state
+4. **Window-Specific Activities & Events** - Distinct activities per window, events identify specific window
+5. **Generalized TARS Preferences / Affinities** - Foundation for activities, locations, objects, environmental conditions, routines
+6. **Generalized Weather System** - Weather as environment state, not just rain; extensible conditions
+7. **Weather Visual Engine Foundation** - Refactor rain into generalized weather visual engine
+8. **Weather Independence** - Weather exists independently of TARS
+9. **Future Houston Weather API Compatibility** - Architecture ready for live data
+9. **Current Visual Activity State** - Authoritative current activity state (location, activity, start time, reason, previous activity)
+10. **Rolling Visual Activity Log** - Meaningful events only, rolling window
+11. **Event Structure** - Structured events with timestamps, types, locations, metadata
+12. **Existing Behavior Integration** - Connect existing movement/behavior to new state/event system
+13. **Zero LLM Requirement** - Phase 1 works entirely locally
+14. **Future Autonomy Compatibility** - Architecture ready for Phase 2 scheduler
 
-### Performance
-- Reduced: shadow map 512px, pixelRatio 1.0, body detail 3, shell detail 1, particles 30/60/100/120
+---
+
+## Architecture Being Introduced
+
+### World State Structure
+```js
+worldState = {
+    room: { currentRoom: "main_room", locations: { workstation, window_left, window_right, server_rack } },
+    environment: { weather: { condition, intensity, precipitation, wind, lightning, visibility }, temperature, wind, visibility, timeOfDay },
+    tars: { location, activity, activityStartedAt, mood, energy, preferences, previousActivity },
+    activityLog: [ { id, timestamp, eventType, activity, location, reason, metadata }, ... ],
+    preferences: { activities: {...}, locations: {...}, objects: {...}, conditions: {...}, routines: {...} }
+}
+```
+
+### Dual Windows
+- Existing window → `window_right` (position: WIN_X=2.5, WALL_Z=-6)
+- New window → `window_left` (position: x≈-6.5, z=-6, same dimensions)
+- Both navigable destinations with unique IDs
+- Movement system supports both
+- Activity system distinguishes them
+
+### Generalized Weather State
+```js
+weather: {
+    condition: "thunderstorm",      // clear, sunny, cloudy, overcast, rain, thunderstorm, snow, fog, etc.
+    intensity: "heavy",             // light, moderate, heavy, severe
+    precipitation: "rain",          // rain, snow, sleet, none
+    wind: { intensity: "strong", direction: 270 },
+    lightning: true,
+    visibility: "reduced",          // clear, reduced, poor
+    cloudCover: 0.9
+}
+```
+
+### Preferences / Affinities (Generalized)
+```js
+preferences: {
+    activities: { gaming: 0.8, computer_work: 0.7, server_check: 0.9, weather_observation: 0.6 },
+    locations: { window_right: 0.9, window_left: 0.5, workstation: 0.8, server_rack: 0.85 },
+    objects: { computer: 0.8, television: 0.6, radio: 0.7 },
+    conditions: { thunderstorm: 0.8, rain: 0.6, clear: 0.4, night: 0.7 }
+}
+```
+
+---
+
+## Files / Components Expected to Change
+
+| File | Changes |
+|------|---------|
+| `projects/tars-face/tars_face_v1.html` | All Phase 1 implementation |
+| `memory/STAGING_INTENT.md` | This log (updated as work progresses) |
+
+### Key Integration Points in `tars_face_v1.html`
+
+1. **World State Module** - New centralized state object (after `currentState`)
+2. **Window System** - Add `window_left` to `TARGET_POSITIONS`, create visual window on left wall
+3. **Navigation** - Update `lookAt()` and collision to support both windows
+3. **Weather Module** - New `environment` state + generalized weather visual engine
+4. **Preferences Module** - New `preferences` state in `currentState` or `worldState`
+5. **Activity State** - `currentActivity` with location, startedAt, reason, previousActivity
+6. **Event System** - `activityLog` array + `logEvent()` function
+7. **Visual Engine** - Refactor rain into `weatherVisualEngine` that reads `environment.weather`
+7. **Preferences Module** - Generalized `preferences` object in `currentState` or `worldState`
+8. **Activity Log** - `activityLog` array + `logActivityEvent()` function
+9. **Integration** - Hook existing `lookAt()`, `triggerLocationBehavior()`, `setBehavior()` to update new state
+
+---
+
+## Validation Strategy
+
+After each meaningful change:
+1. **Syntax check** - No JS syntax errors
+2. **Load test** - Page loads, Three.js initializes
+3. **Console check** - No runtime errors in browser console
+3. **Room renders** - Floor, walls, ceiling, windows visible
+3. **TARS renders** - Core, body, face, particles, gaze indicator
+3. **Existing windows** - Both windows visible, glass, frame, exterior
+3. **TARS movement** - `lookAt('window_left')`, `lookAt('window_right')`, `lookAt('desk')`, `lookAt('user')` all work
+3. **Collision avoidance** - Still steers around desk, racks, plants
+3. **Desk/rack wiggle** - Still triggers on near-contact
+3. **Location behaviors** - Both windows trigger distinct behaviors
+3. **Weather** - Rain still works, weather state readable
+3. **Preferences** - State accessible, no errors
+3. **Activity log** - Events created on location arrival, readable
+3. **Control panel** - All buttons still functional
+
+---
+
+## Rollback Considerations
+
+- Single file (`tars_face_v1.html`) - git checkout restores previous version
+- `STAGING_INTENT.md` documents intent for recovery
+- Changes are additive (new state modules, new window) - minimal risk to existing systems
+- If critical failure: `git checkout HEAD -- projects/tars-face/tars_face_v1.html`
+
+---
+
+## Current Implementation Status
+
+- [x] World State module created
+- [x] Dual windows (window_left added)
+- [x] Window navigation & location tracking
+- [x] Window-specific activities & events
+- [x] Generalized preferences/affinities foundation
+- [x] Generalized weather state model
+- [x] Weather visual engine foundation (rain refactored)
+- [x] Weather independence from TARS
+- [x] Current Visual Activity State
+- [x] Rolling Visual Activity Log
+- [x] Event system with structured events
+- [x] Existing behavior integration
+- [ ] Zero LLM verification
+- [ ] Future autonomy compatibility
+- [ ] Final validation pass
+- [ ] STAGING_INTENT.md finalized
