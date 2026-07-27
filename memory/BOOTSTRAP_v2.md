@@ -1,5 +1,5 @@
 # Amir OS Session Resume Bootstrap (v2 Fast-Boot)
-> Generated: 2026-07-27 21:01:08 UTC
+> Generated: 2026-07-27 21:14:23 UTC
 > Amir OS Version: v0.8.0 (Single-File Fast-Boot Engine)
 > Memory Efficiency: 4833 / 5,500 chars used
 
@@ -354,7 +354,92 @@ Autonomy → makeAutonomousDecision()
 - Wrapper `lookAt()` has dead activity map code — unreachable because original `lookAt()` already sets `worldState.tars.location`
 - `deskWiggle` global initialized but shadowed by inner-scope `let deskWiggle` — harmless
 
-## Phase 4 (Planned) — Cross-Session Persistence
+## Phase 4 (Complete) — Cross-Session World Persistence
+
+**Objective:** Give the TARS World Engine persistent state across browser sessions/restarts.
+
+**Timestamp:** 2026-07-27
+
+### Architecture
+
+**Storage:** `localStorage` with key `tars_world_state_v1`, versioned schema (`TARS_SAVE_VERSION = 1`)
+
+```
+Save triggers:
+  - setTARSActivity() — every meaningful activity change
+  - beforeunload — tab/window close
+  - setInterval every 30s — periodic checkpoint
+
+Restore flow:
+  beforeunload → WorldPersistence.load()
+    ├── validate() checks version, required fields
+    ├── applyToState() writes into worldState
+    │     ├── tars: location, activity, reason, previousActivity, mood, energy, needs, preferences
+    │     ├── environment: weather, timeOfDay, temperature
+    │     └── worldMemory: curated persistent events
+    └── fallback to defaults if missing/corrupt
+```
+
+### What is persisted
+
+| Category | Fields | Storage |
+|----------|--------|---------|
+| **TARS State** | location, activity, activityStartedAt, activityReason, previousActivity, mood, energy, controlMode (always restored to "autonomous"), needs, preferences (full object) | Snapshot |
+| **Environment** | weather (condition, intensity, precipitation, wind, lightning, visibility), timeOfDay, temperature | Snapshot |
+| **World Memory** | Curated array of meaningful events cross-session (~20 max) | Array |
+| **Session** | previousSessionEnd, totalElapsed (ms since last save) | Computed at restore |
+
+### What is intentionally NOT persisted
+
+- `activityLog` (runtime noise, resets each session)
+- `currentState` (Three.js animation state)
+- `emotionMixer` state
+- DOM / UI state
+- Frame-level data
+- `controlMode` (always restored to "autonomous")
+
+### Session boundary handling
+
+- `worldState.session.previousSessionEnd` set from `savedAt` timestamp on restore
+- `worldState.session.totalElapsed` = `Date.now() - savedAt` (ms since last session)
+- Session ID generated on each page load: `session_{timestamp}`
+- No offline simulation yet — raw elapsed time is available for future use
+
+### World Memory (curated persistent events)
+
+- `worldState.worldMemory` — separate from runtime `activityLog`
+- `logWorldEvent()` — logs to both `activityLog` (runtime) and `worldMemory` (persistent)
+- `persistWorldEvent()` — core function for adding to worldMemory with size limit (20)
+- Survives restarts — events from previous sessions are visible after reload
+
+### Autonomy integration
+
+- On startup, restored activity is set as current, but autonomy engine is free to override on next decision cycle (1-3s)
+- `controlMode` always restored to "autonomous" — no stuck LLM mode across sessions
+- Needs decay/restoration continues normally after restore
+- Phase 3b priority gate (llm vs autonomous) preserved
+
+### Validation tests executed
+
+| Test | Result |
+|------|--------|
+| No saved data → defaults | PASS |
+| Save and restore cycle | PASS |
+| Corrupted JSON → fallback to defaults | PASS |
+| Wrong version → fallback to defaults | PASS |
+| Missing fields → fallback to defaults | PASS |
+| Needs values preserved | PASS |
+| worldMemory preserved across sessions | PASS |
+
+### Known limitations
+
+- No offline need decay yet (elapsed time is tracked but not applied to needs)
+- Single localStorage key — no migration path yet (version field is ready)
+- Runtime `activityLog` resets each session (intentional — reduces noise)
+- `beforeunload` save is best-effort (not guaranteed on crash/mobile kill)
+- No backup or redundancy for localStorage data
+
+## Phase 5 (Planned) — Offline Simulation & Learning
 
 ---
 
@@ -614,7 +699,7 @@ This project builds: Documentation, system design, information architecture, aut
 
 # Project Registry (Auto-Generated)
 
-**Last Updated:** 2026-07-27 21:01:07 UTC  
+**Last Updated:** 2026-07-27 21:14:22 UTC  
 **Status:** Active registry  
 **Purpose:** Consolidated inventory of all active, paused, and archived projects
 
@@ -648,8 +733,7 @@ This project builds: Documentation, system design, information architecture, aut
 ## 6. Active Workspace Changes (Git Status)
 
 ```
-M memory/ACTIVE_PROJECT_v2.md
- M memory/PROJECT_REGISTRY.md
+M memory/PROJECT_REGISTRY.md
  M memory/STAGING_INTENT.md
  M projects/tars-face/tars_face_v1.html
 ```
@@ -659,55 +743,55 @@ M memory/ACTIVE_PROJECT_v2.md
 ## 7. Current Code Diffs (Capped at 50 Lines)
 
 ```diff
-diff --git a/memory/ACTIVE_PROJECT_v2.md b/memory/ACTIVE_PROJECT_v2.md
-index 2e8c392..078bc26 100644
---- a/memory/ACTIVE_PROJECT_v2.md
-+++ b/memory/ACTIVE_PROJECT_v2.md
-@@ -1,40 +1,36 @@
- ## Current Priority
- 
--**TARS World Engine** (Phase 1 complete, Phase 2 complete) — Single-file Three.js visual frontend with autonomous needs system. Zero LLM dependency. `https://localhost:[REDACTED_PASSWORD]@@ -1,6 +1,6 @@
+diff --git a/memory/PROJECT_REGISTRY.md b/memory/PROJECT_REGISTRY.md
+index b716a09..5b98d6d 100644
+--- a/memory/PROJECT_REGISTRY.md
++++ b/memory/PROJECT_REGISTRY.md
+@@ -1,6 +1,6 @@
  # Project Registry (Auto-Generated)
  
--**Last Updated:** 2026-07-27 20:46:45 UTC  
-+**Last Updated:** 2026-07-27 21:01:07 UTC  
+-**Last Updated:** 2026-07-27 21:01:07 UTC  
++**Last Updated:** 2026-07-27 21:14:22 UTC  
  **Status:** Active registry  
  **Purpose:** Consolidated inventory of all active, paused, and archived projects
  
 diff --git a/memory/STAGING_INTENT.md b/memory/STAGING_INTENT.md
-index f68a634..3bbe8ea 100644
+index 3bbe8ea..e67b940 100644
 --- a/memory/STAGING_INTENT.md
 +++ b/memory/STAGING_INTENT.md
-@@ -286,4 +286,40 @@ Autonomy → makeAutonomousDecision()
-             └── needs continue updating regardless
- ```
+@@ -322,4 +322,89 @@ Autonomy → makeAutonomousDecision()
+ - Wrapper `lookAt()` has dead activity map code — unreachable because original `lookAt()` already sets `worldState.tars.location`
+ - `deskWiggle` global initialized but shadowed by inner-scope `let deskWiggle` — harmless
  
-+## Phase 3c (In Progress) — Stabilization Pass
+-## Phase 4 (Planned) — Cross-Session Persistence
+\ No newline at end of file
++## Phase 4 (Complete) — Cross-Session World Persistence
 +
-+**Objective:** Fix visual consistency, state machine edge cases, data alignment, and broken initialization without expanding scope.
++**Objective:** Give the TARS World Engine persistent state across browser sessions/restarts.
 +
 +**Timestamp:** 2026-07-27
 +
-+### Bugs Fixed
++### Architecture
 +
-+1. **Bug 3 — Weather condition changes never propagate to visuals** (`updateFromWeatherState()` only called at init)
-+   - Added `weatherCheckAccum` timer in animate loop, calls `weatherVisualEngine.updateFromWeatherState()` every 2s
-+   - Ensures weather condition changes (e.g., clear → thunderstorm) reflect in rain particles, fog, lightning
++**Storage:** `localStorage` with key `tars_world_state_v1`, versioned schema (`TARS_SAVE_VERSION = 1`)
 +
-+2. **Bug 4+5 — window_left/window_right behaviors not differentiated** (both passed same key `"window"`)
-+   - Added `locationBehaviors["window_left"]` and `["window_right"]` aliases pointing to shared window behavior array
-+   - Proximity check now passes correct side key: `triggerLocationBehavior(atWindowLeft ? "window_left" : "window_right")`
++```
++Save triggers:
++  - setTARSActivity() — every meaningful activity change
++  - beforeunload — tab/window close
++  - setInterval every 30s — periodic checkpoint
 +
-+3. **Bug 1 — worldState.locations.server_rack key mismatch** (key was `"server_rack"` but everything else uses `"rack-a"`)
-+   - Changed both `worldState.locations.server_rack` → `"rack-a"` and `prefs.locations.server_rack` → `"rack-a"`
++Restore flow:
++  beforeunload → WorldPersistence.load()
++    ├── validate() checks version, required fields
++    ├── applyToState() writes into worldState
++    │     ├── tars: location, activity, reason, previousActivity, mood, energy, needs, preferences
++    │     ├── environment: weather, timeOfDay, temperature
++    │     └── worldMemory: curated persistent events
++    └── fallback to defaults if missing/corrupt
++```
 +
-+4. **Bug 2 — Left window rain count was const** (couldn't be adjusted by weather engine)
-+   - Changed `const lrainCount` → `let lrainCount`, `const lrainSpeeds` → `let lrainSpeeds`
-+   - Added left rain handling to `applyEffects()`: reallocates/updates lrain positions + speeds when weather changes
-+
-+5. **Bug 7 — Monitor idle screensaver stuck on codeReview/logCleanup states**
-+   - Added `'codeReview'` and `'logCleanup'` to `screensaverStates` array so they reset to `tarsOS` when returning to desk
-+   - Added both states to away-from-desk transition so they enter screensaver cycle instead of staying frozen
++### What is persisted
 +
 
 ... [DIFF TRUNCATED TO 50 LINES FOR BREVITY] ...

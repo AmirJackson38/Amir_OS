@@ -322,4 +322,89 @@ Autonomy → makeAutonomousDecision()
 - Wrapper `lookAt()` has dead activity map code — unreachable because original `lookAt()` already sets `worldState.tars.location`
 - `deskWiggle` global initialized but shadowed by inner-scope `let deskWiggle` — harmless
 
-## Phase 4 (Planned) — Cross-Session Persistence
+## Phase 4 (Complete) — Cross-Session World Persistence
+
+**Objective:** Give the TARS World Engine persistent state across browser sessions/restarts.
+
+**Timestamp:** 2026-07-27
+
+### Architecture
+
+**Storage:** `localStorage` with key `tars_world_state_v1`, versioned schema (`TARS_SAVE_VERSION = 1`)
+
+```
+Save triggers:
+  - setTARSActivity() — every meaningful activity change
+  - beforeunload — tab/window close
+  - setInterval every 30s — periodic checkpoint
+
+Restore flow:
+  beforeunload → WorldPersistence.load()
+    ├── validate() checks version, required fields
+    ├── applyToState() writes into worldState
+    │     ├── tars: location, activity, reason, previousActivity, mood, energy, needs, preferences
+    │     ├── environment: weather, timeOfDay, temperature
+    │     └── worldMemory: curated persistent events
+    └── fallback to defaults if missing/corrupt
+```
+
+### What is persisted
+
+| Category | Fields | Storage |
+|----------|--------|---------|
+| **TARS State** | location, activity, activityStartedAt, activityReason, previousActivity, mood, energy, controlMode (always restored to "autonomous"), needs, preferences (full object) | Snapshot |
+| **Environment** | weather (condition, intensity, precipitation, wind, lightning, visibility), timeOfDay, temperature | Snapshot |
+| **World Memory** | Curated array of meaningful events cross-session (~20 max) | Array |
+| **Session** | previousSessionEnd, totalElapsed (ms since last save) | Computed at restore |
+
+### What is intentionally NOT persisted
+
+- `activityLog` (runtime noise, resets each session)
+- `currentState` (Three.js animation state)
+- `emotionMixer` state
+- DOM / UI state
+- Frame-level data
+- `controlMode` (always restored to "autonomous")
+
+### Session boundary handling
+
+- `worldState.session.previousSessionEnd` set from `savedAt` timestamp on restore
+- `worldState.session.totalElapsed` = `Date.now() - savedAt` (ms since last session)
+- Session ID generated on each page load: `session_{timestamp}`
+- No offline simulation yet — raw elapsed time is available for future use
+
+### World Memory (curated persistent events)
+
+- `worldState.worldMemory` — separate from runtime `activityLog`
+- `logWorldEvent()` — logs to both `activityLog` (runtime) and `worldMemory` (persistent)
+- `persistWorldEvent()` — core function for adding to worldMemory with size limit (20)
+- Survives restarts — events from previous sessions are visible after reload
+
+### Autonomy integration
+
+- On startup, restored activity is set as current, but autonomy engine is free to override on next decision cycle (1-3s)
+- `controlMode` always restored to "autonomous" — no stuck LLM mode across sessions
+- Needs decay/restoration continues normally after restore
+- Phase 3b priority gate (llm vs autonomous) preserved
+
+### Validation tests executed
+
+| Test | Result |
+|------|--------|
+| No saved data → defaults | PASS |
+| Save and restore cycle | PASS |
+| Corrupted JSON → fallback to defaults | PASS |
+| Wrong version → fallback to defaults | PASS |
+| Missing fields → fallback to defaults | PASS |
+| Needs values preserved | PASS |
+| worldMemory preserved across sessions | PASS |
+
+### Known limitations
+
+- No offline need decay yet (elapsed time is tracked but not applied to needs)
+- Single localStorage key — no migration path yet (version field is ready)
+- Runtime `activityLog` resets each session (intentional — reduces noise)
+- `beforeunload` save is best-effort (not guaranteed on crash/mobile kill)
+- No backup or redundancy for localStorage data
+
+## Phase 5 (Planned) — Offline Simulation & Learning

@@ -2030,6 +2030,13 @@ const worldState = {
         previousActivity: null,          // { activity, location, duration, endedAt }
         mood: "neutral",                 // current mood
         energy: 0.7,                     // 0-1 energy level
+        needs: {
+            energy: 0.6,
+            curiosity: 0.4,
+            social: 0.2,
+            maintenance: 0.3,
+            comfort: 0.5
+        },
         preferences: {
             activities: {
                 gaming: 0.8,
@@ -2065,8 +2072,129 @@ const worldState = {
         }
     },
     activityLog: [],          // Rolling log of meaningful events
-    maxActivityLogSize: 50    // Maximum events to keep
+    maxActivityLogSize: 50,   // Maximum events to keep
+    worldMemory: [],          // Curated persistent events cross-session
+    maxWorldMemorySize: 20,   // Max curated persistent events
+    session: {
+        id: `session_${Date.now()}`,
+        startTime: Date.now(),
+        lastActivityTime: Date.now(),
+        previousSessionEnd: null,
+        totalElapsed: 0
+    }
 };
+
+// ============================================================
+// PHASE 4: CROSS-SESSION WORLD PERSISTENCE
+// ============================================================
+
+const TARS_SAVE_VERSION = 1;
+const STORAGE_KEY = "tars_world_state_v1";
+const SAVE_INTERVAL_MS = 30000;
+
+const WorldPersistence = {
+    capture() {
+        return {
+            version: TARS_SAVE_VERSION,
+            savedAt: Date.now(),
+            savedAtISO: new Date().toISOString(),
+            tars: {
+                location: worldState.tars.location,
+                activity: worldState.tars.activity,
+                activityStartedAt: worldState.tars.activityStartedAt,
+                activityReason: worldState.tars.activityReason,
+                previousActivity: worldState.tars.previousActivity,
+                mood: worldState.tars.mood,
+                energy: worldState.tars.energy,
+                needs: { ...(worldState.tars.needs || {}) },
+                preferences: JSON.parse(JSON.stringify(worldState.tars.preferences))
+            },
+            environment: {
+                weather: { ...worldState.environment.weather },
+                timeOfDay: worldState.environment.timeOfDay,
+                temperature: worldState.environment.temperature
+            },
+            worldMemory: (worldState.worldMemory || []).slice()
+        };
+    },
+
+    save() {
+        try {
+            const snapshot = this.capture();
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+            return true;
+        } catch (e) {
+            console.warn("[WorldPersistence] Save failed:", e.message);
+            return false;
+        }
+    },
+
+    load() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (!raw) return null;
+            const data = JSON.parse(raw);
+            if (!this.validate(data)) return null;
+            return data;
+        } catch (e) {
+            console.warn("[WorldPersistence] Load failed:", e.message);
+            return null;
+        }
+    },
+
+    validate(data) {
+        if (!data || typeof data !== "object") return false;
+        if (data.version !== TARS_SAVE_VERSION) return false;
+        if (!data.tars || typeof data.tars !== "object") return false;
+        if (!data.environment || typeof data.environment !== "object") return false;
+        return true;
+    },
+
+    applyToState(data) {
+        if (!data) return false;
+        const t = data.tars;
+        worldState.tars.location = t.location || "spawn";
+        worldState.tars.activity = t.activity || "idle";
+        worldState.tars.activityStartedAt = t.activityStartedAt || Date.now();
+        worldState.tars.activityReason = t.activityReason || "session_restore";
+        worldState.tars.previousActivity = t.previousActivity || null;
+        worldState.tars.mood = t.mood || "neutral";
+        worldState.tars.energy = typeof t.energy === "number" ? t.energy : 0.7;
+        worldState.tars.controlMode = "autonomous";
+        if (t.needs) worldState.tars.needs = { ...t.needs };
+        if (t.preferences) worldState.tars.preferences = JSON.parse(JSON.stringify(t.preferences));
+        const e = data.environment;
+        if (e.weather) worldState.environment.weather = { ...e.weather };
+        if (e.timeOfDay !== undefined) worldState.environment.timeOfDay = e.timeOfDay;
+        if (e.temperature !== undefined) worldState.environment.temperature = e.temperature;
+        if (data.worldMemory && Array.isArray(data.worldMemory)) {
+            worldState.worldMemory = data.worldMemory;
+        }
+        worldState.session.previousSessionEnd = data.savedAt || null;
+        const elapsedMs = Date.now() - (data.savedAt || Date.now());
+        worldState.session.totalElapsed = elapsedMs;
+        console.log(`[WorldPersistence] Restored from ${data.savedAtISO} (${(elapsedMs / 1000).toFixed(0)}s elapsed)`);
+        return true;
+    }
+};
+
+// Log an event to both runtime activityLog and persistent worldMemory
+function persistWorldEvent(event) {
+    if (!worldState.worldMemory) worldState.worldMemory = [];
+    worldState.worldMemory.push(event);
+    if (worldState.worldMemory.length > worldState.maxWorldMemorySize) {
+        worldState.worldMemory.shift();
+    }
+}
+
+// Log a curated event (activityLog + worldMemory)
+function logWorldEvent(eventType, activity, location, reason, metadata = {}) {
+    const event = logActivityEvent(eventType, activity, location, reason, metadata);
+    persistWorldEvent(event);
+    return event;
+}
+
+// ============================================================
 
 // Helper: Log a meaningful activity event
 function logActivityEvent(eventType, activity, location, reason, metadata = {}) {
@@ -2103,6 +2231,7 @@ function setTARSActivity(activity, location, reason, metadata = {}) {
     worldState.tars.activityStartedAt = now;
     worldState.tars.activityReason = reason;
     logActivityEvent("activity_started", activity, location, reason, metadata);
+    WorldPersistence.save();
 }
 
 // Helper: Get current activity summary for LLM queries
@@ -2269,12 +2398,17 @@ const weatherVisualEngine = {
 // Initialize weather visual engine
 weatherVisualEngine.updateFromWeatherState();
 
-// Initialize TARS state
-worldState.tars.location = "spawn";
-worldState.tars.activity = "idle";
-worldState.tars.activityStartedAt = Date.now();
-worldState.tars.activityReason = "spawn";
+// Initialize or restore TARS state
 worldState.environment.timeOfDay = new Date().getHours() + new Date().getMinutes() / 60;
+const savedData = WorldPersistence.load();
+if (savedData) {
+    WorldPersistence.applyToState(savedData);
+} else {
+    worldState.tars.location = "spawn";
+    worldState.tars.activity = "idle";
+    worldState.tars.activityStartedAt = Date.now();
+    worldState.tars.activityReason = "spawn";
+}
 
 // Expose for debugging/LLM access
 window.TARS_WORLD_STATE = worldState;
@@ -3403,15 +3537,6 @@ window.TARS_ROOM = {
 // ============================================================
 
 // Initialize needs if not present
-if (!worldState.tars.needs) {
-    worldState.tars.needs = {
-        energy: 0.6,        // Lower initial energy to drive seeking rack/desk
-        curiosity: 0.4,     // Some curiosity to drive window visits
-        social: 0.2,        // Social need builds up
-        maintenance: 0.3,   // Maintenance need to drive rack visits
-        comfort: 0.5        // Lower comfort to drive seeking better spots
-    };
-}
 if (!worldState.tars.lastDecisionTime) worldState.tars.lastDecisionTime = 0;
 if (!worldState.tars.currentGoal) worldState.tars.currentGoal = null;
 
@@ -4350,6 +4475,16 @@ window.addEventListener("resize", () => {
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
+
+// Phase 4: Persistence hooks
+window.addEventListener("beforeunload", () => WorldPersistence.save());
+setInterval(() => WorldPersistence.save(), SAVE_INTERVAL_MS);
+
+// Expose persistence for debugging
+window.WorldPersistence = WorldPersistence;
+console.log(`[TARS] Session started: ${worldState.session.id}`);
+console.log(`[TARS] Previous session ended: ${worldState.session.previousSessionEnd || "first session"}`);
+console.log(`[TARS] Elapsed since last session: ${(worldState.session.totalElapsed / 1000).toFixed(0)}s`);
 
 </script>
 
