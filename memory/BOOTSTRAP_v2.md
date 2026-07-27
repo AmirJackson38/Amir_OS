@@ -1,6 +1,6 @@
 # Amir OS Session Resume Bootstrap (v2 Fast-Boot)
-> Generated: 2026-07-27 21:30:14 UTC
-> Amir OS Version: v0.8.0 (Single-File Fast-Boot Engine)
+> Generated: 2026-07-27 21:50:00 UTC
+> Amir OS Version: v0.9.0 (Single-File Fast-Boot Engine)
 > Memory Efficiency: 4833 / 5,500 chars used
 
 This file contains the consolidated runtime state of Amir OS v0.8.0.
@@ -584,6 +584,52 @@ Exposed as `window.getTARSContext`.
 - `emitWorldEvent()` doesn't have autonomous environmental triggers yet (Phase 7)
 - No chat UI (Phase 7)
 - Interruption system uses a simple array queue — no dedup or cooldown yet
+
+## Phase 6 Stabilization (Complete) — Activity Pacing & Log Usability
+
+**Objective:** Fix autonomous activity pacing (rapid weather/server ping-pong) and activity-log usability.
+
+**Timestamp:** 2026-07-27
+
+### Root Cause Analysis
+
+The scoring system had three structural biases causing rapid alternation between `weather_observation` at `window_right` and `server_check` at `rack-a`:
+
+1. **Location key mismatch:** `LOCATIONS` array used `"desk"` and `"user"` but `prefs.locations` stored `"workstation"`. Both fell back to 0.5, giving `window_right` (pref 0.9 → 9pts) and `rack-a` (pref 0.85 → 8.5pts) a massive structural advantage.
+
+2. **Flat weather affinity:** Windows had an unconditional `+7.5` bonus from `(prefs.conditions[weather] || 0.5) * 15`. This was always active regardless of TARS's need state, making windows the default best location.
+
+3. **No activity lifecycle:** `makeAutonomousDecision()` could make a new decision every 1-3s regardless of whether the current activity was still in progress. There was no concept of "minimum activity duration."
+
+### What Changed
+
+| Change | File Location | Description |
+|--------|--------------|-------------|
+| **Activity durations** | `ACTIVITY_REGISTRY` entries | Each activity has `minDuration`/`maxDuration` (seconds): weather_observation (12-35), computer_work (20-60), server_check (10-30), user_interaction (15-40), gaming (20-90), tv_watching (20-90), idle (5-15) |
+| **Activity lifecycle field** | `worldState.tars.activityEndsAt` | Computed on every `setTARSActivity()` call from registry metadata + random variance |
+| **Decision gating** | `makeAutonomousDecision()` | Returns early if `now < activityEndsAt` — activity stays engaged for its natural duration |
+| **Activity completion logging** | `setTARSActivity()` | Logs `activity_completed` event with duration when transitioning away from previous activity |
+| **Location recency penalty** | `worldState.tars.locationRecency` | Each location tracks `lastLeft` timestamp; scoring applies a decaying penalty if location was left <45s ago |
+| **Location key mapping** | `LOCATION_PREF_KEYS` lookup table | Maps `"desk"` → `"workstation"`, `"user"` → `"user"` so preference scores use the correct keys |
+| **Need-weighted weather affinity** | `scoreLocation()` | Weather bonus now multiplied by `(1 - needs.curiosity)` — only interesting when TARS is curious |
+| **Decision interval increased** | `makeAutonomousDecision()` | From 1-3s to 2-4s (less frantic decision noise) |
+| **Switch threshold raised** | `makeAutonomousDecision()` | From `best > current + 3` to `best > current + 5`, current threshold from 40→30 |
+| **Old stay penalty removed** | `scoreLocation()` | Replaced by the combination of activity duration gating + recency penalty |
+| **Smart auto-scroll** | `updateActivityDisplay()` | Only auto-scrolls when user is within 24px of bottom; manual scroll position preserved on new entries |
+
+### Preserved Properties
+
+- HIGH/CRITICAL world events still interrupt via `processWorldEvents() → lookAt()` (bypasses activity duration gate)
+- LLM control still overrides autonomy (`controlMode === "llm"` check untouched)
+- `updateNeeds()` runs every frame regardless of activity state
+- All existing scoring factors preserved (need deficit, routine bonus, distance, randomness)
+- Activity log continues to show start/completion events without flooding
+
+### Debug API
+
+`window.TARS_AUTONOMY.status()` returns: `{ activity, location, activityEndsAt, remaining (seconds), locationRecency }`
+
+Set `window.TARS_DEBUG = true` for verbose decision logs.
 
 ## Phase 7 (Planned) — Environmental Events, Ambient Life & Chat UI
 

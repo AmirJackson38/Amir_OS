@@ -2026,8 +2026,10 @@ const worldState = {
         controlMode: "autonomous",       // "autonomous" | "llm"
         activity: "idle",                // current activity
         activityStartedAt: Date.now(),   // timestamp when current activity started
+        activityEndsAt: Date.now() + 5000,   // timestamp when activity naturally completes
         activityReason: "spawn",         // why TARS started this activity
         previousActivity: null,          // { activity, location, duration, endedAt }
+        locationRecency: {},             // { locationKey: lastLeftTimestamp }
         mood: "neutral",                 // current mood
         energy: 0.7,                     // 0-1 energy level
         needs: {
@@ -2300,7 +2302,9 @@ const ACTIVITY_REGISTRY = {
         interruptionOkay: true,
         resumable: true,
         persistentEvent: false,
-        requiredObject: null
+        requiredObject: null,
+        minDuration: 12,
+        maxDuration: 35
     },
     computer_work: {
         id: "computer_work",
@@ -2311,7 +2315,9 @@ const ACTIVITY_REGISTRY = {
         interruptionOkay: true,
         resumable: true,
         persistentEvent: false,
-        requiredObject: null
+        requiredObject: null,
+        minDuration: 20,
+        maxDuration: 60
     },
     server_check: {
         id: "server_check",
@@ -2322,7 +2328,9 @@ const ACTIVITY_REGISTRY = {
         interruptionOkay: true,
         resumable: true,
         persistentEvent: false,
-        requiredObject: null
+        requiredObject: null,
+        minDuration: 10,
+        maxDuration: 30
     },
     user_interaction: {
         id: "user_interaction",
@@ -2333,7 +2341,9 @@ const ACTIVITY_REGISTRY = {
         interruptionOkay: true,
         resumable: true,
         persistentEvent: true,
-        requiredObject: null
+        requiredObject: null,
+        minDuration: 15,
+        maxDuration: 40
     },
     gaming: {
         id: "gaming",
@@ -2344,7 +2354,9 @@ const ACTIVITY_REGISTRY = {
         interruptionOkay: true,
         resumable: true,
         persistentEvent: false,
-        requiredObject: "television"
+        requiredObject: "television",
+        minDuration: 20,
+        maxDuration: 90
     },
     tv_watching: {
         id: "tv_watching",
@@ -2355,7 +2367,9 @@ const ACTIVITY_REGISTRY = {
         interruptionOkay: true,
         resumable: true,
         persistentEvent: false,
-        requiredObject: "television"
+        requiredObject: "television",
+        minDuration: 20,
+        maxDuration: 90
     },
     idle: {
         id: "idle",
@@ -2366,7 +2380,9 @@ const ACTIVITY_REGISTRY = {
         interruptionOkay: true,
         resumable: true,
         persistentEvent: false,
-        requiredObject: null
+        requiredObject: null,
+        minDuration: 5,
+        maxDuration: 15
     }
 };
 
@@ -2432,6 +2448,29 @@ function getTARSContext() {
     };
 }
 
+// Phase 6: Debug visibility — set TARS_DEBUG=true in console for verbose output
+window.TARS_DEBUG = false;
+
+function debugLog(...args) {
+    if (window.TARS_DEBUG) console.log("[TARS DEBUG]", ...args);
+}
+
+function logStateChange(label, details = {}) {
+    const entry = {
+        activity: worldState.tars.activity,
+        location: worldState.tars.location,
+        controlMode: worldState.tars.controlMode,
+        reason: worldState.tars.activityReason,
+        needs: { ...worldState.tars.needs },
+        ...details,
+        _time: Date.now()
+    };
+    console.log(`[TARS STATE] ${label}`, entry);
+}
+
+window.logStateChange = logStateChange;
+window.debugLog = debugLog;
+
 // Expose Phase 5 APIs
 window.getTARSContext = getTARSContext;
 window.getSessionReturnContext = getSessionReturnContext;
@@ -2480,7 +2519,10 @@ function processWorldEvents() {
         });
         worldState.activityLog.push({
             type: "interruption",
-            timestamp: Date.now(),
+            activity: "interruption_" + evt.label,
+            location: evt.metadata?.gazeTarget || null,
+            reason: "world_event",
+            timestamp: new Date().toISOString(),
             event: evt.label,
             priority: evt.priority,
             interruptedActivity: worldState.tars.activity
@@ -2528,20 +2570,49 @@ function logActivityEvent(eventType, activity, location, reason, metadata = {}) 
 // Helper: Update TARS activity state
 function setTARSActivity(activity, location, reason, metadata = {}) {
     const now = Date.now();
-    if (worldState.tars.activity !== "idle" && worldState.tars.activity !== activity) {
+    const prevActivity = worldState.tars.activity;
+    const prevLocation = worldState.tars.location;
+    const isNewActivity = prevActivity !== "idle" && prevActivity !== activity;
+    const isNewLocation = prevLocation !== location;
+
+    if (isNewActivity) {
         worldState.tars.previousActivity = {
-            activity: worldState.tars.activity,
-            location: worldState.tars.location,
+            activity: prevActivity,
+            location: prevLocation,
             duration: now - worldState.tars.activityStartedAt,
             endedAt: now
         };
     }
+
+    if (isNewLocation && prevLocation && prevLocation !== "spawn") {
+        worldState.tars.locationRecency[prevLocation] = now;
+    }
+
     worldState.tars.activity = activity;
     worldState.tars.location = location;
     worldState.tars.activityStartedAt = now;
     worldState.tars.activityReason = reason;
+
+    // Compute natural activity end time from registry metadata
+    const reg = ACTIVITY_REGISTRY[activity];
+    if (reg && reg.minDuration !== undefined) {
+        const durSec = reg.minDuration + Math.random() * (reg.maxDuration - reg.minDuration);
+        worldState.tars.activityEndsAt = now + durSec * 1000;
+    } else {
+        worldState.tars.activityEndsAt = now + 15000;
+    }
+
     logActivityEvent("activity_started", activity, location, reason, metadata);
+    if (isNewActivity && worldState.tars.previousActivity) {
+        logActivityEvent("activity_completed", prevActivity, prevLocation, reason, {
+            duration: worldState.tars.previousActivity.duration
+        });
+    }
+    debugLog("Activity set:", { activity, location, reason, previousActivity: worldState.tars.previousActivity?.activity, endsAt: new Date(worldState.tars.activityEndsAt).toISOString() });
+    logStateChange("activity_set", { activity, location, reason });
     WorldPersistence.save();
+    // Refresh activity display immediately so the UI is never stale
+    updateActivityDisplay();
 }
 
 // Helper: Get current activity summary for LLM queries
@@ -2571,11 +2642,18 @@ function getPreference(category, target) {
 function updateActivityDisplay() {
     const logEl = document.getElementById("activity-log");
     if (!logEl) return;
-    const recent = worldState.activityLog.slice(-10).reverse();
+    const wasNearBottom = logEl.scrollHeight - logEl.scrollTop - logEl.clientHeight < 24;
+    const recent = worldState.activityLog.slice(-12).reverse();
     logEl.innerHTML = recent.map(e => {
-        const time = new Date(e.timestamp).toLocaleTimeString();
-        return `<div class="log-entry">[${time}] ${e.activity || e.state || e.type} @ ${e.location || ""}</div>`;
+        const time = e.timestamp ? new Date(e.timestamp).toLocaleTimeString() : "";
+        const label = e.activity || e.type || "?";
+        const loc = e.location ? ` @ ${e.location}` : "";
+        const src = e.reason ? ` [${e.reason}]` : "";
+        return `<div class="log-entry" style="border-bottom:1px solid rgba(138,180,248,0.15);padding:1px 0">[${time}] ${label}${loc}${src}</div>`;
     }).join("");
+    if (wasNearBottom) {
+        logEl.scrollTop = logEl.scrollHeight;
+    }
 }
 
 // ============================================================
@@ -3483,34 +3561,12 @@ window.TARS = {
 // ============================================================
 
 // Hook into existing lookAt to log location changes
+// The original lookAt handles gaze, behavior, activity state, and event logging.
+// This hook triggers the UI display update after every lookAt call.
 const originalLookAt = window.TARS.lookAt;
 window.TARS.lookAt = function(targetKey, reason) {
-    const previousLocation = worldState.tars.location;
     const result = originalLookAt.call(this, targetKey, reason);
-    
-    if (worldState.tars.location !== targetKey) {
-        worldState.tars.location = targetKey;
-        const activityMap = {
-            "window_left": "observing_weather",
-            "window_right": "observing_weather",
-            "desk": "computer_work",
-            "rack-a": "server_check",
-            "user": "interacting_with_user"
-        };
-        const activity = activityMap[targetKey] || "idle";
-        setTARSActivity(activity, targetKey, reason || "autonomous_move");
-        worldState.activityLog.push({
-            type: "activity",
-            timestamp: Date.now(),
-            activity: activity,
-            location: targetKey,
-            previousLocation: previousLocation,
-            reason: reason || "autonomous_move"
-        });
-        if (worldState.activityLog.length > 50) worldState.activityLog.shift();
-        updateActivityDisplay();
-        console.log(`[TARS Activity] ${activity} at ${targetKey} (reason: ${reason || "autonomous_move"})`);
-    }
+    updateActivityDisplay();
     return result;
 };
 
@@ -3922,13 +3978,23 @@ function updateNeeds(dt) {
     }
 }
 
+// Map scoring location keys to preference keys (desk → workstation, user → default)
+const LOCATION_PREF_KEYS = {
+    desk: "workstation",
+    "rack-a": "rack-a",
+    window_right: "window_right",
+    window_left: "window_left",
+    user: "user"
+};
+
 function scoreLocation(location) {
     let score = 0;
     const needs = worldState.tars.needs;
     const prefs = worldState.tars.preferences;
     const currentLoc = worldState.tars.location;
+    const now = Date.now();
     
-    // Need satisfaction potential
+    // Need satisfaction potential — weighted by deficit magnitude
     const restoration = NEED_RESTORATION[location] || {};
     for (const [need, amount] of Object.entries(restoration)) {
         const deficit = 1 - needs[need];
@@ -3943,8 +4009,9 @@ function scoreLocation(location) {
         score += 20; // Urgency bonus when starving — any location change is better
     }
     
-    // Location preference
-    score += (prefs.locations[location] || 0.5) * 10;
+    // Location preference — use correct key mapping
+    const prefKey = LOCATION_PREF_KEYS[location] || location;
+    score += (prefs.locations[prefKey] || 0.5) * 10;
     
     // Activity preference for likely activity at location
     const activityMap = {
@@ -3957,10 +4024,11 @@ function scoreLocation(location) {
     const activity = activityMap[location];
     if (activity) score += (prefs.activities[activity] || 0.5) * 10;
     
-    // Weather affinity for windows
+    // Weather affinity — need-weighted: only interesting when curiosity is high
     if (location.includes("window")) {
         const weather = worldState.environment.weather.condition;
-        score += (prefs.conditions[weather] || 0.5) * 15;
+        const curiosityDeficit = 1 - needs.curiosity;
+        score += curiosityDeficit * (prefs.conditions[weather] || 0.5) * 15;
     }
     
     // Routine bonus
@@ -3970,11 +4038,13 @@ function scoreLocation(location) {
     if (hour >= 18 && hour < 22 && location === "desk") score += prefs.routines.evening_wind_down * 15;
     if (currentWeather === "thunderstorm" && location.includes("window")) score += prefs.routines.storm_watch * 25;
     
-    // Avoid staying in same place too long
-    if (location === currentLoc) {
-        const timeHere = Date.now() - worldState.tars.activityStartedAt;
-        if (timeHere > 30000) score -= 30; // Penalty after 30 sec
-        if (timeHere > 90000) score -= 50; // Stronger penalty after 90 sec
+    // Recency penalty — avoid returning to a location soon after leaving
+    const lastLeft = worldState.tars.locationRecency[location];
+    if (lastLeft) {
+        const secondsSinceLeft = (now - lastLeft) / 1000;
+        if (secondsSinceLeft < 45) {
+            score -= (45 - secondsSinceLeft) * 1.0;
+        }
     }
     
     // Distance penalty (prefer closer locations but not too strong)
@@ -3982,7 +4052,7 @@ function scoreLocation(location) {
     const targetPos = TARGET_POSITIONS[location];
     if (targetPos) {
         const dist = currentPos.distanceTo(targetPos);
-        score -= dist * 1;  // Reduced from 2
+        score -= dist * 1;
     }
     
     // Add some randomness for organic behavior
@@ -3993,8 +4063,8 @@ function scoreLocation(location) {
 
 function makeAutonomousDecision() {
     const now = Date.now();
-    // Only decide every 1-3 seconds (faster for testing)
-    if (now - worldState.tars.lastDecisionTime < 1000 + Math.random() * 2000) return;
+    // Only decide every 2-4 seconds
+    if (now - worldState.tars.lastDecisionTime < 2000 + Math.random() * 2000) return;
     
     // Defer to LLM control — autonomy reads needs but does not move
     if (worldState.tars.controlMode === "llm") return;
@@ -4002,6 +4072,13 @@ function makeAutonomousDecision() {
     // Don't interrupt active one-shot FX states (not ambient emotions)
     const blockingFx = ["strobe_orange", "strobe_red", "strobe", "bounce", "expansive"];
     if (currentState.fx && blockingFx.includes(currentState.fx)) return;
+    
+    // Gate: if current activity still has remaining duration, don't re-decide.
+    // High-priority world events bypass this via processWorldEvents → lookAt → setTARSActivity.
+    const currentActivity = ACTIVITY_REGISTRY[worldState.tars.activity];
+    if (currentActivity && worldState.tars.activityEndsAt && now < worldState.tars.activityEndsAt) {
+        return; // Activity still in progress — stay engaged
+    }
     
     // Score all locations
     const scores = LOCATIONS.map(loc => ({ location: loc, score: scoreLocation(loc) }));
@@ -4012,15 +4089,18 @@ function makeAutonomousDecision() {
     
     // Always log scores for debugging
     console.log(`[TARS Autonomy] Scores:`, scores.map(s => `${s.location}:${s.score.toFixed(1)}`).join(" | "));
+    console.log(`[TARS Autonomy] Activity ends at:`, new Date(worldState.tars.activityEndsAt).toLocaleTimeString());
     
     // Only switch if significantly better or current is very poor
     const currentScore = scoreLocation(current);
-    if (best.location !== current && (best.score > currentScore + 3 || currentScore < 40)) {
+    if (best.location !== current && (best.score > currentScore + 5 || currentScore < 30)) {
         worldState.tars.lastDecisionTime = now;
         worldState.tars.currentGoal = best.location;
         
         console.log(`[TARS Autonomy] MOVING: ${best.location} (${best.score.toFixed(1)}) vs ${current} (${currentScore.toFixed(1)})`);
         console.log(`[TARS Autonomy] Needs:`, Object.entries(worldState.tars.needs).map(([k,v]) => `${k}:${(v*100).toFixed(0)}%`).join(" "));
+        
+        logStateChange("autonomous_move", { from: current, to: best.location, score: best.score });
         
         // Trigger move
         window.TARS.lookAt(best.location);
@@ -4044,7 +4124,14 @@ window.TARS_AUTONOMY = {
     getNeeds: () => ({ ...worldState.tars.needs }),
     getScores: () => LOCATIONS.map(loc => ({ location: loc, score: scoreLocation(loc) })),
     forceDecision: makeAutonomousDecision,
-    setNeed: (need, value) => { worldState.tars.needs[need] = Math.max(0, Math.min(1, value)); }
+    setNeed: (need, value) => { worldState.tars.needs[need] = Math.max(0, Math.min(1, value)); },
+    status: () => ({
+        activity: worldState.tars.activity,
+        location: worldState.tars.location,
+        activityEndsAt: new Date(worldState.tars.activityEndsAt).toLocaleTimeString(),
+        remaining: Math.max(0, (worldState.tars.activityEndsAt - Date.now()) / 1000).toFixed(1) + "s",
+        locationRecency: { ...worldState.tars.locationRecency }
+    })
 };
 
 // Expose control mode for LLM integration
@@ -4081,9 +4168,20 @@ window.TARS_INTENT = {
         console.log(`[TARS INTENT] Raw:`, intent, `Parsed:`, behavior, `Valid:`, validation.valid);
         if (Object.keys(behavior).length > 0) {
             window.TARS.setBehavior(behavior);
+            const activityMap = {
+                window_left: "weather_observation",
+                window_right: "weather_observation",
+                desk: "computer_work",
+                "rack-a": "server_check",
+                user: "user_interaction"
+            };
+            const intentActivity = activityMap[behavior.gaze] || "intent";
             worldState.activityLog.push({
                 type: "intent",
-                timestamp: Date.now(),
+                activity: intentActivity,
+                location: behavior.gaze || null,
+                reason: "llm_intent",
+                timestamp: new Date().toISOString(),
                 raw: typeof intent === 'string' ? intent : JSON.stringify(intent),
                 parsed: behavior,
                 valid: validation.valid
@@ -4091,6 +4189,7 @@ window.TARS_INTENT = {
             if (worldState.activityLog.length > worldState.maxActivityLogSize) {
                 worldState.activityLog.shift();
             }
+            updateActivityDisplay();
         }
         return { behavior, validation };
     },
@@ -4206,6 +4305,9 @@ window.TARS_INTENT = {
         const pick = intents[Math.floor(Math.random() * intents.length)];
         console.log(`[TARS INTENT] Mock: "${pick}"`);
         return this.parse(pick);
+    },
+    mockBehavior() {
+        return this.mock().behavior;
     }
 };
 

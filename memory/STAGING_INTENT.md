@@ -7,10 +7,10 @@
 
 ## Active Staged Action
 
-- **Timestamp:** 2026-07-27 20:50:00 UTC
-- **Target Component:** T.A.R.S. World Engine — Phase 3: LLM Intent Parsing & Behavioral JSON
-- **Planned Action:** Phase 3a (Foundation Audit) + Phase 3b (Priority & Control Integration) complete. Ready for real LLM integration.
-- **Status:** Completed (Schema, Mock Generator, Prompt Template, Audit, Control Mode, Priority Gate, Reason Propagation — all built)
+- **Timestamp:** 2026-07-27 21:45:00 UTC
+- **Target Component:** T.A.R.S. World Engine — Phase 6 Stabilization: Activity Pacing & Log Usability
+- **Planned Action:** Activity lifecycle (min/max duration per activity, end-time gating in autonomy), recency-based location cooldown, scoring bias fix (location key mapping, need-weighted weather affinity), auto-scroll fix for activity log, worldState fields (activityEndsAt, locationRecency)
+- **Status:** Completed. TARS now stays engaged in activities for meaningful durations. No more 1s ping-pong between weather/server. LLM/interruption bypasses preserved.
 
 ---
 
