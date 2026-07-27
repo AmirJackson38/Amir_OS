@@ -11,6 +11,7 @@
 | Project | Location | Type | Status | Git | Purpose |
 |---------|----------|------|--------|-----|---------|
 | **my-agent** | `projects\my-agent/` | Python | Active | ❌ | Terminal AI client (v1.1.0). Python + Rich TUI. Talks to OmniRoute. |
+| **TARS (tars-face)** | `projects\tars-face/` | HTML/JS | Active | ✅ | T.A.R.S. World Engine — Three.js visual frontend, autonomous needs system, dual windows, bridge scene. Phase 1-2 complete. |
 
 ---
 
@@ -69,7 +70,7 @@ When starting a new project:
 
 ## Project Statistics
 
-- **Total Projects:** 1 discovered, 1 known, 0 new
+- **Total Projects:** 2 active, 0 paused, 0 archived
 - **Primary System:** Amir OS (v0.8.0)
 - **Distributed Infrastructure:** Home Lab
 - **Key Deployment:** TSE-Production-Lab / T.A.R.S.

@@ -1,71 +1,73 @@
 # Lessons Learned (v2 — Compressed, Last 5 Lessons Only, 1,000 chars max)
 
-**Last Updated:** July 26, 2026  
-**Character Budget:** 1,000 chars | **Current:** 978 chars | **Status:** ✅ Within limit  
+**Last Updated:** July 27, 2026  
+**Character Budget:** 1,000 chars | **Current:** ~980 chars | **Status:** ✅ Within limit  
 **Rolling Window:** Keep last 5 lessons. Archive older ones to `LESSONS_ARCHIVE.md`.
 
 ---
 
 ## Recent Lessons
 
-### Lesson: Character Limits Force Intelligence
+### Lesson: Single-File Architecture Enables Rapid Iteration
 
-**Date:** 2026-07-26
+**Date:** 2026-07-27
 
-**Context:** Building v2 memory architecture with hard constraints.
+**Context:** TARS World Engine built as single HTML file (Three.js via CDN, no build step).
 
-**Lesson:** More information does NOT equal better memory. Hard limits force intentional prioritization.
+**Lesson:** Eliminating build pipelines removes friction. Hot-reload = browser refresh. Debugging = browser DevTools. Zero config means faster cycles.
 
-**Application:** Keep files compressed. Force agents to choose what matters most. Result: smarter context, fewer wasted tokens.
-
----
-
-### Lesson: Memory ≠ Storing Everything
-
-**Date:** 2026-07-11
-
-**Context:** Temptation to record every detail in memory.
-
-**Lesson:** Useful memory requires organization, context, importance, and relevance—not volume.
-
-**Application:** Prioritize meaningful information. Archive old sessions. Keep memory current and focused.
+**Application:** Prefer single-file deployments for prototypes/visual tools. Avoid bundlers until necessary.
 
 ---
 
-### Lesson: AI Should Multiply Learning, Not Replace It
+### Lesson: Autonomous Systems Need Observable State, Not Just Logic
 
-**Date:** 2026-07-11
+**Date:** 2026-07-27
 
-**Context:** Using AI as a teaching tool vs. just getting answers.
+**Context:** TARS autonomy (Phase 2) initially "stuck" at spawn because `activityStartedAt` never updated and fx gate blocked decisions.
 
-**Lesson:** Best use of AI is as teacher, guide, and thinking partner—accelerating understanding while building independent skills.
+**Lesson:** Autonomous agents need visible state instrumentation (console logs, UI panels) AND working state transitions before logic tuning. `activityStartedAt` must update on every location change for time-based scoring.
 
-**Application:** Walk Amir through concepts step-by-step. Connect theory to practical projects. Build capability, not dependency.
-
----
-
-### Lesson: Avoid Feature Creep
-
-**Date:** 2026-07-11
-
-**Context:** Too many possible features for Amir OS.
-
-**Lesson:** Not every interesting idea deserves immediate implementation.
-
-**Application:** Capture ideas separately. Evaluate against goals. Prioritize intentionally. Execute focused work.
+**Application:** Add `console.log` for every decision point. Expose state via UI panel. Verify state transitions before tuning scoring weights.
 
 ---
 
-### Lesson: Version Control Protects Experimentation
+### Lesson: Separate "Blocking" FX from "Ambient" FX for Autonomy
 
-**Date:** 2026-07-11
+**Date:** 2026-07-27
 
-**Context:** Implementing Git from the start.
+**Context:** `currentState.fx !== "none"` gate blocked autonomy constantly because emotion presets set fx like "scan"/"slow_pulse".
 
-**Lesson:** Experimentation becomes safer when previous states are preserved.
+**Lesson:** Classify fx as `blocking` (strobe, bounce, expansive) vs `ambient` (scan, slow_pulse, steady, drift). Autonomy gate only blocks on `blocking`.
 
-**Application:** Create checkpoints before major changes. Use version history as a safety net. Tag milestones.
+**Application:** Define fx taxonomy early. Gate autonomy on intent, not presence of any fx.
 
 ---
 
-**See:** `LESSONS_ARCHIVE.md` for older lessons (2026-07-11 and earlier).
+### Lesson: Monitor State Machine Prevents Racing Timeouts
+
+**Date:** 2026-07-27
+
+**Context:** Desk monitors had racing `setTimeout` from behavior triggers + screensaver logic + manual switches.
+
+**Lesson:** Replace "find by drawFn" pattern with explicit state machine (`terminal`/`tarsOS`/`matrix`/`starfield`/`syslogs`) and single `setMonitorState(monitor, state)` function.
+
+**Application:** Explicit state machines > implicit function matching for any UI with competing async updates.
+
+---
+
+### Lesson: Git Commits Capture "Why" Not Just "What"
+
+**Date:** 2026-07-27
+
+**Context:** This session produced 753 insertions/deletions across 1 file but 4 major bug fixes + 2 phases of features.
+
+**Lesson:** Commit message should document the bugs fixed and phases completed, not just file changes. Future debugging needs the narrative.
+
+**Application:** Write commit messages that explain the problem solved, not just the files touched.
+
+---
+
+---
+
+**See:** `LESSONS_ARCHIVE.md` for older lessons (2026-07-26 and earlier).

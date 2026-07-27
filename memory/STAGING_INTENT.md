@@ -157,7 +157,21 @@ After each meaningful change:
 - [x] Rolling Visual Activity Log
 - [x] Event system with structured events
 - [x] Existing behavior integration
-- [ ] Zero LLM verification
-- [ ] Future autonomy compatibility
-- [ ] Final validation pass
-- [ ] STAGING_INTENT.md finalized
+- [x] Zero LLM verification (Phase 1)
+- [x] Future autonomy compatibility (Phase 2 implemented)
+- [x] Final validation pass
+- [x] STAGING_INTENT.md finalized
+
+## Phase 2 (Autonomous Scheduler / Needs System) — COMPLETE
+
+- [x] 5 needs: energy, curiosity, social, maintenance, comfort
+- [x] 6 autonomous activities with scoring (time/weather/preference/recency/distance)
+- [x] Decisions every 2-5s, fx gate only blocks blocking fx
+- [x] `setTARSActivity()` called in lookAt hook for activityStartedAt tracking
+- [x] Need decay/restoration by location, time-of-day, weather
+- [x] "Stay too long" penalty in scoring
+- [x] Console logging of scores + needs every decision
+
+## Phase 3 (Planned) — LLM Intent → Behavioral JSON
+
+## Phase 4 (Planned) — Cross-Session Persistence
