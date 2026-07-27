@@ -1,0 +1,2655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>T.A.R.S. World v0.4 — Embodiment System</title>
+
+<style>
+    * { box-sizing: border-box; }
+
+    html, body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        background: #05070a;
+        font-family: Arial, sans-serif;
+    }
+
+    #scene { position: fixed; inset: 0; }
+
+    #hud {
+        position: fixed;
+        top: 20px;
+        left: 24px;
+        z-index: 10;
+        color: rgba(210, 235, 255, 0.75);
+        pointer-events: none;
+        text-shadow: 0 0 12px rgba(80, 180, 255, 0.6);
+    }
+
+    #hud .title { font-size: 13px; letter-spacing: 5px; font-weight: bold; }
+    #hud .status { margin-top: 8px; font-size: 10px; letter-spacing: 2px; opacity: 0.65; }
+
+    #status {
+        position: fixed;
+        bottom: 20px;
+        left: 24px;
+        z-index: 10;
+        color: rgba(170, 210, 235, 0.55);
+        font-size: 10px;
+        letter-spacing: 2px;
+        pointer-events: none;
+    }
+
+    #hint {
+        position: fixed;
+        bottom: 20px;
+        right: 24px;
+        z-index: 10;
+        color: rgba(170, 210, 235, 0.35);
+        font-size: 9px;
+        letter-spacing: 1px;
+        pointer-events: none;
+    }
+
+    /* T.A.R.S. Interactive Control Console */
+    #tars-controls {
+        position: fixed;
+        top: 20px;
+        right: 24px;
+        z-index: 20;
+        background: rgba(10, 16, 24, 0.85);
+        border: 1px solid rgba(80, 180, 255, 0.3);
+        border-radius: 8px;
+        padding: 14px;
+        width: 310px;
+        color: #d2ebff;
+        font-size: 11px;
+        backdrop-filter: blur(8px);
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.6);
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    #tars-controls h3 {
+        margin: 0 0 10px 0;
+        font-size: 12px;
+        letter-spacing: 3px;
+        color: #5fd0ff;
+        border-bottom: 1px solid rgba(80, 180, 255, 0.2);
+        padding-bottom: 6px;
+    }
+
+    .ctrl-group { margin-bottom: 10px; }
+    .ctrl-group label { display: block; margin-bottom: 4px; color: rgba(210, 235, 255, 0.7); }
+
+    .ctrl-buttons { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; }
+
+    .btn {
+        background: rgba(20, 35, 50, 0.8);
+        border: 1px solid rgba(80, 180, 255, 0.3);
+        color: #9fe6ff;
+        padding: 6px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 10px;
+        letter-spacing: 1px;
+        transition: all 0.2s ease;
+    }
+
+    .btn:hover {
+        background: rgba(40, 80, 120, 0.9);
+        border-color: #5fd0ff;
+        color: #fff;
+        box-shadow: 0 0 8px rgba(95, 208, 255, 0.4);
+    }
+
+    .btn.active {
+        background: #1b5e8c;
+        border-color: #5fd0ff;
+        color: #ffffff;
+        font-weight: bold;
+    }
+
+    input[type=range] {
+        width: 100%;
+        accent-color: #5fd0ff;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-weight: bold;
+        background: rgba(0, 170, 255, 0.2);
+        color: #5fd0ff;
+        border: 1px solid rgba(0, 170, 255, 0.4);
+    }
+</style>
+</head>
+
+<body>
+
+<div id="scene"></div>
+
+<div id="hud">
+    <div class="title">T.A.R.S. // WORLD</div>
+    <div class="status">EMBODIMENT ENGINE // ACTIVE</div>
+</div>
+
+<div id="status">EMOTION: <span id="current-emotion" class="status-badge">IDLE</span> | MODE: <span id="current-mode" class="status-badge">LIVE</span></div>
+<div id="hint">MOVE POINTER TO EXPLORE</div>
+
+<!-- Developer / Live Controller Panel -->
+<div id="tars-controls">
+    <h3>T.A.R.S. BEHAVIOR CONSOLE</h3>
+    
+    <div class="ctrl-group">
+        <label>SYSTEM MODE</label>
+        <div class="ctrl-buttons">
+            <button class="btn active" id="btn-mode-live" onclick="window.TARS.setMode('live')">LIVE MODE</button>
+            <button class="btn" id="btn-mode-demo" onclick="window.TARS.setMode('demo')">DEMO FLIGHT</button>
+        </div>
+    </div>
+
+    <div class="ctrl-group">
+        <label>BEHAVIOR PRESETS</label>
+        <div class="ctrl-buttons">
+            <button class="btn" onclick="window.TARS.trigger('idle')">IDLE</button>
+            <button class="btn" onclick="window.TARS.trigger('listen')">LISTEN</button>
+            <button class="btn" onclick="window.TARS.trigger('think')">THINK</button>
+            <button class="btn" onclick="window.TARS.trigger('speak')">SPEAK</button>
+            <button class="btn" onclick="window.TARS.trigger('sarcastic')">SARCASTIC</button>
+            <button class="btn" onclick="window.TARS.trigger('amused')">AMUSED</button>
+            <button class="btn" onclick="window.TARS.trigger('confused')">CONFUSED</button>
+            <button class="btn" onclick="window.TARS.trigger('serious')">SERIOUS</button>
+            <button class="btn" onclick="window.TARS.trigger('warning')">WARNING</button>
+            <button class="btn" onclick="window.TARS.trigger('critical')">CRITICAL</button>
+            <button class="btn" onclick="window.TARS.trigger('celebrate')">CELEBRATE</button>
+            <button class="btn" onclick="window.TARS.trigger('chill')">CHILL</button>
+            <button class="btn" onclick="window.TARS.trigger('disapproving')">DISAPPROVING</button>
+            <button class="btn" onclick="window.TARS.trigger('excited')">EXCITED</button>
+        </div>
+    </div>
+
+    <div class="ctrl-group">
+        <label>GAZE / ATTENTION TARGET</label>
+        <div class="ctrl-buttons">
+            <button class="btn" onclick="window.TARS.lookAt('user')">USER</button>
+            <button class="btn" onclick="window.TARS.lookAt('desk')">DESK</button>
+            <button class="btn" onclick="window.TARS.lookAt('rack-a')">RACK A</button>
+            <button class="btn" onclick="window.TARS.lookAt('window')">WINDOW</button>
+        </div>
+    </div>
+
+    <div class="ctrl-group">
+        <label>SPEECH REACTIVITY</label>
+        <div class="ctrl-buttons">
+            <button class="btn" onclick="window.TARS.onSpeechStart()">SPEECH START</button>
+            <button class="btn" onclick="window.TARS.onSpeechEnd()">SPEECH END</button>
+        </div>
+    </div>
+
+    <div class="ctrl-group">
+        <label>SPEECH AMPLITUDE: <span id="speech-amp-val">0</span></label>
+        <input type="range" min="0" max="1" step="0.05" value="0" oninput="document.getElementById('speech-amp-val').innerText = this.value; window.TARS.setSpeechAmplitude(parseFloat(this.value));">
+    </div>
+
+    <div class="ctrl-group">
+        <label>SPEECH PITCH: <span id="speech-pitch-val">1.0</span></label>
+        <input type="range" min="0.5" max="2" step="0.05" value="1" oninput="document.getElementById('speech-pitch-val').innerText = this.value; window.TARS.setSpeechPitch(parseFloat(this.value));">
+    </div>
+
+    <div class="ctrl-group">
+        <label>GESTURE TESTS</label>
+        <div class="ctrl-buttons">
+            <button class="btn" onclick="window.TARS.triggerGesture('nod')">NOD</button>
+            <button class="btn" onclick="window.TARS.triggerGesture('shake')">SHAKE</button>
+            <button class="btn" onclick="window.TARS.triggerGesture('pulse')">PULSE</button>
+            <button class="btn" onclick="window.TARS.triggerGesture('expand')">EXPAND</button>
+            <button class="btn" onclick="window.TARS.triggerGesture('spin')">SPIN</button>
+        </div>
+    </div>
+
+    <div class="ctrl-group">
+        <label>LLM BEHAVIOR INTENT TEST</label>
+        <div class="ctrl-buttons">
+            <button class="btn" onclick="window.TARS.setBehavior({emotion:'excited', intensity:0.8, energy:0.9, urgency:0.7, gesture:'pulse', gaze:'user'})">EXCITED</button>
+            <button class="btn" onclick="window.TARS.setBehavior({emotion:'thinking', intensity:0.4, energy:0.3, urgency:0.1, gesture:'nod', gaze:'desk'})">THINKING</button>
+            <button class="btn" onclick="window.TARS.setBehavior({emotion:'warning', intensity:0.9, energy:0.8, urgency:0.9, gesture:'expand', gaze:'rack-a'})">WARNING</button>
+        </div>
+    </div>
+
+    <div class="ctrl-group">
+        <label>INTENSITY: <span id="intensity-val">0.5</span></label>
+        <input type="range" min="0" max="1" step="0.05" value="0.5" oninput="document.getElementById('intensity-val').innerText = this.value; window.TARS.setIntensity(parseFloat(this.value));">
+    </div>
+
+    <div class="ctrl-group">
+        <label>URGENCY: <span id="urgency-val">0.1</span></label>
+        <input type="range" min="0" max="1" step="0.05" value="0.1" oninput="document.getElementById('urgency-val').innerText = this.value; window.TARS.setUrgency(parseFloat(this.value));">
+    </div>
+</div>
+
+<script type="module">
+
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js";
+
+// ============================================================
+// CORE
+// ============================================================
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x020407);
+scene.fog = new THREE.FogExp2(0x05080c, 0.035);
+
+const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
+camera.position.set(0, 2.7, 10);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.0));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+document.getElementById("scene").appendChild(renderer.domElement);
+
+// ============================================================
+// LIGHTING
+// ============================================================
+
+const ambientLight = new THREE.AmbientLight(0x263746, 1.2);
+scene.add(ambientLight);
+
+const blueLight = new THREE.PointLight(0x2d8cff, 18, 30);
+blueLight.position.set(-3, 4, 2);
+scene.add(blueLight);
+
+const warmLight = new THREE.PointLight(0xff8b3d, 8, 12);
+warmLight.position.set(2, 3, 1);
+scene.add(warmLight);
+
+const serverLight = new THREE.PointLight(0x00aaff, 10, 8);
+serverLight.position.set(-4, 2, -2);
+scene.add(serverLight);
+
+// ============================================================
+// HELPERS
+// ============================================================
+
+function material(color, roughness = 0.8, metalness = 0) {
+    return new THREE.MeshStandardMaterial({ color, roughness, metalness });
+}
+
+function glowMaterial(color) {
+    return new THREE.MeshBasicMaterial({ color, toneMapped: false });
+}
+
+function makeCanvas(w, h) {
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    return { canvas, ctx: canvas.getContext("2d") };
+}
+
+function canvasTexture(draw, w = 512, h = 512) {
+    const { canvas, ctx } = makeCanvas(w, h);
+    draw(ctx, w, h);
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.needsUpdate = true;
+    return tex;
+}
+
+function circleSpriteTexture() {
+    return canvasTexture((ctx, w, h) => {
+        const g = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2);
+        g.addColorStop(0, "rgba(255,255,255,1)");
+        g.addColorStop(0.4, "rgba(255,255,255,0.9)");
+        g.addColorStop(1, "rgba(255,255,255,0)");
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, w, h);
+    }, 32, 32);
+}
+const dotSprite = circleSpriteTexture();
+
+const animatedScreens = [];
+function registerAnimatedScreen(w, h, drawFn, refreshRate = 0.12) {
+    const { canvas, ctx } = makeCanvas(w, h);
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    const entry = { ctx, w, h, tex, drawFn, refreshRate, nextUpdate: 0 };
+    animatedScreens.push(entry);
+    return tex;
+}
+
+const room = new THREE.Group();
+scene.add(room);
+
+// ============================================================
+// FLOOR / SIDE WALLS / CEILING
+// ============================================================
+
+const floor = new THREE.Mesh(new THREE.BoxGeometry(16, 0.3, 14), material(0x111820, 0.95));
+floor.position.y = -0.15;
+floor.receiveShadow = true;
+room.add(floor);
+
+const leftWall = new THREE.Mesh(new THREE.BoxGeometry(0.3, 8, 14), material(0x0a1016, 0.95));
+leftWall.position.set(-8, 4, 0);
+leftWall.receiveShadow = true;
+room.add(leftWall);
+
+const rightWall = new THREE.Mesh(new THREE.BoxGeometry(0.3, 8, 14), material(0x0a1016, 0.95));
+rightWall.position.set(8, 4, 0);
+rightWall.receiveShadow = true;
+room.add(rightWall);
+
+const ceiling = new THREE.Mesh(new THREE.BoxGeometry(16, 0.3, 14), material(0x070b10, 0.95));
+ceiling.position.y = 8;
+ceiling.receiveShadow = true;
+room.add(ceiling);
+
+// ============================================================
+// BACK WALL WITH WINDOW OPENING
+// ============================================================
+
+const backWallMat = material(0x0c1219, 0.95);
+const WIN_X = 2.5, WIN_Y = 4.2, WIN_W = 6, WIN_H = 4, WALL_Z = -6, WALL_THICK = 0.3;
+const winLeft = WIN_X - WIN_W / 2;
+const winRight = WIN_X + WIN_W / 2;
+const winTop = WIN_Y + WIN_H / 2;
+const winBottom = WIN_Y - WIN_H / 2;
+
+const wallLeftSeg = new THREE.Mesh(new THREE.BoxGeometry(winLeft - (-8), 8, WALL_THICK), backWallMat);
+wallLeftSeg.position.set((-8 + winLeft) / 2, 4, WALL_Z);
+wallLeftSeg.receiveShadow = true;
+room.add(wallLeftSeg);
+
+const wallRightSeg = new THREE.Mesh(new THREE.BoxGeometry(8 - winRight, 8, WALL_THICK), backWallMat);
+wallRightSeg.position.set((winRight + 8) / 2, 4, WALL_Z);
+wallRightSeg.receiveShadow = true;
+room.add(wallRightSeg);
+
+const wallTopSeg = new THREE.Mesh(new THREE.BoxGeometry(WIN_W, 8 - winTop, WALL_THICK), backWallMat);
+wallTopSeg.position.set(WIN_X, (winTop + 8) / 2, WALL_Z);
+wallTopSeg.receiveShadow = true;
+room.add(wallTopSeg);
+
+const wallBottomSeg = new THREE.Mesh(new THREE.BoxGeometry(WIN_W, winBottom, WALL_THICK), backWallMat);
+wallBottomSeg.position.set(WIN_X, winBottom / 2, WALL_Z);
+wallBottomSeg.receiveShadow = true;
+room.add(wallBottomSeg);
+
+// ============================================================
+// WINDOW FRAME + GLASS
+// ============================================================
+
+const windowFrame = new THREE.Group();
+windowFrame.position.set(WIN_X, WIN_Y, WALL_Z + 0.22);
+room.add(windowFrame);
+
+const glass = new THREE.Mesh(
+    new THREE.PlaneGeometry(WIN_W, WIN_H),
+    new THREE.MeshPhysicalMaterial({
+        color: 0x0b2233,
+        transparent: true,
+        opacity: 0.12,
+        roughness: 0.03,
+        metalness: 0.05,
+        transmission: 0.9,
+        side: THREE.DoubleSide
+    })
+);
+windowFrame.add(glass);
+
+const windowGlow = new THREE.PointLight(0x1679c9, 10, 15);
+windowGlow.position.set(WIN_X, WIN_Y - 0.2, WALL_Z + 1);
+scene.add(windowGlow);
+
+const frameMaterial = material(0x101820, 0.6, 0.5);
+const vFrame = new THREE.Mesh(new THREE.BoxGeometry(0.12, WIN_H + 0.3, 0.2), frameMaterial);
+windowFrame.add(vFrame);
+const hFrame = new THREE.Mesh(new THREE.BoxGeometry(WIN_W + 0.3, 0.12, 0.2), frameMaterial);
+windowFrame.add(hFrame);
+const trimMat = material(0x0d151c, 0.55, 0.4);
+const trimTop = new THREE.Mesh(new THREE.BoxGeometry(WIN_W + 0.4, 0.15, 0.25), trimMat);
+trimTop.position.y = WIN_H / 2 + 0.1;
+windowFrame.add(trimTop);
+const trimBottom = trimTop.clone();
+trimBottom.position.y = -WIN_H / 2 - 0.1;
+windowFrame.add(trimBottom);
+const trimLeft = new THREE.Mesh(new THREE.BoxGeometry(0.15, WIN_H + 0.4, 0.25), trimMat);
+trimLeft.position.x = -WIN_W / 2 - 0.1;
+windowFrame.add(trimLeft);
+const trimRight = trimLeft.clone();
+trimRight.position.x = WIN_W / 2 + 0.1;
+windowFrame.add(trimRight);
+
+// ============================================================
+// EXTERIOR: SKYLINE + SKY + SUN/MOON + STARS + RAIN
+// ============================================================
+
+const exterior = new THREE.Group();
+exterior.position.set(0, 0, WALL_Z - 3);
+scene.add(exterior);
+
+const skyPlane = new THREE.Mesh(
+    new THREE.PlaneGeometry(30, 20),
+    new THREE.MeshBasicMaterial({ color: 0x04070c, fog: false })
+);
+skyPlane.position.set(0, 6, -10);
+exterior.add(skyPlane);
+
+const celestial = new THREE.Mesh(
+    new THREE.CircleGeometry(0.5, 32),
+    new THREE.MeshBasicMaterial({ color: 0xfff3d6, toneMapped: false, transparent: true })
+);
+celestial.position.set(0, 5, -9.5);
+exterior.add(celestial);
+
+const starGeometry = new THREE.BufferGeometry();
+const starCount = 100;  // Reduced from 200
+const starPositions = new Float32Array(starCount * 3);
+for (let i = 0; i < starCount; i++) {
+    starPositions[i * 3] = (Math.random() - 0.5) * 26;
+    starPositions[i * 3 + 1] = 2 + Math.random() * 14;
+    starPositions[i * 3 + 2] = -9.8 - Math.random() * 2;
+}
+starGeometry.setAttribute("position", new THREE.BufferAttribute(starPositions, 3));
+const stars = new THREE.Points(starGeometry, new THREE.PointsMaterial({
+    color: 0xffffff, size: 0.045, map: dotSprite, transparent: true, opacity: 0.8, depthWrite: false
+}));
+exterior.add(stars);
+
+function buildingWindowTex() {
+    return canvasTexture((ctx, w, h) => {
+        ctx.fillStyle = "#050a10";
+        ctx.fillRect(0, 0, w, h);
+        for (let y = 8; y < h; y += 14) {
+            for (let x = 6; x < w; x += 14) {
+                if (Math.random() > 0.5) {
+                    ctx.fillStyle = Math.random() > 0.5 ? "#ffcd8a" : "#8fd0ff";
+                    ctx.fillRect(x, y, 6, 8);
+                }
+            }
+        }
+    }, 128, 256);
+}
+
+const buildings = [];
+for (let i = 0; i < 9; i++) {
+    const bw = 1.2 + Math.random() * 1.6;
+    const bh = 3 + Math.random() * 7;
+    const bd = 1.2 + Math.random() * 1.6;
+    const bx = -3 + i * 1.3 + (Math.random() - 0.5) * 0.6;
+    const tex = buildingWindowTex();
+    const buildingMat = new THREE.MeshStandardMaterial({
+        map: tex, color: 0x2a3a4c, roughness: 0.9,
+        emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.6
+    });
+    const buildingMesh = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), buildingMat);
+    buildingMesh.position.set(bx, bh / 2 - 0.1, -Math.random() * 4);
+    exterior.add(buildingMesh);
+    buildings.push(buildingMat);
+}
+
+const rainGroup = new THREE.Group();
+rainGroup.position.set(0, 0, WALL_Z - 0.6);
+scene.add(rainGroup);
+
+const rainCount = 200;  // Reduced from 500
+const rainGeometry = new THREE.BufferGeometry();
+const rainPositions = new Float32Array(rainCount * 3);
+const rainSpeeds = new Float32Array(rainCount);
+for (let i = 0; i < rainCount; i++) {
+    rainPositions[i * 3] = winLeft + Math.random() * WIN_W;
+    rainPositions[i * 3 + 1] = winBottom + Math.random() * (WIN_H + 2);
+    rainPositions[i * 3 + 2] = -Math.random() * 2.5;
+    rainSpeeds[i] = 0.04 + Math.random() * 0.05;
+}
+rainGeometry.setAttribute("position", new THREE.BufferAttribute(rainPositions, 3));
+const rain = new THREE.Points(rainGeometry, new THREE.PointsMaterial({
+    color: 0x9fd4ef, size: 0.035, map: dotSprite, transparent: true, opacity: 0.7, depthWrite: false
+}));
+rainGroup.add(rain);
+
+// ============================================================
+// DAY / NIGHT CYCLE
+// ============================================================
+
+const NIGHT_SKY = new THREE.Color(0x03050a);
+const DAY_SKY = new THREE.Color(0x2f5a82);
+const WARM_TINT = new THREE.Color(0xff9a52);
+const MOON_COLOR = new THREE.Color(0xd8e8ff);
+const SUN_COLOR = new THREE.Color(0xfff3d6);
+const NIGHT_GLOW = new THREE.Color(0x1679c9);
+const DAY_GLOW = new THREE.Color(0xcfe9ff);
+
+function bell(hours, center, width) {
+    const d = Math.abs(((hours - center + 12 + 24) % 24) - 12);
+    return Math.max(0, 1 - d / width);
+}
+
+function updateDayNight() {
+    const now = new Date();
+    const hours = now.getHours() + now.getMinutes() / 60;
+    const t = hours / 24;
+
+    const dayFactor = Math.cos((t - 0.5) * Math.PI * 2) * 0.5 + 0.5;
+    const dawn = bell(hours, 6.5, 2.2);
+    const dusk = bell(hours, 19.5, 2.2);
+    const warmth = Math.min(1, dawn + dusk);
+
+    const sky = new THREE.Color().lerpColors(NIGHT_SKY, DAY_SKY, dayFactor).lerp(WARM_TINT, warmth * 0.35);
+    skyPlane.material.color.copy(sky);
+
+    const glow = new THREE.Color().lerpColors(NIGHT_GLOW, DAY_GLOW, dayFactor).lerp(WARM_TINT, warmth * 0.5);
+    windowGlow.color.copy(glow);
+    windowGlow.intensity = 6 + dayFactor * 8 + warmth * 4;
+
+    ambientLight.intensity = 1.0 + dayFactor * 0.7;
+
+    const angle = t * Math.PI * 2 - Math.PI / 2;
+    celestial.position.x = Math.cos(angle) * 3.2;
+    celestial.position.y = 4 + Math.sin(angle) * 5.5;
+    const aboveHorizon = celestial.position.y > 0.5 ? 1 : 0;
+    celestial.material.opacity = aboveHorizon * (0.6 + warmth * 0.4);
+    celestial.material.color.copy(dayFactor > 0.5 ? SUN_COLOR : MOON_COLOR).lerp(WARM_TINT, warmth * 0.6);
+
+    stars.material.opacity = (1 - dayFactor) * 0.85;
+
+    buildings.forEach(mat => { mat.emissiveIntensity = 0.15 + (1 - dayFactor) * 0.75; });
+
+    return dayFactor;
+}
+
+// ============================================================
+// FRAMED WALL ART
+// ============================================================
+
+function drawSchematic(ctx, w, h) {
+    ctx.fillStyle = "#050c14";
+    ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = "rgba(70,150,200,0.25)";
+    ctx.lineWidth = 1;
+    for (let x = 0; x < w; x += 24) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+    for (let y = 0; y < h; y += 24) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+    ctx.strokeStyle = "#5fd0ff";
+    ctx.lineWidth = 3;
+    ctx.strokeRect(w * 0.32, h * 0.15, w * 0.36, h * 0.6);
+    for (let i = 0; i < 5; i++) {
+        ctx.beginPath();
+        ctx.moveTo(w * 0.32, h * (0.25 + i * 0.1));
+        ctx.lineTo(w * 0.32 + w * 0.36, h * (0.25 + i * 0.1));
+        ctx.stroke();
+    }
+    ctx.fillStyle = "#5fd0ff";
+    for (let i = 0; i < 6; i++) {
+        ctx.beginPath();
+        ctx.arc(w * (0.15 + i * 0.14), h * 0.85, 4, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.font = "12px monospace";
+    ctx.fillStyle = "rgba(150,210,240,0.6)";
+    ctx.fillText("UNIT// SCHEMATIC 07-A", w * 0.08, h * 0.92);
+}
+
+function drawNebula(ctx, w, h) {
+    const grad = ctx.createRadialGradient(w * 0.4, h * 0.4, 10, w * 0.4, h * 0.4, w * 0.7);
+    grad.addColorStop(0, "#5a2d8f");
+    grad.addColorStop(0.4, "#22376b");
+    grad.addColorStop(1, "#020409");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+    for (let i = 0; i < 180; i++) {
+        ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.8})`;
+        ctx.beginPath();
+        ctx.arc(Math.random() * w, Math.random() * h, Math.random() * 1.4, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+function drawCircuit(ctx, w, h) {
+    ctx.fillStyle = "#07131a";
+    ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = "#e0a752";
+    ctx.lineWidth = 2;
+    let x = 20, y = h * 0.5;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    for (let i = 0; i < 14; i++) {
+        x += 20 + Math.random() * 20;
+        y += (Math.random() - 0.5) * 60;
+        y = Math.max(20, Math.min(h - 20, y));
+        ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.fillStyle = "#5fd0ff";
+    for (let i = 0; i < 20; i++) {
+        ctx.beginPath();
+        ctx.arc(Math.random() * w, Math.random() * h, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+function createFramedArt({ x, y, z, rotY = 0, width = 1.6, height = 1.1, draw, glow = 0.2 }) {
+    const group = new THREE.Group();
+    group.position.set(x, y, z);
+    group.rotation.y = rotY;
+    room.add(group);
+
+    const tex = canvasTexture(draw);
+    const artMat = new THREE.MeshStandardMaterial({
+        map: tex, roughness: 0.7, emissive: 0x223344, emissiveMap: tex, emissiveIntensity: glow
+    });
+    const artPlane = new THREE.Mesh(new THREE.PlaneGeometry(width, height), artMat);
+    group.add(artPlane);
+
+    const frameMat = material(0x1a1410, 0.6, 0.3);
+    const t = 0.07;
+    const topBar = new THREE.Mesh(new THREE.BoxGeometry(width + t * 2, t, 0.06), frameMat);
+    topBar.position.set(0, height / 2 + t / 2, -0.02);
+    group.add(topBar);
+    const botBar = topBar.clone();
+    botBar.position.y = -height / 2 - t / 2;
+    group.add(botBar);
+    const leftBar = new THREE.Mesh(new THREE.BoxGeometry(t, height, 0.06), frameMat);
+    leftBar.position.set(-width / 2 - t / 2, 0, -0.02);
+    group.add(leftBar);
+    const rightBar = leftBar.clone();
+    rightBar.position.x = width / 2 + t / 2;
+    group.add(rightBar);
+
+    return group;
+}
+
+createFramedArt({ x: -3.2, y: 4.6, z: -5.83, width: 2.1, height: 1.5, draw: drawSchematic, glow: 0.35 });
+createFramedArt({ x: -7.83, y: 4.7, z: -2.3, rotY: Math.PI / 2, width: 1.5, height: 2, draw: drawNebula, glow: 0.4 });
+createFramedArt({ x: -7.83, y: 2.7, z: 0.8, rotY: Math.PI / 2, width: 1.2, height: 1.2, draw: drawCircuit, glow: 0.3 });
+createFramedArt({ x: 7.83, y: 4.8, z: -3.6, rotY: -Math.PI / 2, width: 1.6, height: 1.1, draw: drawCircuit, glow: 0.3 });
+
+// ============================================================
+// WALL CLOCK
+// ============================================================
+
+const clockGroup = new THREE.Group();
+clockGroup.position.set(7.82, 6.2, -1.2);
+clockGroup.rotation.y = -Math.PI / 2;
+room.add(clockGroup);
+
+const clockFaceTex = canvasTexture((ctx, w, h) => {
+    ctx.fillStyle = "#0b1218";
+    ctx.beginPath();
+    ctx.arc(w / 2, h / 2, w / 2 - 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#5fd0ff";
+    ctx.lineWidth = 4;
+    ctx.stroke();
+    ctx.fillStyle = "#5fd0ff";
+    for (let i = 0; i < 12; i++) {
+        const a = (i / 12) * Math.PI * 2 - Math.PI / 2;
+        const x1 = w / 2 + Math.cos(a) * (w / 2 - 16);
+        const y1 = h / 2 + Math.sin(a) * (w / 2 - 16);
+        ctx.beginPath();
+        ctx.arc(x1, y1, 3, 0, Math.PI * 2);
+        ctx.fill();
+    }
+});
+const clockFace = new THREE.Mesh(new THREE.CircleGeometry(0.4, 32), new THREE.MeshStandardMaterial({ map: clockFaceTex, emissive: 0x113344, emissiveIntensity: 0.3 }));
+clockGroup.add(clockFace);
+
+const hourPivot = new THREE.Group();
+hourPivot.position.set(0, 0, 0.015);
+clockGroup.add(hourPivot);
+const hourHand = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.2, 0.01), glowMaterial(0x9fe6ff));
+hourHand.position.set(0, 0.09, 0);
+hourPivot.add(hourHand);
+
+const minutePivot = new THREE.Group();
+minutePivot.position.set(0, 0, 0.02);
+clockGroup.add(minutePivot);
+const minuteHand = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.32, 0.01), glowMaterial(0x9fe6ff));
+minuteHand.position.set(0, 0.15, 0);
+minutePivot.add(minuteHand);
+
+const clockPin = new THREE.Mesh(new THREE.CircleGeometry(0.022, 16), glowMaterial(0x9fe6ff));
+clockPin.position.set(0, 0, 0.022);
+clockGroup.add(clockPin);
+
+function setClockToRealTime() {
+    const now = new Date();
+    const h = now.getHours() % 12;
+    const m = now.getMinutes();
+    hourPivot.rotation.z = -((h + m / 60) / 12) * Math.PI * 2;
+    minutePivot.rotation.z = -(m / 60) * Math.PI * 2;
+}
+
+// ============================================================
+// CORK BOARD & SHELF
+// ============================================================
+
+const corkTex = canvasTexture((ctx, w, h) => {
+    ctx.fillStyle = "#5a4632";
+    ctx.fillRect(0, 0, w, h);
+    for (let i = 0; i < 400; i++) {
+        ctx.fillStyle = `rgba(0,0,0,${Math.random() * 0.15})`;
+        ctx.beginPath();
+        ctx.arc(Math.random() * w, Math.random() * h, Math.random() * 3, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    const notes = ["#e8d24a", "#5fd0ff", "#ff8b6b", "#8de88a"];
+    for (let i = 0; i < 6; i++) {
+        ctx.fillStyle = notes[i % notes.length];
+        const x = 20 + (i % 3) * (w / 3.2);
+        const y = 20 + Math.floor(i / 3) * (h / 2.2);
+        ctx.save();
+        ctx.translate(x + 40, y + 40);
+        ctx.rotate((Math.random() - 0.5) * 0.3);
+        ctx.fillRect(-40, -40, 80, 80);
+        ctx.restore();
+    }
+});
+const corkBoard = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1), new THREE.MeshStandardMaterial({ map: corkTex, roughness: 0.9 }));
+corkBoard.position.set(6.7, 3.3, -5.83);
+room.add(corkBoard);
+
+const shelf = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.08, 0.35), material(0x1a130d, 0.7));
+shelf.position.set(7.7, 5.6, -1.9);
+room.add(shelf);
+const bookColors = [0x8b2c2c, 0x2c5c8b, 0x3c8b4a, 0xb08a2c, 0x6b3c8b];
+for (let i = 0; i < 8; i++) {
+    const bw = 0.08 + Math.random() * 0.05;
+    const bh = 0.35 + Math.random() * 0.15;
+    const book = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, 0.28), material(bookColors[i % bookColors.length], 0.6));
+    book.position.set(7.4 + i * 0.12, 5.64 + bh / 2, -1.9);
+    room.add(book);
+}
+
+// ============================================================
+// DESK & EQUIPMENT
+// ============================================================
+
+const desk = new THREE.Group();
+desk.position.set(1.7, 0, -2.2);
+room.add(desk);
+
+const desktop = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.25, 1.5), material(0x171d23, 0.75));
+desktop.position.y = 2.3;
+desktop.castShadow = true;
+desktop.receiveShadow = true;
+desk.add(desktop);
+
+for (const x of [-1.7, 1.7]) {
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.18, 2.3, 0.8), material(0x0b1015, 0.8));
+    leg.position.set(x, 1.15, 0);
+    desk.add(leg);
+}
+
+function drawTerminal(ctx, w, h, time) {
+    ctx.fillStyle = "#040d14";
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = "#4fd6ff";
+    ctx.font = "13px monospace";
+    const load = Math.floor(4 + Math.sin(time * 0.6) * 3 + 4);
+    const loadBar = "|".repeat(Math.max(1, load)) + ".".repeat(Math.max(0, 10 - load));
+    const cursor = Math.floor(time * 2) % 2 === 0 ? "_" : " ";
+    const lines = [
+        "> tars.core.status()",
+        "SYS  : nominal",
+        "PWR  : " + (95 + Math.sin(time * 0.4) * 3).toFixed(1) + "%",
+        "TEMP : " + (40 + Math.sin(time * 0.9) * 2).toFixed(0) + "C",
+        "NET  : " + (1.1 + Math.sin(time * 1.3) * 0.2).toFixed(1) + "gbps",
+        "LOAD : " + loadBar,
+        "> awaiting input" + cursor
+    ];
+    lines.forEach((l, i) => ctx.fillText(l, 14, 30 + i * 22));
+    ctx.strokeStyle = "rgba(79,214,255,0.4)";
+    ctx.strokeRect(2, 2, w - 4, h - 4);
+}
+
+function drawWaveform(ctx, w, h, time) {
+    ctx.fillStyle = "#050a12";
+    ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = "#5fd0ff";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let x = 0; x < w; x++) {
+        const y = h / 2 + Math.sin(x * 0.05 + time * 2) * 20 * Math.sin(x * 0.003 + time * 0.5) + (Math.random() - 0.5) * 6;
+        if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.fillStyle = "#ff8b6b";
+    for (let i = 0; i < 8; i++) {
+        const bx = 20 + i * (w / 9);
+        const bh = 10 + (Math.sin(time * 3 + i) * 0.5 + 0.5) * (h - 30);
+        ctx.fillRect(bx, h - bh, 10, bh);
+    }
+}
+
+// TARS OS Interface - shows when TARS is at desk
+function drawTARSOS(ctx, w, h, time) {
+    ctx.fillStyle = "#02060a";
+    ctx.fillRect(0, 0, w, h);
+    
+    // Scanline effect
+    ctx.fillStyle = "rgba(0, 0, 0, 0.15)";
+    for (let y = 0; y < h; y += 3) {
+        ctx.fillRect(0, y + (time * 30) % 3, w, 1);
+    }
+    
+    // Header bar
+    const headerH = 36;
+    const grad = ctx.createLinearGradient(0, 0, 0, headerH);
+    grad.addColorStop(0, "rgba(30, 50, 80, 0.9)");
+    grad.addColorStop(1, "rgba(10, 20, 40, 0.95)");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, headerH);
+    ctx.strokeStyle = "rgba(95, 208, 255, 0.3)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, headerH);
+    ctx.lineTo(w, headerH);
+    ctx.stroke();
+    
+    // TARS logo
+    ctx.fillStyle = "#5fd0ff";
+    ctx.font = "bold 16px monospace";
+    ctx.fillText("T.A.R.S. OS v0.9", 16, 24);
+    
+    // Status indicator
+    const statusColor = currentState.emotion === "critical" ? "#ff2200" :
+                        currentState.emotion === "warning" ? "#ff8800" :
+                        currentState.emotion === "celebrate" ? "#00ff44" :
+                        currentState.emotion === "speak" ? "#00d2ff" : "#4fe07a";
+    ctx.fillStyle = statusColor;
+    ctx.beginPath();
+    ctx.arc(w - 28, headerH / 2, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,0.8)";
+    ctx.font = "11px monospace";
+    ctx.fillText(currentState.emotion.toUpperCase(), w - 120, headerH / 2 + 4);
+    
+    // Main content area
+    const contentY = headerH + 20;
+    const lineH = 22;
+    
+    // System metrics
+    ctx.fillStyle = "#5fd0ff";
+    ctx.font = "12px monospace";
+    const metrics = [
+        `CORE TEMP: ${(42 + Math.sin(time * 0.7) * 3).toFixed(1)}°C`,
+        `POWER: ${(94 + Math.sin(time * 0.5) * 2).toFixed(1)}%`,
+        `NETWORK: ${(1.2 + Math.sin(time * 1.1) * 0.15).toFixed(2)} GB/s`,
+        `MEMORY: ${Math.floor(65 + Math.sin(time * 0.3) * 5)}%`,
+        `PROCESSES: ${Math.floor(47 + Math.sin(time * 0.4) * 3)}`,
+        `UPTIME: ${Math.floor(time / 3600)}h ${Math.floor((time % 3600) / 60)}m ${Math.floor(time % 60)}s`
+    ];
+    
+    metrics.forEach((m, i) => {
+        ctx.fillText(m, 20, contentY + i * lineH);
+    });
+    
+    // Activity log
+    ctx.fillStyle = "rgba(95, 208, 255, 0.6)";
+    ctx.fillText("ACTIVITY LOG:", 20, contentY + 7 * lineH);
+    
+    const activities = [
+        "> neural_net.optimize()",
+        "> memory.consolidate()", 
+        "> sensors.poll()",
+        "> network.sync()",
+        "> idle.monitor()"
+    ];
+    
+    ctx.font = "11px monospace";
+    activities.forEach((a, i) => {
+        const alpha = 0.3 + 0.7 * Math.sin(time * 2 + i) * 0.5 + 0.5;
+        ctx.fillStyle = `rgba(95, 208, 255, ${alpha})`;
+        ctx.fillText(a, 28, contentY + 8.5 * lineH + i * 18);
+    });
+    
+    // Bottom bar
+    ctx.fillStyle = "rgba(10, 20, 40, 0.9)";
+    ctx.fillRect(0, h - 30, w, 30);
+    ctx.strokeStyle = "rgba(95, 208, 255, 0.2)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, h - 30);
+    ctx.lineTo(w, h - 30);
+    ctx.stroke();
+    
+    ctx.fillStyle = "#5fd0ff";
+    ctx.font = "10px monospace";
+    const cursor = Math.floor(time * 2) % 2 === 0 ? "_" : " ";
+    ctx.fillText(`tars@desktop:~$ awaiting input${cursor}`, 16, h - 12);
+    
+    // Border
+    ctx.strokeStyle = "rgba(95, 208, 255, 0.3)";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(1, 1, w - 2, h - 2);
+}
+
+// Rack data transfer visualization
+function drawRackTransfer(ctx, w, h, time) {
+    ctx.fillStyle = "#010305";
+    ctx.fillRect(0, 0, w, h);
+    
+    // Transfer bars
+    ctx.fillStyle = "#ff8800";
+    for (let i = 0; i < 12; i++) {
+        const barH = 4 + Math.sin(time * 8 + i) * 2 + Math.random() * 8;
+        const x = 10 + i * 20;
+        ctx.fillRect(x, h - barH - 8, 14, barH);
+    }
+    
+    // Status text
+    ctx.fillStyle = "#ffaa00";
+    ctx.font = "11px monospace";
+    ctx.fillText("DATA TRANSFER ACTIVE", 10, 20);
+    ctx.fillStyle = "#5fd0ff";
+    ctx.fillText(`RATE: ${(2.4 + Math.sin(time * 3) * 0.6).toFixed(1)} GB/s`, 10, 40);
+    ctx.fillText(`PKTS: ${Math.floor(15000 + Math.sin(time * 5) * 300)}/s`, 10, 58);
+}
+
+function createMonitor(x, y, z, scale, drawFn, refreshRate) {
+    const monitor = new THREE.Group();
+    monitor.position.set(x, y, z);
+    monitor.scale.setScalar(scale);
+    desk.add(monitor);
+
+    const tex = registerAnimatedScreen(512, 320, drawFn, refreshRate);
+    const screen = new THREE.Mesh(
+        new THREE.BoxGeometry(1.5, 0.9, 0.08),
+        new THREE.MeshStandardMaterial({
+            map: tex, emissiveMap: tex, emissive: 0xffffff, emissiveIntensity: 1.1, roughness: 0.3
+        })
+    );
+    monitor.add(screen);
+
+    const stand = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.5, 0.12), material(0x151b20, 0.5));
+    stand.position.y = -0.65;
+    monitor.add(stand);
+
+    const base = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.08, 0.3), material(0x151b20, 0.5));
+    base.position.y = -0.9;
+    monitor.add(base);
+
+    return screen;
+}
+
+const monitor1 = createMonitor(-0.9, 3.1, -0.3, 1.1, drawTerminal, 0.15);
+const monitor2 = createMonitor(0.8, 3.1, -0.3, 0.9, drawWaveform, 0.05);
+
+// Store monitor references for dynamic content switching
+const monitorScreens = {
+    desk: { screen: monitor1, ctx: animatedScreens.find(s => s.drawFn === drawTerminal)?.ctx },
+    desk2: { screen: monitor2, ctx: animatedScreens.find(s => s.drawFn === drawWaveform)?.ctx }
+};
+
+const keyboard = new THREE.Group();
+keyboard.position.set(-0.1, 2.44, 0.35);
+desk.add(keyboard);
+const kbBody = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.05, 0.45), material(0x14181c, 0.6));
+keyboard.add(kbBody);
+const kbTex = canvasTexture((ctx, w, h) => {
+    ctx.fillStyle = "#14181c";
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = "#2a3138";
+    const cols = 14, rows = 5;
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            ctx.fillRect(6 + c * (w / cols), 6 + r * (h / rows), w / cols - 4, h / rows - 4);
+        }
+    }
+}, 256, 96);
+const kbTop = new THREE.Mesh(new THREE.PlaneGeometry(1.28, 0.43), new THREE.MeshStandardMaterial({ map: kbTex, roughness: 0.7 }));
+kbTop.rotation.x = -Math.PI / 2;
+kbTop.position.y = 0.026;
+keyboard.add(kbTop);
+
+const mouse = new THREE.Mesh(new THREE.CapsuleGeometry(0.07, 0.08, 4, 8), material(0x1c2126, 0.4, 0.2));
+mouse.rotation.x = Math.PI / 2;
+mouse.position.set(0.85, 2.35, 0.4);
+desk.add(mouse);
+
+const mug = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.07, 0.14, 16), material(0x3a4a55, 0.5));
+mug.position.set(-1.75, 2.42, 0.45);
+desk.add(mug);
+const mugHandle = new THREE.Mesh(new THREE.TorusGeometry(0.05, 0.012, 8, 16, Math.PI), material(0x3a4a55, 0.5));
+mugHandle.rotation.z = Math.PI / 2;
+mugHandle.position.set(-1.68, 2.42, 0.45);
+desk.add(mugHandle);
+
+const lamp = new THREE.Group();
+lamp.position.set(-1.85, 2.3, -0.4);
+desk.add(lamp);
+const lampBase = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.04, 16), material(0x1a1e22, 0.5, 0.3));
+lamp.add(lampBase);
+const lampArmLower = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.5, 8), material(0x1a1e22, 0.5, 0.3));
+lampArmLower.position.set(0, 0.25, 0);
+lampArmLower.rotation.z = 0.3;
+lamp.add(lampArmLower);
+const lampArmUpper = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.45, 8), material(0x1a1e22, 0.5, 0.3));
+lampArmUpper.position.set(0.2, 0.55, 0);
+lampArmUpper.rotation.z = -0.5;
+lamp.add(lampArmUpper);
+const lampHead = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.16, 16, 1, true), material(0x1a1e22, 0.4, 0.3));
+lampHead.position.set(0.42, 0.72, 0);
+lampHead.rotation.z = Math.PI / 2 + 0.6;
+lamp.add(lampHead);
+const lampBulb = new THREE.PointLight(0xffb066, 3, 3);
+lampBulb.position.set(0.5, 0.68, 0);
+lamp.add(lampBulb);
+
+const pcTower = new THREE.Group();
+pcTower.position.set(2.3, 1.15, -0.5);
+desk.add(pcTower);
+const towerBody = new THREE.Mesh(new THREE.BoxGeometry(0.5, 2.2, 1.1), material(0x121619, 0.5, 0.4));
+towerBody.castShadow = true;
+pcTower.add(towerBody);
+const towerGlass = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.42, 1.8),
+    new THREE.MeshStandardMaterial({ color: 0x0a1520, emissive: 0x1c4fbf, emissiveIntensity: 1, roughness: 0.2, transparent: true, opacity: 0.85 })
+);
+towerGlass.rotation.y = Math.PI / 2;
+towerGlass.position.set(0.26, 0.1, 0);
+pcTower.add(towerGlass);
+const rgbStrip = new THREE.Mesh(new THREE.BoxGeometry(0.05, 2, 0.05), glowMaterial(0xff2ec4));
+rgbStrip.position.set(0.26, 0.1, 0.5);
+pcTower.add(rgbStrip);
+
+const rgbLight = new THREE.PointLight(0xff2ec4, 6, 5, 2);
+rgbLight.position.set(0.4, -1.0, 0.2);
+pcTower.add(rgbLight);
+
+function makeCable(points, color = 0x0d0f11) {
+    const curve = new THREE.CatmullRomCurve3(points);
+    const geo = new THREE.TubeGeometry(curve, 20, 0.02, 6, false);
+    return new THREE.Mesh(geo, material(color, 0.6));
+}
+
+desk.add(makeCable([
+    new THREE.Vector3(2.3, 2.15, -0.1),
+    new THREE.Vector3(2.3, 1.6, -0.1),
+    new THREE.Vector3(2.3, 0.3, -0.3),
+    new THREE.Vector3(2.3, 0.02, -0.3)
+]));
+desk.add(makeCable([
+    new THREE.Vector3(-0.9, 2.6, -0.3),
+    new THREE.Vector3(-1.2, 2.0, -0.2),
+    new THREE.Vector3(-1.6, 0.8, -0.1),
+    new THREE.Vector3(-1.6, 0.02, -0.1)
+]));
+
+// ============================================================
+// SERVER RACK(S)
+// ============================================================
+
+const serverLEDs = [];
+const rackFans = [];
+const UNIT_H = 0.42;
+const UNIT_PITCH = 0.58;
+
+function drawPatchPanel(ctx, w, h) {
+    ctx.fillStyle = "#111417";
+    ctx.fillRect(0, 0, w, h);
+    ctx.font = "10px monospace";
+    ctx.fillStyle = "#8a95a0";
+    ctx.fillText("PATCH PANEL // 24 PORT", 8, 12);
+    const cols = 12;
+    for (let i = 0; i < cols; i++) {
+        const px = 10 + i * (w / cols);
+        for (let row = 0; row < 2; row++) {
+            const py = 20 + row * 22;
+            ctx.fillStyle = "#1c2126";
+            ctx.fillRect(px, py, w / cols - 8, 16);
+            ctx.strokeStyle = "#3a4249";
+            ctx.strokeRect(px, py, w / cols - 8, 16);
+            if (Math.random() > 0.55) {
+                ctx.fillStyle = ["#e0a752", "#5fd0ff", "#4fe07a", "#ff6b5c"][Math.floor(Math.random() * 4)];
+                ctx.fillRect(px + 3, py + 4, w / cols - 14, 8);
+            }
+        }
+    }
+}
+
+function drawSwitchFace(ctx, w, h, label) {
+    ctx.fillStyle = "#0d0f11";
+    ctx.fillRect(0, 0, w, h);
+    ctx.font = "11px monospace";
+    ctx.fillStyle = "#e8ecef";
+    ctx.fillText(label, 8, 14);
+    ctx.fillStyle = "#5a6570";
+    ctx.font = "8px monospace";
+    ctx.fillText("24x GbE  PoE+  250W", 8, h - 6);
+}
+
+function drawRackScreen(ctx, w, h, label) {
+    ctx.fillStyle = "#020608";
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = "#4fe07a";
+    ctx.font = "11px monospace";
+    ctx.fillText(label, 8, 16);
+    for (let i = 0; i < 6; i++) {
+        const bh = 4 + Math.random() * 20;
+        ctx.fillStyle = i % 3 === 0 ? "#ff6b5c" : "#4fe07a";
+        ctx.fillRect(8 + i * 14, h - 6 - bh, 8, bh);
+    }
+}
+
+function createFan(radius = 0.16) {
+    const fanGroup = new THREE.Group();
+    const ring = new THREE.Mesh(new THREE.RingGeometry(radius * 0.75, radius, 24), material(0x0c1013, 0.5, 0.3));
+    fanGroup.add(ring);
+    const blades = new THREE.Group();
+    for (let i = 0; i < 5; i++) {
+        const blade = new THREE.Mesh(new THREE.PlaneGeometry(radius * 0.55, radius * 0.16), material(0x1a2126, 0.4, 0.3));
+        blade.position.x = radius * 0.35;
+        blade.rotation.z = (i / 5) * Math.PI * 2;
+        blades.add(blade);
+    }
+    fanGroup.add(blades);
+    const hub = new THREE.Mesh(new THREE.CircleGeometry(radius * 0.15, 12), glowMaterial(0xff3b3b));
+    hub.position.z = 0.01;
+    fanGroup.add(hub);
+    rackFans.push(blades);
+    return fanGroup;
+}
+
+function addUnitLEDs(parent, unitY, count, palette, spread = 1.15) {
+    for (let j = 0; j < count; j++) {
+        const color = palette[Math.floor(Math.random() * palette.length)];
+        const led = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.055, 0.035), glowMaterial(color));
+        led.position.set(-spread / 2 + (j / (count - 1 || 1)) * spread, unitY, 0.62);
+        parent.add(led);
+        serverLEDs.push({ mesh: led, phase: Math.random() * Math.PI * 2, speed: 2 + Math.random() * 4 });
+    }
+}
+
+function buildPatchPanelUnit(rack, unitY) {
+    const body = new THREE.Mesh(new THREE.BoxGeometry(1.35, UNIT_H, 1.2), material(0x14181c, 0.55, 0.4));
+    body.position.y = unitY;
+    rack.add(body);
+    const tex = canvasTexture((ctx, w, h) => drawPatchPanel(ctx, w, h), 512, 128);
+    const face = new THREE.Mesh(new THREE.PlaneGeometry(1.3, UNIT_H - 0.02), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.6 }));
+    face.position.set(0, unitY, 0.605);
+    rack.add(face);
+}
+
+function buildSwitchUnit(rack, unitY, label) {
+    const body = new THREE.Mesh(new THREE.BoxGeometry(1.35, UNIT_H, 1.2), material(0x101316, 0.4, 0.5));
+    body.position.y = unitY;
+    rack.add(body);
+    const tex = canvasTexture((ctx, w, h) => drawSwitchFace(ctx, w, h, label), 512, 128);
+    const face = new THREE.Mesh(new THREE.PlaneGeometry(1.3, UNIT_H - 0.02), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.5 }));
+    face.position.set(0, unitY, 0.605);
+    rack.add(face);
+    addUnitLEDs(rack, unitY, 12, [0x2ecc71, 0xf5a623, 0x2ecc71, 0x2ecc71], 1.2);
+}
+
+function buildServerUnit(rack, unitY) {
+    const body = new THREE.Mesh(new THREE.BoxGeometry(1.35, UNIT_H, 1.2), material(0x151c23, 0.55, 0.4));
+    body.position.y = unitY;
+    rack.add(body);
+    for (let v = 0; v < 3; v++) {
+        const vent = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.02, 0.02), material(0x090c0f, 0.9));
+        vent.position.set(0, unitY - 0.1 + v * 0.09, 0.61);
+        rack.add(vent);
+    }
+    addUnitLEDs(rack, unitY, 4, [0x00aaff, 0x00ff66, 0xff3b3b, 0xffb400], 0.9);
+}
+
+function buildFillerUnit(rack, unitY) {
+    const body = new THREE.Mesh(new THREE.BoxGeometry(1.35, UNIT_H, 1.2), material(0x0c0f12, 0.7, 0.2));
+    body.position.y = unitY;
+    rack.add(body);
+}
+
+function buildRack(originX, originZ, unitTypes) {
+    const rack = new THREE.Group();
+    rack.position.set(originX, 0, originZ);
+    rack.castShadow = true;
+    room.add(rack);
+
+    const rackHeight = 0.7 + unitTypes.length * UNIT_PITCH;
+    const shellMat = material(0x090d12, 0.6, 0.55);
+    const shellThick = 0.08;
+    const shellDepth = 1.3;
+    const shellTop = new THREE.Mesh(new THREE.BoxGeometry(1.6, shellThick, shellDepth), shellMat);
+    shellTop.position.set(0, rackHeight, 0);
+    shellTop.castShadow = true;
+    rack.add(shellTop);
+    const shellBottom = new THREE.Mesh(new THREE.BoxGeometry(1.6, shellThick, shellDepth), shellMat);
+    shellBottom.position.set(0, 0, 0);
+    rack.add(shellBottom);
+    const shellLeft = new THREE.Mesh(new THREE.BoxGeometry(shellThick, rackHeight, shellDepth), shellMat);
+    shellLeft.position.set(-0.8, rackHeight / 2, 0);
+    shellLeft.castShadow = true;
+    rack.add(shellLeft);
+    const shellRight = shellLeft.clone();
+    shellRight.position.x = 0.8;
+    rack.add(shellRight);
+    const shellBack = new THREE.Mesh(new THREE.BoxGeometry(1.6, rackHeight, shellThick), shellMat);
+    shellBack.position.set(0, rackHeight / 2, -0.65 + shellThick / 2);
+    rack.add(shellBack);
+
+    for (const rx of [-0.78, 0.78]) {
+        const rail = new THREE.Mesh(new THREE.BoxGeometry(0.05, rackHeight, 1.32), material(0x14191f, 0.4, 0.5));
+        rail.position.set(rx, rackHeight / 2, 0);
+        rack.add(rail);
+    }
+
+    unitTypes.forEach((type, i) => {
+        const unitY = 0.5 + i * UNIT_PITCH;
+        if (type === "patch") buildPatchPanelUnit(rack, unitY);
+        else if (type === "switch") buildSwitchUnit(rack, unitY, i === 0 ? "UBNT US-24-250W" : "UBNT US-24");
+        else if (type === "filler") buildFillerUnit(rack, unitY);
+        else buildServerUnit(rack, unitY);
+    });
+
+    const screenLabel = "NODE " + Math.floor(Math.random() * 90 + 10);
+    const screenTex = registerAnimatedScreen(256, 96, (ctx, w, h) => drawRackScreen(ctx, w, h, screenLabel), 0.3);
+    const statusScreen = new THREE.Mesh(
+        new THREE.PlaneGeometry(0.9, 0.3),
+        new THREE.MeshStandardMaterial({ map: screenTex, emissiveMap: screenTex, emissive: 0xffffff, emissiveIntensity: 0.9 })
+    );
+    statusScreen.position.set(0, rackHeight - 0.35, 0.646);
+    rack.add(statusScreen);
+
+    for (const fx of [-0.4, 0.4]) {
+        const fan = createFan(0.18);
+        fan.position.set(fx, rackHeight + 0.02, 0);
+        fan.rotation.x = -Math.PI / 2;
+        rack.add(fan);
+    }
+
+    for (let c = 0; c < 3; c++) {
+        const cx = -0.5 + c * 0.5;
+        const cable = makeCable([
+            new THREE.Vector3(cx, 0.5, -0.6),
+            new THREE.Vector3(cx + 0.1, 0.25, -0.4),
+            new THREE.Vector3(cx + 0.15, 0.02, -0.1)
+        ]);
+        rack.add(cable);
+    }
+
+    const rackGlow = new THREE.PointLight(0x2ec8ff, 3.5, 4.5);
+    rackGlow.position.set(0, rackHeight * 0.55, 0.5);
+    rack.add(rackGlow);
+
+    return rack;
+}
+
+buildRack(-4.7, -4, ["patch", "switch", "server", "server", "server", "server", "server", "filler"]);
+buildRack(-6.6, -5.2, ["patch", "switch", "server", "server", "filler"]);
+
+// ============================================================
+// PLANTS & CEILING STRIP & DUST
+// ============================================================
+
+function createPlant(x, z) {
+    const plant = new THREE.Group();
+    plant.position.set(x, 0, z);
+    room.add(plant);
+
+    const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.45, 0.6, 8), material(0x34302b, 0.9));
+    pot.position.y = 0.3;
+    plant.add(pot);
+
+    for (let i = 0; i < 7; i++) {
+        const leaf = new THREE.Mesh(new THREE.CapsuleGeometry(0.08, 0.7, 4, 8), material(0x1b4f3a, 0.9));
+        const angle = i * Math.PI / 3.5;
+        leaf.position.set(Math.cos(angle) * 0.25, 0.9 + Math.random() * 0.4, Math.sin(angle) * 0.25);
+        leaf.rotation.z = angle;
+        plant.add(leaf);
+    }
+}
+
+createPlant(5.7, -4.7);
+createPlant(-1.2, -5.2);
+
+const ledStripMat = new THREE.MeshBasicMaterial({ color: 0x3fb8ff, toneMapped: false });
+const ledStrip = new THREE.Mesh(new THREE.BoxGeometry(15, 0.05, 0.1), ledStripMat);
+ledStrip.position.set(0, 7.85, -5.5);
+room.add(ledStrip);
+const ledStripLight = new THREE.PointLight(0x3fb8ff, 4, 8);
+ledStripLight.position.set(0, 7.7, -5.3);
+scene.add(ledStripLight);
+
+const dustGeometry = new THREE.BufferGeometry();
+const dustCount = 60;  // Reduced from 130
+const dustPositions = new Float32Array(dustCount * 3);
+for (let i = 0; i < dustCount; i++) {
+    dustPositions[i * 3] = (Math.random() - 0.5) * 14;
+    dustPositions[i * 3 + 1] = Math.random() * 7;
+    dustPositions[i * 3 + 2] = -Math.random() * 9 + 1;
+}
+dustGeometry.setAttribute("position", new THREE.BufferAttribute(dustPositions, 3));
+const dust = new THREE.Points(dustGeometry, new THREE.PointsMaterial({ color: 0x6fa8c9, size: 0.03, transparent: true, opacity: 0.45 }));
+scene.add(dust);
+
+// ============================================================
+// ROOM BOUNDS & GAZE TARGET REFERENCE MATRIX
+// ============================================================
+
+const ROOM_BOUNDS = { xMin: -7.5, xMax: 7.5, yMin: 0.15, yMax: 7.6, zMin: -5.5, zMax: 6.8 };
+const TARGET_POSITIONS = {
+    "user": new THREE.Vector3(0, 2.7, 0),    // Center of room (where user appears to be)
+    "desk": new THREE.Vector3(1.7, 2.3, -2.2),
+    "rack-a": new THREE.Vector3(-4.7, 2.5, -4),
+    "window": new THREE.Vector3(WIN_X, WIN_Y, WALL_Z)
+};
+
+// ============================================================
+// PROCEDURAL T.A.R.S. EMBODIMENT ENTITY
+// Semi-organic, semi-machine digital AI core with dynamic vertex
+// deformation, inner energy light, wireframe shell, and orbiting particles
+// ============================================================
+
+const tarsEntityGroup = new THREE.Group();
+tarsEntityGroup.position.set(0, 2.6, 1.5);
+scene.add(tarsEntityGroup);
+
+// 1. Dynamic Point Light casting shadows across room
+const tarsLight = new THREE.PointLight(0x5fd0ff, 5, 10, 2);
+tarsLight.castShadow = true;
+tarsLight.shadow.mapSize.set(512, 512);  // Reduced from 1024
+tarsEntityGroup.add(tarsLight);
+
+// 2. Inner Glowing Energy Core
+const coreGeo = new THREE.SphereGeometry(0.22, 16, 16);
+const coreMat = new THREE.MeshBasicMaterial({ color: 0x9fe6ff, toneMapped: false });
+const tarsCoreMesh = new THREE.Mesh(coreGeo, coreMat);
+tarsEntityGroup.add(tarsCoreMesh);
+
+// 2b. Emotional Face Display (projected on core front - LARGER & MORE EXPRESSIVE)
+const faceCanvas = document.createElement("canvas");
+faceCanvas.width = 256;
+faceCanvas.height = 256;
+const faceCtx = faceCanvas.getContext("2d");
+const faceTexture = new THREE.CanvasTexture(faceCanvas);
+faceTexture.colorSpace = THREE.SRGBColorSpace;
+const faceGeo = new THREE.PlaneGeometry(0.6, 0.6);
+const faceMat = new THREE.MeshBasicMaterial({ 
+    map: faceTexture, transparent: true, toneMapped: false, 
+    side: THREE.DoubleSide, depthTest: false 
+});
+const tarsFaceMesh = new THREE.Mesh(faceGeo, faceMat);
+tarsFaceMesh.position.z = 0.35; // In front of core
+tarsCoreMesh.add(tarsFaceMesh);
+
+// Face animation state
+let faceState = {
+    eyeBlink: 0,
+    blinkTimer: 0,
+    expression: "neutral",
+    expressionTimer: 0,
+    eyebrowOffset: 0,
+    mouthOffset: 0,
+    squint: 0,
+    lookDir: { x: 0, y: 0 },
+    pupilDilation: 1.0
+};
+
+function drawFace(time) {
+    const ctx = faceCtx;
+    const w = faceCanvas.width, h = faceCanvas.height;
+    ctx.clearRect(0, 0, w, h);
+    
+    const emotion = currentState.emotion;
+    const intensity = currentState.intensity;
+    const pulse = Math.sin(time * currentState.pulseSpeed) * 0.5 + 0.5;
+    
+    // Update face state
+    faceState.blinkTimer -= 1/60;
+    if (faceState.blinkTimer <= 0) {
+        faceState.eyeBlink = 1;
+        faceState.blinkTimer = 2 + Math.random() * 4;
+    }
+    if (faceState.eyeBlink > 0) {
+        faceState.eyeBlink = Math.max(0, faceState.eyeBlink - 0.15);
+    }
+    
+    faceState.expressionTimer -= 1/60;
+    if (faceState.expressionTimer <= 0) {
+        faceState.expression = ["neutral", "curious", "focused", "amused"][Math.floor(Math.random() * 4)];
+        faceState.expressionTimer = 3 + Math.random() * 5;
+    }
+    
+    // Emotion-driven face parameters
+    const preset = BEHAVIOR_PRESETS[emotion] || BEHAVIOR_PRESETS.idle;
+    const faceColor = new THREE.Color(preset.color);
+    const r = Math.floor(faceColor.r * 255);
+    const g = Math.floor(faceColor.g * 255);
+    const b = Math.floor(faceColor.b * 255);
+    
+    // Base face glow
+    const glowAlpha = 0.2 + pulse * 0.3 + intensity * 0.2;
+    ctx.fillStyle = `rgba(${r},${g},${b},${glowAlpha})`;
+    ctx.beginPath();
+    ctx.arc(w/2, h/2, 110, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Face shape
+    ctx.fillStyle = `rgba(${Math.min(255, r+30)},${Math.min(255, g+30)},${Math.min(255, b+30)},0.15)`;
+    ctx.beginPath();
+    ctx.ellipse(w/2, h/2 + 10, 90, 100, 0, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // ========== EYEBROWS ==========
+    ctx.strokeStyle = `rgb(${r},${g},${b})`;
+    ctx.lineWidth = 4;
+    ctx.lineCap = "round";
+    const browY = h/2 - 55;
+    const browW = 35;
+    
+    // Left eyebrow
+    ctx.beginPath();
+    if (emotion === "critical" || emotion === "warning" || emotion === "serious" || emotion === "disapproving") {
+        // Angry/down
+        ctx.moveTo(w/2 - 45, browY + faceState.eyebrowOffset);
+        ctx.lineTo(w/2 - 10, browY - 8 + faceState.eyebrowOffset);
+    } else if (emotion === "confused") {
+        // Uneven
+        ctx.moveTo(w/2 - 45, browY - 5 + faceState.eyebrowOffset);
+        ctx.lineTo(w/2 - 10, browY + 3 + faceState.eyebrowOffset);
+    } else if (emotion === "amused" || emotion === "celebrate" || emotion === "excited") {
+        // Raised happy
+        ctx.moveTo(w/2 - 45, browY - 8 + faceState.eyebrowOffset);
+        ctx.quadraticCurveTo(w/2 - 27, browY - 15 + faceState.eyebrowOffset, w/2 - 10, browY - 5 + faceState.eyebrowOffset);
+    } else if (emotion === "sarcastic") {
+        // One up, one down
+        ctx.moveTo(w/2 - 45, browY - 10 + faceState.eyebrowOffset);
+        ctx.lineTo(w/2 - 10, browY + 5 + faceState.eyebrowOffset);
+    } else {
+        // Neutral/relaxed
+        ctx.moveTo(w/2 - 45, browY + faceState.eyebrowOffset);
+        ctx.quadraticCurveTo(w/2 - 27, browY - 5 + faceState.eyebrowOffset, w/2 - 10, browY + faceState.eyebrowOffset);
+    }
+    ctx.stroke();
+    
+    // Right eyebrow
+    ctx.beginPath();
+    if (emotion === "critical" || emotion === "warning" || emotion === "serious" || emotion === "disapproving") {
+        ctx.moveTo(w/2 + 10, browY - 8 - faceState.eyebrowOffset);
+        ctx.lineTo(w/2 + 45, browY - faceState.eyebrowOffset);
+    } else if (emotion === "confused") {
+        ctx.moveTo(w/2 + 10, browY + 3 - faceState.eyebrowOffset);
+        ctx.lineTo(w/2 + 45, browY - 5 - faceState.eyebrowOffset);
+    } else if (emotion === "sarcastic") {
+        ctx.moveTo(w/2 + 10, browY + 5 - faceState.eyebrowOffset);
+        ctx.lineTo(w/2 + 45, browY - 10 - faceState.eyebrowOffset);
+    } else {
+        ctx.moveTo(w/2 + 10, browY - faceState.eyebrowOffset);
+        ctx.quadraticCurveTo(w/2 + 27, browY - 5 - faceState.eyebrowOffset, w/2 + 45, browY - faceState.eyebrowOffset);
+    }
+    ctx.stroke();
+    
+    // ========== EYES ==========
+    const eyeY = h/2 - 20;
+    const eyeW = 28 - faceState.squint * 10;
+    const eyeH = (32 - faceState.squint * 16) * (1 - faceState.eyeBlink);
+    const pupilSize = (10 + intensity * 6) * faceState.pupilDilation;
+    
+    // Eye whites / base
+    ctx.fillStyle = `rgba(${r},${g},${b},0.9)`;
+    
+    // Left eye
+    ctx.beginPath();
+    ctx.ellipse(w/2 - 35 + faceState.lookDir.x * 5, eyeY + faceState.lookDir.y * 3, eyeW, eyeH, 0, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Right eye
+    ctx.beginPath();
+    ctx.ellipse(w/2 + 35 + faceState.lookDir.x * 5, eyeY + faceState.lookDir.y * 3, eyeW, eyeH, 0, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Pupils (track look direction)
+    ctx.fillStyle = `rgb(${Math.max(0, r-80)},${Math.max(0, g-80)},${Math.max(0, b-80)})`;
+    const pupilOffsetX = faceState.lookDir.x * 8;
+    const pupilOffsetY = faceState.lookDir.y * 6;
+    
+    // Left pupil
+    ctx.beginPath();
+    ctx.ellipse(w/2 - 35 + pupilOffsetX, eyeY + pupilOffsetY, pupilSize, pupilSize * 1.2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Right pupil
+    ctx.beginPath();
+    ctx.ellipse(w/2 + 35 + pupilOffsetX, eyeY + pupilOffsetY, pupilSize, pupilSize * 1.2, 0, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Eye highlights (life!)
+    ctx.fillStyle = "rgba(255,255,255,0.9)";
+    ctx.beginPath();
+    ctx.ellipse(w/2 - 35 + pupilOffsetX - 4, eyeY + pupilOffsetY - 4, 4, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(w/2 + 35 + pupilOffsetX - 4, eyeY + pupilOffsetY - 4, 4, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Eyelids (blink/squint)
+    if (faceState.eyeBlink > 0.5 || faceState.squint > 0.5) {
+        ctx.fillStyle = `rgba(10,20,40,${faceState.eyeBlink * 0.8 + faceState.squint * 0.5})`;
+        ctx.beginPath();
+        ctx.ellipse(w/2 - 35, eyeY, eyeW + 4, eyeH * (faceState.eyeBlink + faceState.squint) * 0.8, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(w/2 + 35, eyeY, eyeW + 4, eyeH * (faceState.eyeBlink + faceState.squint) * 0.8, 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    
+    // ========== MOUTH ==========
+    const mouthY = h/2 + 40;
+    const mouthW = 30 + intensity * 15;
+    const baseMouthH = 8;
+    
+    ctx.strokeStyle = `rgb(${r},${g},${b})`;
+    ctx.lineWidth = 3;
+    ctx.lineCap = "round";
+    
+    if (emotion === "speak" || currentState.speaking) {
+        // Speaking - mouth opens with amplitude
+        const mouthOpen = 4 + currentState.speechAmplitude * 25 * (0.5 + 0.5 * Math.sin(time * 15));
+        ctx.fillStyle = `rgba(${r},${g},${b},0.9)`;
+        ctx.beginPath();
+        ctx.ellipse(w/2, mouthY, mouthW * 0.6, mouthOpen, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+    } else if (emotion === "amused" || emotion === "celebrate" || emotion === "excited") {
+        // Big smile
+        ctx.beginPath();
+        ctx.moveTo(w/2 - mouthW, mouthY);
+        ctx.quadraticCurveTo(w/2, mouthY - 20 - faceState.mouthOffset, w/2 + mouthW, mouthY);
+        ctx.stroke();
+        
+        // Dimples
+        ctx.fillStyle = `rgba(${r},${g},${b},0.5)`;
+        ctx.beginPath();
+        ctx.arc(w/2 - mouthW * 0.7, mouthY - 5, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(w/2 + mouthW * 0.7, mouthY - 5, 4, 0, Math.PI * 2);
+        ctx.fill();
+    } else if (emotion === "critical" || emotion === "warning") {
+        // Grimace / teeth grit
+        ctx.fillStyle = `rgb(${r},${g},${b})`;
+        ctx.fillRect(w/2 - mouthW * 0.6, mouthY - 3, mouthW * 1.2, 6);
+        // Teeth lines
+        ctx.strokeStyle = "rgba(255,255,255,0.3)";
+        ctx.lineWidth = 1;
+        for (let i = -2; i <= 2; i++) {
+            ctx.beginPath();
+            ctx.moveTo(w/2 + i * 8, mouthY - 3);
+            ctx.lineTo(w/2 + i * 8, mouthY + 3);
+            ctx.stroke();
+        }
+    } else if (emotion === "sarcastic") {
+        // Smirk - one side up
+        ctx.beginPath();
+        ctx.moveTo(w/2 - mouthW, mouthY + 3);
+        ctx.quadraticCurveTo(w/2, mouthY - 8, w/2 + mouthW, mouthY + 5);
+        ctx.stroke();
+    } else if (emotion === "confused") {
+        // Wavy uncertain mouth
+        ctx.beginPath();
+        for (let x = -mouthW; x <= mouthW; x += 3) {
+            const y = mouthY + Math.sin(x * 0.15 + time * 2) * 4;
+            if (x === -mouthW) ctx.moveTo(w/2 + x, y); else ctx.lineTo(w/2 + x, y);
+        }
+        ctx.stroke();
+    } else if (emotion === "disapproving" || emotion === "serious") {
+        // Flat line
+        ctx.beginPath();
+        ctx.moveTo(w/2 - mouthW * 0.7, mouthY);
+        ctx.lineTo(w/2 + mouthW * 0.7, mouthY);
+        ctx.stroke();
+    } else if (emotion === "think") {
+        // Slight pursed / thinking
+        ctx.beginPath();
+        ctx.moveTo(w/2 - mouthW * 0.4, mouthY);
+        ctx.quadraticCurveTo(w/2, mouthY - 5, w/2 + mouthW * 0.4, mouthY);
+        ctx.stroke();
+    } else {
+        // Neutral slight curve
+        ctx.beginPath();
+        ctx.moveTo(w/2 - mouthW * 0.5, mouthY);
+        ctx.quadraticCurveTo(w/2, mouthY + 3, w/2 + mouthW * 0.5, mouthY);
+        ctx.stroke();
+    }
+    
+    // ========== CHEEK BLUSH (for happy) ==========
+    if (emotion === "amused" || emotion === "celebrate" || emotion === "excited") {
+        ctx.fillStyle = `rgba(${Math.min(255, r+60)},${Math.max(0, g-20)},${Math.max(0, b-20)},0.2)`;
+        ctx.beginPath();
+        ctx.arc(w/2 - 70, h/2 + 10, 25, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(w/2 + 70, h/2 + 10, 25, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    
+    // ========== FOREHEAD WRINKLES (for thinking/concern) ==========
+    if (emotion === "think" || emotion === "confused" || emotion === "critical" || emotion === "warning") {
+        ctx.strokeStyle = `rgba(${r},${g},${b},0.4)`;
+        ctx.lineWidth = 1.5;
+        for (let i = 0; i < 3; i++) {
+            ctx.beginPath();
+            ctx.moveTo(w/2 - 30, h/2 - 75 + i * 6);
+            ctx.quadraticCurveTo(w/2, h/2 - 80 + i * 6, w/2 + 30, h/2 - 75 + i * 6);
+            ctx.stroke();
+        }
+    }
+    
+    faceTexture.needsUpdate = true;
+}
+
+// 3. Translucent Volumetric Deforming Body
+const bodyGeo = new THREE.IcosahedronGeometry(0.48, 3);  // Reduced from 4 to 3 (80 vertices -> 20)
+const originalBodyPositions = bodyGeo.attributes.position.array.slice();
+const bodyMat = new THREE.MeshStandardMaterial({
+    color: 0x1b4f72,
+    emissive: 0x2e86c1,
+    emissiveIntensity: 0.8,
+    roughness: 0.1,
+    metalness: 0.1,
+    transparent: true,
+    opacity: 0.82,
+    wireframe: false
+});
+const tarsBodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
+tarsEntityGroup.add(tarsBodyMesh);
+
+// 4. Dynamic Outer Wireframe / Grid Shell
+const shellGeo = new THREE.IcosahedronGeometry(0.58, 1);  // Reduced from 2 to 1
+const shellMat = new THREE.MeshBasicMaterial({ color: 0x5fd0ff, wireframe: true, transparent: true, opacity: 0.35 });
+const tarsShellMesh = new THREE.Mesh(shellGeo, shellMat);
+tarsEntityGroup.add(tarsShellMesh);
+
+// 5. Gaze Direction Indicator (visual "face" direction)
+const gazeIndicatorGeo = new THREE.ConeGeometry(0.08, 0.3, 6);
+const gazeIndicatorMat = new THREE.MeshBasicMaterial({ color: 0x5fd0ff, transparent: true, opacity: 0.6, toneMapped: false });
+const tarsGazeIndicator = new THREE.Mesh(gazeIndicatorGeo, gazeIndicatorMat);
+tarsGazeIndicator.rotation.x = -Math.PI / 2;  // Point forward
+tarsGazeIndicator.position.z = 0.65;  // In front of body
+tarsEntityGroup.add(tarsGazeIndicator);
+
+// 6. Orbiting Energy Particles / Filaments
+const orbParticleCount = 30;  // Reduced from 60
+const orbParticleGeo = new THREE.BufferGeometry();
+const orbParticlePositions = new Float32Array(orbParticleCount * 3);
+const orbParticlePhases = new Float32Array(orbParticleCount);
+const orbParticleRadii = new Float32Array(orbParticleCount);
+
+for (let i = 0; i < orbParticleCount; i++) {
+    orbParticlePhases[i] = Math.random() * Math.PI * 2;
+    orbParticleRadii[i] = 0.7 + Math.random() * 0.5;
+    orbParticlePositions[i * 3] = Math.cos(orbParticlePhases[i]) * orbParticleRadii[i];
+    orbParticlePositions[i * 3 + 1] = (Math.random() - 0.5) * 0.6;
+    orbParticlePositions[i * 3 + 2] = Math.sin(orbParticlePhases[i]) * orbParticleRadii[i];
+}
+orbParticleGeo.setAttribute("position", new THREE.BufferAttribute(orbParticlePositions, 3));
+const orbParticleMat = new THREE.PointsMaterial({
+    color: 0x5fd0ff, size: 0.04, map: dotSprite, transparent: true, opacity: 0.85, depthWrite: false
+});
+const tarsParticleSystem = new THREE.Points(orbParticleGeo, orbParticleMat);
+tarsEntityGroup.add(tarsParticleSystem);
+
+// ============================================================
+// FX PARTICLE SYSTEM (celebration bursts, warning strobes, etc)
+// ============================================================
+
+const fxParticleCount = 120;
+const fxParticleGeo = new THREE.BufferGeometry();
+const fxParticlePositions = new Float32Array(fxParticleCount * 3);
+const fxParticleVelocities = new Float32Array(fxParticleCount * 3);
+const fxParticleLifes = new Float32Array(fxParticleCount);
+const fxParticleColors = new Float32Array(fxParticleCount * 3);
+const fxParticleSizes = new Float32Array(fxParticleCount);
+
+for (let i = 0; i < fxParticleCount; i++) {
+    fxParticleLifes[i] = 0; // dead by default
+}
+fxParticleGeo.setAttribute("position", new THREE.BufferAttribute(fxParticlePositions, 3));
+fxParticleGeo.setAttribute("color", new THREE.BufferAttribute(fxParticleColors, 3));
+fxParticleGeo.setAttribute("size", new THREE.BufferAttribute(fxParticleSizes, 1));
+
+const fxParticleMat = new THREE.PointsMaterial({
+    size: 0.06, vertexColors: true, map: dotSprite,
+    transparent: true, opacity: 1, depthWrite: false, sizeAttenuation: true
+});
+const tarsFXSystem = new THREE.Points(fxParticleGeo, fxParticleMat);
+tarsEntityGroup.add(tarsFXSystem);
+
+// FX state
+let fxState = { type: "none", timer: 0, color: new THREE.Color(0x5fd0ff) };
+
+function triggerFX(type, color = 0x5fd0ff, count = 40) {
+    fxState.type = type;
+    fxState.timer = 0;
+    fxState.color.setHex(color);
+    
+    const positions = fxParticleGeo.attributes.position.array;
+    const velocities = fxParticleVelocities;
+    const lifes = fxParticleLifes;
+    const colors = fxParticleGeo.attributes.color.array;
+    const sizes = fxParticleGeo.attributes.size.array;
+    
+    for (let i = 0; i < count; i++) {
+        const idx = i * 3;
+        // Spawn at entity center
+        positions[idx] = 0;
+        positions[idx + 1] = 0;
+        positions[idx + 2] = 0;
+        
+        // Random velocity based on FX type
+        let speed, spread;
+        if (type === "burst") {
+            speed = 0.8 + Math.random() * 1.2;
+            spread = 1.0;
+        } else if (type === "strobe_red" || type === "strobe_orange") {
+            speed = 0.3 + Math.random() * 0.5;
+            spread = 0.5;
+        } else {
+            speed = 0.4 + Math.random() * 0.6;
+            spread = 0.8;
+        }
+        
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.acos(2 * Math.random() - 1);
+        velocities[idx] = Math.sin(phi) * Math.cos(theta) * speed;
+        velocities[idx + 1] = Math.cos(phi) * speed;
+        velocities[idx + 2] = Math.sin(phi) * Math.sin(theta) * speed;
+        
+        lifes[i] = 1.5 + Math.random() * 1.0; // life in seconds
+        
+        colors[idx] = fxState.color.r;
+        colors[idx + 1] = fxState.color.g;
+        colors[idx + 2] = fxState.color.b;
+        
+        sizes[i] = 0.05 + Math.random() * 0.08;
+    }
+    fxParticleGeo.attributes.position.needsUpdate = true;
+    fxParticleGeo.attributes.color.needsUpdate = true;
+    fxParticleGeo.attributes.size.needsUpdate = true;
+}
+
+// ============================================================
+// BEHAVIOR PRESETS & ANIMATION MIXER ENGINE
+// ============================================================
+
+const BEHAVIOR_PRESETS = {
+    idle:        { color: 0x5fd0ff, pulseSpeed: 1.5, deformation: 0.05, energy: 0.3, asymmetry: 0.0,  leanZ: 0.0,  orbitSpeed: 0.8,  gesture: "none",      fx: "none" },
+    listen:      { color: 0x4fe07a, pulseSpeed: 2.2, deformation: 0.08, energy: 0.5, asymmetry: 0.05, leanZ: 0.25, orbitSpeed: 1.2, gesture: "attentive", fx: "scan" },
+    think:       { color: 0x9b59b6, pulseSpeed: 0.8, deformation: 0.12, energy: 0.4, asymmetry: 0.1,  leanZ: -0.1, orbitSpeed: 0.5, gesture: "contemplative", fx: "slow_pulse" },
+    speak:       { color: 0x00d2ff, pulseSpeed: 3.5, deformation: 0.18, energy: 0.7, asymmetry: 0.08, leanZ: 0.15, orbitSpeed: 2.0, gesture: "expressive", fx: "voice_wave" },
+    sarcastic:   { color: 0xf39c12, pulseSpeed: 1.2, deformation: 0.15, energy: 0.4, asymmetry: 0.35, leanZ: 0.3,  orbitSpeed: 0.7, gesture: "dismissive", fx: "flicker" },
+    amused:      { color: 0xf1c40f, pulseSpeed: 2.8, deformation: 0.12, energy: 0.6, asymmetry: 0.1,  leanZ: 0.1,  orbitSpeed: 1.5, gesture: "playful", fx: "bounce" },
+    confused:    { color: 0xe67e22, pulseSpeed: 1.0, deformation: 0.20, energy: 0.35,asymmetry: 0.45, leanZ: -0.2, orbitSpeed: 0.6, gesture: "tilted", fx: "wobble" },
+    serious:     { color: 0x3498db, pulseSpeed: 1.0, deformation: 0.02, energy: 0.5, asymmetry: 0.0,  leanZ: 0.0,  orbitSpeed: 0.9, gesture: "rigid", fx: "steady" },
+    warning:     { color: 0xff8800, pulseSpeed: 4.5, deformation: 0.22, energy: 0.85,asymmetry: 0.15, leanZ: 0.2,  orbitSpeed: 2.8, gesture: "alert", fx: "strobe_orange" },
+    critical:    { color: 0xff2200, pulseSpeed: 8.0, deformation: 0.35, energy: 1.0, asymmetry: 0.4,  leanZ: 0.5,  orbitSpeed: 5.0, gesture: "urgent", fx: "strobe_red" },
+    celebrate:   { color: 0x00ff44, pulseSpeed: 6.0, deformation: 0.30, energy: 1.0, asymmetry: 0.1,  leanZ: 0.0,  orbitSpeed: 4.0, gesture: "expansive", fx: "burst" },
+    chill:       { color: 0x16a085, pulseSpeed: 0.9, deformation: 0.03, energy: 0.2, asymmetry: 0.0,  leanZ: -0.05,orbitSpeed: 0.4, gesture: "relaxed", fx: "drift" },
+    disapproving:{ color: 0x8e44ad, pulseSpeed: 1.0, deformation: 0.04, energy: 0.3, asymmetry: 0.2,  leanZ: -0.15,orbitSpeed: 0.6, gesture: "stern", fx: "dim_pulse" },
+    excited:     { color: 0xe91e63, pulseSpeed: 4.0, deformation: 0.22, energy: 0.85,asymmetry: 0.15, leanZ: 0.2,  orbitSpeed: 3.0, gesture: "energetic", fx: "rapid_pulse" }
+};
+
+// Emotion Mixer - blends between states smoothly
+class EmotionMixer {
+    constructor() {
+        this.current = { ...BEHAVIOR_PRESETS.idle };
+        this.target = { ...BEHAVIOR_PRESETS.idle };
+        this.lerpSpeed = 0.08;
+        this.gesturePhase = 0;
+        // Use THREE.Color for proper lerping
+        this.current.color = new THREE.Color(BEHAVIOR_PRESETS.idle.color);
+        this.target.color = new THREE.Color(BEHAVIOR_PRESETS.idle.color);
+    }
+
+    setTarget(presetName, intensity = 1.0) {
+        const preset = BEHAVIOR_PRESETS[presetName];
+        if (!preset) return;
+        this.target = { ...preset };
+        // Apply intensity modifier
+        this.target.deformation *= intensity;
+        this.target.energy *= intensity;
+        this.target.pulseSpeed *= (0.5 + intensity * 0.5);
+        this.target.orbitSpeed *= (0.5 + intensity * 0.5);
+        // Convert color to THREE.Color
+        this.target.color = new THREE.Color(preset.color);
+    }
+
+    blend(presetA, presetB, factor) {
+        const result = {};
+        const keys = ['pulseSpeed', 'deformation', 'energy', 'asymmetry', 'leanZ', 'orbitSpeed'];
+        for (const key of keys) {
+            const a = presetA[key];
+            const b = presetB[key];
+            result[key] = a + (b - a) * factor;
+        }
+        // Color lerp
+        result.color = new THREE.Color(presetA.color).lerp(new THREE.Color(presetB.color), factor);
+        result.gesture = factor > 0.5 ? presetB.gesture : presetA.gesture;
+        return result;
+    }
+
+    update(dt) {
+        // Smooth lerp towards target
+        const keys = ['pulseSpeed', 'deformation', 'energy', 'asymmetry', 'leanZ', 'orbitSpeed'];
+        for (const key of keys) {
+            this.current[key] += (this.target[key] - this.current[key]) * this.lerpSpeed * dt * 60;
+        }
+        // Color lerp
+        this.current.color.lerp(this.target.color, this.lerpSpeed * dt * 60);
+        
+        this.gesturePhase += dt * this.current.orbitSpeed * 0.5;
+    }
+
+    getCurrent() {
+        return this.current;
+    }
+
+    getMixedState() {
+        // Return with color as THREE.Color for proper lerping in animation loop
+        return {
+            color: this.current.color.clone(),
+            pulseSpeed: this.current.pulseSpeed,
+            deformation: this.current.deformation,
+            asymmetry: this.current.asymmetry,
+            leanZ: this.current.leanZ,
+            orbitSpeed: this.current.orbitSpeed,
+            energy: this.current.energy,
+            gesture: this.current.gesture
+        };
+    }
+
+    getGesture() {
+        return this.current.gesture;
+    }
+    
+    setIntensity(intensity) {
+        // Adjust target deformation and energy based on intensity
+        const basePreset = Object.values(BEHAVIOR_PRESETS).find(p => p.color === this.target.color.getHex()) || BEHAVIOR_PRESETS.idle;
+        this.target.deformation = basePreset.deformation * intensity;
+        this.target.energy = basePreset.energy * intensity;
+    }
+}
+
+const emotionMixer = new EmotionMixer();
+
+// Current Target Blended State
+const currentState = {
+    mode: "live", // "live" or "demo"
+    emotion: "idle",
+    intensity: 0.5,
+    energy: 0.3,
+    urgency: 0.1,
+    speaking: false,
+    listening: false,
+    gazeTarget: "user",
+    targetPos: new THREE.Vector3(0, 2.6, 1.5),
+    
+    // Speech reactivity
+    speechAmplitude: 0,
+    speechPitch: 1.0,
+    lastSpeechTime: 0,
+    
+    // FX system
+    fx: "none",
+    fxTimer: 0,
+    
+    // Location interaction state
+    atDesk: false,
+    atRack: false,
+    atWindow: false,
+    
+    // Lerped visual channels (driven by EmotionMixer)
+    currentColor: new THREE.Color(0x5fd0ff),
+    targetColor: new THREE.Color(0x5fd0ff),
+    pulseSpeed: 1.5,
+    deformation: 0.05,
+    asymmetry: 0.0,
+    leanZ: 0.0,
+    orbitSpeed: 0.8,
+    scale: 1.0
+};
+
+// Global TARS Controller API
+
+window.TARS = {
+    setMode(mode) {
+        currentState.mode = mode;
+        document.getElementById("current-mode").innerText = mode.toUpperCase();
+        document.getElementById("btn-mode-live").classList.toggle("active", mode === "live");
+        document.getElementById("btn-mode-demo").classList.toggle("active", mode === "demo");
+    },
+    trigger(presetName) {
+        if (!BEHAVIOR_PRESETS[presetName]) return;
+        currentState.emotion = presetName;
+        document.getElementById("current-emotion").innerText = presetName.toUpperCase();
+        console.log(`[TARS] Trigger: ${presetName}`);
+        
+        // Fire FX from preset
+        const preset = BEHAVIOR_PRESETS[presetName];
+        if (preset.fx && preset.fx !== "none") {
+            currentState.fx = preset.fx;
+            currentState.fxTimer = 0;
+        }
+        
+        // Use EmotionMixer for smooth transitions
+        emotionMixer.setTarget(presetName, currentState.intensity);
+    },
+    setEmotion(name, intensity = 0.5) {
+        this.trigger(name);
+        currentState.intensity = intensity;
+    },
+    setSpeaking(bool) {
+        currentState.speaking = bool;
+        console.log(`[TARS] Speaking: ${bool}`);
+        if (bool) {
+            this.trigger("speak");
+            currentState.lastSpeechTime = performance.now() / 1000;
+        }
+    },
+    setListening(bool) {
+        currentState.listening = bool;
+        console.log(`[TARS] Listening: ${bool}`);
+        if (bool) this.trigger("listen");
+    },
+    setIntensity(v) {
+        currentState.intensity = v;
+        console.log(`[TARS] Intensity: ${v}`);
+        // Update mixer intensity
+        emotionMixer.setIntensity(v);
+    },
+    setUrgency(v) {
+        currentState.urgency = v;
+        currentState.orbitSpeed = 0.8 + v * 3.0;
+        currentState.pulseSpeed = 1.5 + v * 4.0;
+        console.log(`[TARS] Urgency: ${v}`);
+    },
+    // Speech reactivity hooks for LLM/TTS integration
+    setSpeechAmplitude(amp) {
+        currentState.speechAmplitude = Math.max(0, Math.min(1, amp));
+    },
+    setSpeechPitch(pitch) {
+        currentState.speechPitch = Math.max(0.5, Math.min(2.0, pitch));
+    },
+    onSpeechStart() {
+        console.log(`[TARS] Speech START`);
+        this.setSpeaking(true);
+    },
+    onSpeechEnd() {
+        console.log(`[TARS] Speech END`);
+        this.setSpeaking(false);
+        // Return to idle after brief delay
+        setTimeout(() => {
+            if (!currentState.speaking) this.trigger("idle");
+        }, 500);
+    },
+    lookAt(targetKey) {
+        currentState.gazeTarget = targetKey;
+        console.log(`[TARS] Look at: ${targetKey}`);
+        if (TARGET_POSITIONS[targetKey]) {
+            // Actually MOVE to the target location
+            currentState.targetPos.copy(TARGET_POSITIONS[targetKey]);
+            // Face the target immediately
+            const targetVec = TARGET_POSITIONS[targetKey];
+            const dx = targetVec.x - tarsEntityGroup.position.x;
+            const dz = targetVec.z - tarsEntityGroup.position.z;
+            const angle = Math.atan2(dx, dz);
+            tarsEntityGroup.rotation.y = angle;
+            
+            // Trigger location-specific behaviors
+            triggerLocationBehavior(targetKey);
+        }
+    },
+    moveTo(pos) {
+        currentState.targetPos.copy(pos);
+        console.log(`[TARS] Move to:`, pos);
+    },
+    // Accepts behavioral intent JSON from LLM: { emotion, intensity, energy, urgency, gesture, movement, gaze, target }
+    setBehavior(obj) {
+        console.log(`[TARS] setBehavior:`, obj);
+        if (obj.emotion) this.setEmotion(obj.emotion, obj.intensity || 0.5);
+        if (obj.energy !== undefined) currentState.energy = obj.energy;
+        if (obj.urgency !== undefined) this.setUrgency(obj.urgency);
+        if (obj.gaze) this.lookAt(obj.gaze);
+        if (obj.movement && obj.target && TARGET_POSITIONS[obj.target]) {
+            this.moveTo(TARGET_POSITIONS[obj.target]);
+        }
+        if (obj.gesture) {
+            // Trigger gesture-specific micro-behavior
+            this.triggerGesture(obj.gesture);
+        }
+    },
+    triggerGesture(gesture) {
+        console.log(`[TARS] Gesture: ${gesture}`);
+        const gestures = {
+            "nod": () => { currentState.leanZ = -0.2; setTimeout(() => currentState.leanZ = 0, 300); },
+            "shake": () => { currentState.asymmetry = 0.4; setTimeout(() => currentState.asymmetry = 0, 400); },
+            "pulse": () => { currentState.pulseSpeed *= 3; setTimeout(() => currentState.pulseSpeed /= 3, 200); },
+            "expand": () => { currentState.scale = 1.3; setTimeout(() => currentState.scale = 1.0, 500); },
+            "spin": () => { currentState.orbitSpeed *= 4; setTimeout(() => currentState.orbitSpeed /= 4, 600); }
+        };
+        if (gestures[gesture]) gestures[gesture]();
+    }
+};
+    
+    // ============================================================
+    // LOCATION-BEHAVIOR SYSTEM - Random animations per station
+    // ============================================================
+    
+    const locationBehaviors = {
+        desk: [
+            () => { // BIOS/boot sequence
+                currentState.fx = "strobe";
+                currentState.fxTimer = 0;
+                setTimeout(() => {
+                    // Switch to TARS OS
+                    const deskScreen = animatedScreens.find(s => s.drawFn === drawTerminal);
+                    if (deskScreen) deskScreen.drawFn = drawTARSOS;
+                }, 500);
+            },
+            () => { // Linux terminal hacking
+                currentState.emotion = "think";
+                emotionMixer.setTarget("think", 0.7);
+                const deskScreen = animatedScreens.find(s => s.drawFn === drawTerminal || s.drawFn === drawTARSOS);
+                if (deskScreen) {
+                    const originalDraw = deskScreen.drawFn;
+                    deskScreen.drawFn = function(ctx, w, h, time) {
+                        // Hacking overlay
+                        originalDraw(ctx, w, h, time);
+                        ctx.fillStyle = "rgba(0,255,136,0.8)";
+                        ctx.font = "14px monospace";
+                        const lines = [
+                            "> sudo nmap -sS 192.168.1.0/24",
+                            "> ssh root@192.168.1.100",
+                            "> cat /etc/shadow | grep -v '^#'",
+                            "> nc -lvp 4444 -e /bin/bash",
+                            "> history -c && exit"
+                        ];
+                        lines.forEach((l, i) => ctx.fillText(l, 20, 60 + i * 22));
+                    };
+                    setTimeout(() => { deskScreen.drawFn = originalDraw; }, 8000);
+                }
+            },
+            () => { // Neural interface calibration
+                currentState.emotion = "focused";
+                emotionMixer.setTarget("listen", 0.8);
+                faceState.expression = "focused";
+                tarsLight.intensity = 12;
+                setTimeout(() => { tarsLight.intensity = 5; }, 3000);
+            }
+        ],
+        rack: [
+            () => { // Data transfer with sparks
+                currentState.fx = "strobe_orange";
+                currentState.fxTimer = 0;
+                serverLEDs.forEach(led => { led.speed = 30; led.phase = Math.random() * Math.PI * 2; });
+                // Spark particles
+                spawnSparks(new THREE.Vector3(-4.7, 2.5, -4), 0xff8800, 50);
+            },
+            () => { // System diagnostic
+                currentState.emotion = "serious";
+                emotionMixer.setTarget("serious", 1.0);
+                serverLEDs.forEach(led => { led.speed = 8; });
+                // Scrolling diagnostic text on rack screen
+                const rackScreen = animatedScreens.find(s => s.drawFn === drawRackScreen);
+                if (rackScreen) {
+                    const originalDraw = rackScreen.drawFn;
+                    rackScreen.drawFn = function(ctx, w, h, time) {
+                        originalDraw(ctx, w, h, time);
+                        ctx.fillStyle = "#00ff88";
+                        ctx.font = "10px monospace";
+                        ctx.fillText("DIAGNOSTIC: RAID OK  NET OK  TEMP 34C  PWR 99%", 5, h - 10);
+                    };
+                    setTimeout(() => { rackScreen.drawFn = originalDraw; }, 5000);
+                }
+            },
+            () => { // Firmware update simulation
+                currentState.emotion = "think";
+                emotionMixer.setTarget("think", 0.6);
+                const progress = Math.random();
+                tarsLight.color.setHex(0x0088ff);
+                setTimeout(() => { tarsLight.color.setHex(0x00ff88); }, 2000);
+            }
+        ],
+        window: [
+            () => { // Chill and morph
+                currentState.emotion = "chill";
+                emotionMixer.setTarget("chill", 0.5);
+                currentState.scale = 1.2;
+                currentState.deformation = 0.1;
+                setTimeout(() => { currentState.scale = 1.0; currentState.deformation = 0.05; }, 5000);
+            },
+            () => { // Watch weather/stars - shape shift
+                currentState.emotion = "amused";
+                emotionMixer.setTarget("amused", 0.6);
+                currentState.orbitSpeed = 2.0;
+                // Morph between shapes
+                let morph = 0;
+                const morphInterval = setInterval(() => {
+                    morph += 0.1;
+                    currentState.deformation = 0.05 + Math.sin(morph) * 0.15;
+                    if (morph > 6) { clearInterval(morphInterval); currentState.deformation = 0.05; currentState.orbitSpeed = 0.8; }
+                }, 500);
+            },
+            () => { // Open/close blinds (window glow pulse)
+                windowGlow.intensity = 20;
+                setTimeout(() => { windowGlow.intensity = 10; }, 1000);
+                setTimeout(() => { windowGlow.intensity = 20; }, 2000);
+                setTimeout(() => { windowGlow.intensity = 10; }, 3000);
+            }
+        ],
+        user: [
+            () => { // Come close, inspect
+                currentState.targetPos.set(0, 2.7, 3.5); // Right in front of camera
+                currentState.emotion = "curious";
+                emotionMixer.setTarget("listen", 0.9);
+                currentState.scale = 1.4;
+                faceState.expression = "curious";
+                faceState.pupilDilation = 1.5;
+                setTimeout(() => { 
+                    currentState.targetPos.set(0, 2.6, 1.5);
+                    currentState.scale = 1.0;
+                    faceState.pupilDilation = 1.0;
+                }, 4000);
+            },
+            () => { // Face tracking - follow mouse
+                currentState.emotion = "listen";
+                emotionMixer.setTarget("listen", 0.7);
+                // Gaze indicator follows user
+            },
+            () => { // Playful boop
+                currentState.emotion = "amused";
+                emotionMixer.setTarget("amused", 0.8);
+                triggerGesture("nod");
+                setTimeout(() => triggerGesture("shake"), 500);
+                setTimeout(() => triggerGesture("pulse"), 1000);
+            }
+        ]
+    };
+    
+    function triggerLocationBehavior(locationKey) {
+        const behaviors = locationBehaviors[locationKey];
+        if (!behaviors) return;
+        
+        // Pick random behavior for this location
+        const behavior = behaviors[Math.floor(Math.random() * behaviors.length)];
+        behavior();
+        
+        console.log(`[TARS] At ${locationKey} - executing behavior`);
+    }
+    
+    function spawnSparks(position, color, count) {
+        const positions = fxParticleGeo.attributes.position.array;
+        const velocities = fxParticleVelocities;
+        const lifes = fxParticleLifes;
+        const colors = fxParticleGeo.attributes.color.array;
+        const sizes = fxParticleGeo.attributes.size.array;
+        const c = new THREE.Color(color);
+        
+        for (let i = 0; i < count; i++) {
+            const idx = i * 3;
+            positions[idx] = position.x + (Math.random() - 0.5) * 0.5;
+            positions[idx + 1] = position.y + (Math.random() - 0.5) * 0.5;
+            positions[idx + 2] = position.z + (Math.random() - 0.5) * 0.5;
+            
+            const speed = 0.5 + Math.random() * 1.0;
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.acos(2 * Math.random() - 1);
+            velocities[idx] = Math.sin(phi) * Math.cos(theta) * speed;
+            velocities[idx + 1] = Math.cos(phi) * speed * 0.5;
+            velocities[idx + 2] = Math.sin(phi) * Math.sin(theta) * speed;
+            
+            lifes[i] = 0.5 + Math.random() * 1.0;
+            colors[idx] = c.r;
+            colors[idx + 1] = c.g;
+            colors[idx + 2] = c.b;
+            sizes[i] = 0.04 + Math.random() * 0.06;
+        }
+        fxParticleGeo.attributes.position.needsUpdate = true;
+        fxParticleGeo.attributes.color.needsUpdate = true;
+        fxParticleGeo.attributes.size.needsUpdate = true;
+    }
+
+window.TARS_ROOM = {
+    bounds: ROOM_BOUNDS,
+    light: tarsLight,
+    placeholder: tarsEntityGroup,
+    setPosition(x, y, z) {
+        tarsEntityGroup.position.set(x, y, z);
+    },
+    setColor(hex) {
+        currentState.targetColor.setHex(hex);
+    },
+    setIntensity(v) {
+        tarsLight.intensity = v;
+    }
+};
+
+// ============================================================
+// CAMERA PARALLAX
+// ============================================================
+
+let mouseX = 0, mouseY = 0, targetX = 0, targetY = 0;
+
+window.addEventListener("pointermove", event => {
+    mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+    mouseY = (event.clientY / window.innerHeight) * 2 - 1;
+});
+
+// ============================================================
+// MAIN ANIMATION LOOP
+// ============================================================
+
+const clock = new THREE.Clock();
+let dayNightAccum = 0;
+let clockAccum = 0;
+
+function animate() {
+    requestAnimationFrame(animate);
+    const time = clock.getElapsedTime();
+    const dt = clock.getDelta();
+
+    // 1. Camera Parallax
+    targetX = mouseX * 0.7;
+    targetY = mouseY * 0.35;
+    camera.position.x += (targetX - camera.position.x) * 0.025;
+    camera.position.y += (2.7 - targetY - camera.position.y) * 0.025;
+    camera.lookAt(0, 2.8, -3);
+
+    // 2. Day/Night & Clock
+    dayNightAccum += dt;
+    if (dayNightAccum > 0.5) {
+        dayNightAccum = 0;
+        updateDayNight();
+    }
+    clockAccum += dt;
+    if (clockAccum > 1) {
+        clockAccum = 0;
+        setClockToRealTime();
+    }
+
+    // 3. Environment LEDs & Fans
+    serverLEDs.forEach(entry => {
+        const pulse = Math.sin(time * entry.speed + entry.phase);
+        entry.mesh.material.opacity = 0.5 + pulse * 0.4;
+    });
+    rackFans.forEach((fanBlades, i) => {
+        fanBlades.rotation.z += (i % 2 === 0 ? 1 : -1) * 0.06;
+    });
+    animatedScreens.forEach(s => {
+        if (time >= s.nextUpdate) {
+            s.nextUpdate = time + s.refreshRate;
+            s.drawFn(s.ctx, s.w, s.h, time);
+            s.tex.needsUpdate = true;
+        }
+    });
+
+    // 4. PC RGB Cycle
+    const hue = (time * 0.08) % 1;
+    rgbStrip.material.color.setHSL(hue, 1, 0.55);
+    towerGlass.material.emissive.setHSL(hue, 0.8, 0.4);
+    rgbLight.color.setHSL(hue, 1, 0.55);
+    rgbLight.intensity = 5 + Math.sin(time * 3) * 1.2;
+
+    // 5. Rain & Dust
+    const positions = rain.geometry.attributes.position.array;
+    for (let i = 0; i < rainCount; i++) {
+        positions[i * 3 + 1] -= rainSpeeds[i];
+        if (positions[i * 3 + 1] < winBottom - 1.5) {
+            positions[i * 3 + 1] = winTop + 1.5;
+            positions[i * 3] = winLeft + Math.random() * WIN_W;
+        }
+    }
+    rain.geometry.attributes.position.needsUpdate = true;
+    dust.rotation.y = time * 0.015;
+
+    // 6. Lights
+    blueLight.intensity = 16 + Math.sin(time * 0.4) * 2;
+    ledStripLight.intensity = 3.5 + Math.sin(time * 2.2) * 0.8;
+
+    // 7. T.A.R.S. POSITION & MOVEMENT PROCEDURAL CONTROLLER
+    if (currentState.mode === "demo") {
+        // DEMO Lissajous Flight Path across room
+        const demoX = THREE.MathUtils.clamp(Math.sin(time * 0.18) * 5.8, ROOM_BOUNDS.xMin + 0.6, ROOM_BOUNDS.xMax - 0.6);
+        const demoZ = THREE.MathUtils.clamp(-0.5 + Math.cos(time * 0.13) * 3.8, ROOM_BOUNDS.zMin + 0.6, ROOM_BOUNDS.zMax - 0.6);
+        const demoY = THREE.MathUtils.clamp(2.6 + Math.sin(time * 0.27) * 1.8, ROOM_BOUNDS.yMin + 0.3, ROOM_BOUNDS.yMax - 0.3);
+        tarsEntityGroup.position.set(demoX, demoY, demoZ);
+    } else {
+        // LIVE MODE: Smooth Spring Hovering around target position
+        const hoverY = Math.sin(time * (1.2 + currentState.energy * 2.0)) * (0.12 + currentState.energy * 0.15);
+        const hoverX = Math.cos(time * 0.8) * 0.08;
+        
+        tarsEntityGroup.position.x += (currentState.targetPos.x + hoverX - tarsEntityGroup.position.x) * 0.05;
+        tarsEntityGroup.position.y += (currentState.targetPos.y + hoverY - tarsEntityGroup.position.y) * 0.05;
+        tarsEntityGroup.position.z += (currentState.targetPos.z - tarsEntityGroup.position.z) * 0.05;
+
+        // Orient / Lean towards Gaze Target
+        if (TARGET_POSITIONS[currentState.gazeTarget]) {
+            const targetVec = TARGET_POSITIONS[currentState.gazeTarget];
+            const dx = targetVec.x - tarsEntityGroup.position.x;
+            const dz = targetVec.z - tarsEntityGroup.position.z;
+            const angle = Math.atan2(dx, dz);
+            tarsEntityGroup.rotation.y += (angle - tarsEntityGroup.rotation.y) * 0.04;
+        }
+    }
+
+    // 7b. LOCATION-BASED INTERACTIONS
+    const pos = tarsEntityGroup.position;
+    const atDesk = pos.distanceTo(new THREE.Vector3(1.7, 2.3, -2.2)) < 1.5;
+    const atRack = pos.distanceTo(new THREE.Vector3(-4.7, 2.5, -4)) < 1.5;
+    const atWindow = pos.distanceTo(new THREE.Vector3(WIN_X, WIN_Y, WALL_Z)) < 2.0;
+    
+    // Desk interaction - switch monitor to TARS OS
+    if (atDesk && !currentState.atDesk) {
+        currentState.atDesk = true;
+        currentState.atRack = false;
+        currentState.atWindow = false;
+        // Switch monitor1 to TARS OS
+        const deskScreen = animatedScreens.find(s => s.drawFn === drawTerminal);
+        if (deskScreen) deskScreen.drawFn = drawTARSOS;
+        console.log("[TARS] At desk - neural interface active");
+    } else if (!atDesk && currentState.atDesk) {
+        currentState.atDesk = false;
+        // Restore terminal
+        const deskScreen = animatedScreens.find(s => s.drawFn === drawTARSOS);
+        if (deskScreen) deskScreen.drawFn = drawTerminal;
+    }
+    
+    // Rack interaction - data transfer effect on server LEDs
+    if (atRack && !currentState.atRack) {
+        currentState.atRack = true;
+        currentState.atDesk = false;
+        currentState.atWindow = false;
+        // Trigger data transfer pulse on server LEDs
+        serverLEDs.forEach(led => {
+            led.phase = Math.random() * Math.PI * 2;
+            led.speed = 15 + Math.random() * 10; // Fast pulsing
+        });
+        console.log("[TARS] At rack - data transfer initiated");
+    } else if (!atRack && currentState.atRack) {
+        currentState.atRack = false;
+        // Restore normal LED speeds
+        serverLEDs.forEach(led => {
+            led.speed = 2 + Math.random() * 4;
+        });
+    }
+    
+    // Window interaction - scan outside
+    if (atWindow && !currentState.atWindow) {
+        currentState.atWindow = true;
+        console.log("[TARS] At window - scanning exterior");
+    } else if (!atWindow && currentState.atWindow) {
+        currentState.atWindow = false;
+    }
+
+    // 8. T.A.R.S. EMBODIMENT PROCEDURAL SHADER & MESH ANIMATION
+    // Update EmotionMixer for smooth transitions
+    emotionMixer.update(dt);
+    
+    // Apply mixed state to currentState
+    const mixed = emotionMixer.getMixedState();
+    currentState.targetColor.lerp(mixed.color, 0.1);
+    currentState.pulseSpeed = mixed.pulseSpeed;
+    currentState.deformation = mixed.deformation;
+    currentState.asymmetry = mixed.asymmetry;
+    currentState.leanZ = mixed.leanZ;
+    currentState.orbitSpeed = mixed.orbitSpeed;
+    currentState.energy = mixed.energy;
+
+    // Color Lerp
+    currentState.currentColor.lerp(currentState.targetColor, 0.05);
+    tarsLight.color.copy(currentState.currentColor);
+    bodyMat.emissive.copy(currentState.currentColor);
+    coreMat.color.copy(currentState.currentColor);
+    orbParticleMat.color.copy(currentState.currentColor);
+
+    // Pulse & Core Intensity (with speech reactivity)
+    const speechPulse = currentState.speaking 
+        ? (Math.sin(time * 12) * 0.4 + currentState.speechAmplitude * 0.6)
+        : 0;
+    const corePulse = Math.sin(time * currentState.pulseSpeed) * 0.15 + speechPulse;
+    tarsCoreMesh.scale.setScalar(1.0 + corePulse * 0.4 * currentState.scale);
+    tarsLight.intensity = 5 + corePulse * 4 + currentState.urgency * 4;
+
+    // Draw emotional face
+    drawFace(time);
+
+    // Shell Rotation
+    tarsShellMesh.rotation.x += 0.005 * currentState.orbitSpeed;
+    tarsShellMesh.rotation.y += 0.008 * currentState.orbitSpeed;
+    tarsShellMesh.rotation.z += (currentState.leanZ - tarsShellMesh.rotation.z) * 0.05;
+
+    // Gaze Indicator - points toward gaze target
+    if (tarsGazeIndicator && TARGET_POSITIONS[currentState.gazeTarget]) {
+        const targetVec = TARGET_POSITIONS[currentState.gazeTarget];
+        const dx = targetVec.x - tarsEntityGroup.position.x;
+        const dz = targetVec.z - tarsEntityGroup.position.z;
+        const gazeAngle = Math.atan2(dx, dz);
+        tarsGazeIndicator.rotation.y += (gazeAngle - tarsGazeIndicator.rotation.y) * 0.1;
+        tarsGazeIndicator.material.color.copy(currentState.currentColor);
+    }
+
+    // Deforming Vertex Noise Body
+    const bodyPosAttr = bodyGeo.attributes.position;
+    const posArr = bodyPosAttr.array;
+    const defAmount = currentState.deformation + (currentState.speaking ? 0.1 : 0) + currentState.speechAmplitude * 0.15;
+    
+    for (let i = 0; i < posArr.length; i += 3) {
+        const ox = originalBodyPositions[i];
+        const oy = originalBodyPositions[i + 1];
+        const oz = originalBodyPositions[i + 2];
+        
+        // Multi-frequency wave deformation
+        const noise = Math.sin(ox * 5 + time * 3) * Math.cos(oy * 5 + time * 2.5) * Math.sin(oz * 5 + time * 4);
+        const asym = ox * currentState.asymmetry;
+        const factor = 1.0 + (noise * defAmount) + (asym * 0.2);
+
+        posArr[i] = ox * factor * currentState.scale;
+        posArr[i + 1] = oy * factor * currentState.scale;
+        posArr[i + 2] = oz * factor * currentState.scale;
+    }
+    bodyPosAttr.needsUpdate = true;
+    bodyGeo.computeVertexNormals();
+
+    // Orbiting Particles Simulation
+    const pArr = orbParticleGeo.attributes.position.array;
+    for (let i = 0; i < orbParticleCount; i++) {
+        orbParticlePhases[i] += 0.01 * currentState.orbitSpeed;
+        const rad = orbParticleRadii[i] + Math.sin(time * 2 + i) * 0.08;
+        pArr[i * 3] = Math.cos(orbParticlePhases[i]) * rad * currentState.scale;
+        pArr[i * 3 + 1] = Math.sin(orbParticlePhases[i] * 2) * 0.25 * currentState.scale;
+        pArr[i * 3 + 2] = Math.sin(orbParticlePhases[i]) * rad * currentState.scale;
+    }
+    orbParticleGeo.attributes.position.needsUpdate = true;
+
+    // Spark/FX Particle System Update
+    const fxPositions = fxParticleGeo.attributes.position.array;
+    const fxVelocities = fxParticleVelocities;
+    const fxLifes = fxParticleLifes;
+    const fxSizes = fxParticleGeo.attributes.size.array;
+    for (let i = 0; i < fxParticleCount; i++) {
+        if (fxLifes[i] > 0) {
+            const idx = i * 3;
+            fxPositions[idx] += fxVelocities[idx] * dt * 60;
+            fxPositions[idx + 1] += fxVelocities[idx + 1] * dt * 60;
+            fxPositions[idx + 2] += fxVelocities[idx + 2] * dt * 60;
+            
+            // Gravity
+            fxVelocities[idx + 1] -= 0.02 * dt * 60;
+            
+            fxLifes[i] -= dt;
+            fxSizes[i] *= 0.98;
+        }
+    }
+    fxParticleGeo.attributes.position.needsUpdate = true;
+    fxParticleGeo.attributes.size.needsUpdate = true;
+
+    // FX System - Special visual effects per emotion
+    currentState.fxTimer += dt;
+    const fxTime = currentState.fxTimer;
+    
+    switch (currentState.fx) {
+        case "strobe_orange": {  // WARNING - intense orange/red strobe
+            const strobe = Math.sin(fxTime * 30) > 0 ? 1 : 0;
+            const color = new THREE.Color().lerpColors(
+                new THREE.Color(0xff8800), 
+                new THREE.Color(0xff2200), 
+                (Math.sin(fxTime * 10) + 1) * 0.5
+            );
+            tarsLight.color.copy(color);
+            bodyMat.emissive.copy(color);
+            coreMat.color.copy(color);
+            orbParticleMat.color.copy(color);
+            tarsLight.intensity = 15 + strobe * 20;
+            if (fxTime > 3) currentState.fx = "none";  // Auto-clear after 3s
+            break;
+        }
+        case "strobe_red": {  // CRITICAL - violent red strobe
+            const strobe = Math.sin(fxTime * 50) > 0 ? 1 : 0.3;
+            const color = new THREE.Color(0xff0000);
+            tarsLight.color.copy(color);
+            bodyMat.emissive.copy(color);
+            coreMat.color.copy(color);
+            orbParticleMat.color.copy(color);
+            tarsLight.intensity = 20 + Math.sin(fxTime * 40) * 15;
+            // Violent scale pulse
+            currentState.scale = 1.0 + Math.sin(fxTime * 25) * 0.3;
+            if (fxTime > 3) { currentState.fx = "none"; currentState.scale = 1.0; }
+            break;
+        }
+        case "strobe": {  // SPEAK - voice wave pulse
+            const wave = (Math.sin(fxTime * 20) + 1) * 0.5;
+            const color = new THREE.Color().lerpColors(
+                new THREE.Color(0x00d2ff), 
+                new THREE.Color(0xffffff), 
+                wave * 0.5
+            );
+            orbParticleMat.color.copy(color);
+            if (fxTime > 1.5) currentState.fx = "none";
+            break;
+        }
+        case "bounce": {  // AMUSED - playful bounce
+            const bounce = Math.sin(fxTime * 15) * 0.15;
+            tarsEntityGroup.position.y += bounce;
+            tarsCoreMesh.scale.setScalar(1.0 + Math.abs(bounce) * 2);
+            if (fxTime > 2) { currentState.fx = "none"; tarsCoreMesh.scale.setScalar(1.0); }
+            break;
+        }
+        case "scan": {  // LISTEN - scanning sweep
+            tarsShellMesh.rotation.y += dt * 8;
+            tarsLight.intensity = 8 + Math.sin(fxTime * 12) * 3;
+            if (fxTime > 2) currentState.fx = "none";
+            break;
+        }
+        case "wobble": {  // CONFUSED - unstable wobble
+            currentState.asymmetry = 0.5 + Math.sin(fxTime * 8) * 0.3;
+            currentState.leanZ = Math.sin(fxTime * 6) * 0.4;
+            if (fxTime > 2.5) currentState.fx = "none";
+            break;
+        }
+        case "flicker": {  // SARCASTIC - color flicker
+            if (Math.random() < 0.1) {
+                tarsLight.color.setHex(Math.random() < 0.5 ? 0xf39c12 : 0x5fd0ff);
+                bodyMat.emissive.setHex(tarsLight.color.getHex());
+            }
+            if (fxTime > 2) currentState.fx = "none";
+            break;
+        }
+        case "expansive": {  // CELEBRATE - expanding burst with color cycle
+            const expand = Math.min(1, fxTime * 2);
+            currentState.scale = 1.0 + expand * 0.8;
+            currentState.deformation = 0.3 + expand * 0.2;
+            // Rainbow cycle
+            const hue = (fxTime * 0.3) % 1;
+            const rainbow = new THREE.Color().setHSL(hue, 1, 0.5);
+            tarsLight.color.copy(rainbow);
+            bodyMat.emissive.copy(rainbow);
+            coreMat.color.copy(rainbow);
+            orbParticleMat.color.copy(rainbow);
+            // Burst particles outward
+            const pArr2 = orbParticleGeo.attributes.position.array;
+            for (let i = 0; i < orbParticleCount; i++) {
+                const rad = orbParticleRadii[i] * (1 + expand * 3);
+                pArr2[i * 3] = Math.cos(orbParticlePhases[i]) * rad;
+                pArr2[i * 3 + 2] = Math.sin(orbParticlePhases[i]) * rad;
+            }
+            orbParticleGeo.attributes.position.needsUpdate = true;
+            if (fxTime > 2.5) { currentState.fx = "none"; currentState.scale = 1.0; }
+            break;
+        }
+        case "steady": {  // SERIOUS - rock solid, high contrast
+            tarsLight.intensity = 8;
+            bodyMat.emissiveIntensity = 1.5;
+            currentState.deformation = 0.01;
+            if (fxTime > 2) currentState.fx = "none";
+            break;
+        }
+        case "slow_pulse": {  // THINK - slow deep pulse
+            const pulse = Math.sin(fxTime * 2) * 0.2;
+            tarsLight.intensity = 5 + pulse * 3;
+            if (fxTime > 2) currentState.fx = "none";
+            break;
+        }
+    }
+
+    // FX Spark Particle System Update
+    if (fxParticleGeo && fxParticleLifes) {
+        const positions = fxParticleGeo.attributes.position.array;
+        const velocities = fxParticleVelocities;
+        const lifes = fxParticleLifes;
+        const colors = fxParticleGeo.attributes.color.array;
+        const sizes = fxParticleGeo.attributes.size.array;
+        
+        for (let i = 0; i < fxParticleCount; i++) {
+            if (lifes[i] > 0) {
+                const idx = i * 3;
+                positions[idx] += velocities[idx] * dt * 60;
+                positions[idx + 1] += velocities[idx + 1] * dt * 60;
+                positions[idx + 2] += velocities[idx + 2] * dt * 60;
+                
+                // Gravity
+                velocities[idx + 1] -= 0.3 * dt * 60;
+                
+                lifes[i] -= dt;
+                if (lifes[i] <= 0) {
+                    sizes[i] = 0;
+                } else {
+                    // Fade out
+                    sizes[i] = Math.max(0, 0.04 * (lifes[i] / 1.5));
+                    // Fade color
+                    colors[idx] *= 0.98;
+                    colors[idx + 1] *= 0.98;
+                    colors[idx + 2] *= 0.98;
+                }
+            }
+        }
+        fxParticleGeo.attributes.position.needsUpdate = true;
+        fxParticleGeo.attributes.size.needsUpdate = true;
+        fxParticleGeo.attributes.color.needsUpdate = true;
+    }
+
+    renderer.render(scene, camera);
+}
+
+updateDayNight();
+setClockToRealTime();
+animate();
+
+window.addEventListener("resize", () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+</script>
+
+</body>
+</html>
