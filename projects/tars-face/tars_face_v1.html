@@ -440,12 +440,6 @@ windowFrame.add(trimRight);
 // LEFT WALL WINDOW (window_left)
 // ============================================================
 
-const LEFT_WIN_X = -7.5, LEFT_WIN_Y = 4.2, LEFT_WIN_W = 6, LEFT_WIN_H = 4, LEFT_WALL_X = -8, LEFT_WALL_THICK = 0.3;
-const lwinLeft = LEFT_WIN_X - LEFT_WIN_W / 2;
-const lwinRight = LEFT_WIN_X + LEFT_WIN_W / 2;
-const lwinTop = LEFT_WIN_Y + LEFT_WIN_H / 2;
-const lwinBottom = LEFT_WIN_Y - LEFT_WIN_H / 2;
-
 // Left wall has a window opening - create wall segments around it
 const lwallLeftSeg = new THREE.Mesh(new THREE.BoxGeometry(-8 - lwinLeft, 8, LEFT_WALL_THICK), backWallMat);
 lwallLeftSeg.position.set((-8 + lwinLeft) / 2, 4, LEFT_WALL_X);
@@ -3175,10 +3169,6 @@ function animate() {
     rain.geometry.attributes.position.needsUpdate = true;
 
     // Left window rain
-    const lwinLeft = -7.5 - 3;  // WIN_X = -7.5, WIN_W = 6
-    const lwinRight = -7.5 + 3;
-    const lwinTop = 4.2 + 2;
-    const lwinBottom = 4.2 - 2;
     const lpositions = lrain.geometry.attributes.position.array;
     for (let i = 0; i < lrainCount; i++) {
         lpositions[i * 3 + 1] -= lrainSpeeds[i];
