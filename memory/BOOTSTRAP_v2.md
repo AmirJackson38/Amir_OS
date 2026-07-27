@@ -1,5 +1,5 @@
 # Amir OS Session Resume Bootstrap (v2 Fast-Boot)
-> Generated: 2026-07-27 20:29:43 UTC
+> Generated: 2026-07-27 20:38:42 UTC
 > Amir OS Version: v0.8.0 (Single-File Fast-Boot Engine)
 > Memory Efficiency: 4833 / 5,500 chars used
 
@@ -204,7 +204,41 @@ After each meaningful change:
 - [x] "Stay too long" penalty in scoring
 - [x] Console logging of scores + needs every decision
 
-## Phase 3 (Planned) — LLM Intent → Behavioral JSON
+## Phase 3 (In Progress) — LLM Intent → Behavioral JSON
+
+### Audit Completed — 2026-07-27
+
+**Verified:**
+- Every supported mock intent produces valid JSON that passes schema validation
+- Invalid emotions/gestures/targets are silently stripped by validate(); no crashes
+- Intents route through World Engine: `TARS_INTENT.parse()` → `TARS.setBehavior()` → `lookAt()` → `setTARSActivity()` → `logActivityEvent()`, all updating `worldState`
+- Intent updates: location, activity, activityReason, previousActivity, activityStartedAt, activityLog, worldState.tars.energy
+- Autonomy and intents share the same `worldState`, activity state, event logging, and visual execution pipeline
+- LLM prompt template now describes actual BEHAVIOR_PRESETS (14 emotions) and real capabilities
+- Mock system is a replaceable dev layer — a real LLM would call `TARS.setBehavior()` directly with no changes to the World Engine
+- 12 keyword rules cover all 7 representative intent flows (window left/right, game, work, rack, tv, alert)
+
+**Bugs Fixed During Audit:**
+1. Schema emotion enum listed 8 values; only 3 (`think`, `listen`, `chill`) existed in `BEHAVIOR_PRESETS`. `neutral`, `curious`, `happy`, `concerned`, `alert` were silent no-ops. Updated to all 14 actual presets.
+2. Mock keyword rules used invalid emotions (`curious`, `happy`, `alert`, `concerned`) → mapped to valid equivalents (`think`, `amused`, `warning`, `confused`)
+3. `currentState.energy` and `worldState.tars.energy` were independent copies. `setBehavior()` now syncs both.
+4. `updateActivityDisplay()` was dead code — only called inside wrapper `lookAt()` whose condition always evaluated to false. Added periodic call to animate loop (every 1s).
+5. Keyword "window" matched the chill rule (gaze: window_left) even for "right window" intents. Split into "right window" (rule 5) and "left window" (rule 6) for disambiguation.
+6. Schema and LLM prompt documented "speak" capability that doesn't exist. Changed to "Future: speech bubble text (not yet implemented)".
+
+**Architectural Weaknesses Discovered:**
+1. **No priority/interruption system** — LLM intents immediately override autonomous behavior. The autonomous system tries to override back after 1-3s. No `controlMode` or priority field exists. Currently not a problem for demos, but needed before real LLM integration.
+2. **Wrapper lookAt has dead code** — the wrapped lookAt's activity map (`observing_weather`, `interacting_with_user`) and extra event push are unreachable because the original lookAt already sets `worldState.tars.location`. No runtime impact but misleading.
+3. **worldState.tars.energy vs worldState.tars.needs.energy** — same name, different semantics. `energy` is a 0-1 general state; `needs.energy` is a specific need for the autonomy system. Confusing but functionally separate.
+4. **Activity reason always "autonomous_move"** — `lookAt()` hardcodes the reason, so LLM-driven moves don't show "llm_intent" in the log. Metadata-only issue.
+5. **Mock intent "investigate an alert" has no gaze** — shows warning face but doesn't look toward any location. Acceptable for Phase 3 foundation.
+
+**Architecture Readiness for Real LLM Integration:**
+- Ready for controlled integration. The pipeline exists (`TARS.setBehavior()` → World Engine), schema is now accurate, and validate() catches invalid fields.
+- **Required before production use:**
+  1. Add `worldState.tars.controlMode` ("autonomous" | "llm") to prevent autonomy from overriding active LLM sessions
+  2. Add explicit priority/interruption system
+  3. Wire `reason` through `lookAt()` so LLM intents are distinguishable from autonomous moves in the activity log
 
 ### Objective
 Create a structured pipeline that translates natural language intent (from an LLM or human) into TARS behavioral JSON consumed by `TARS.setBehavior()`.
@@ -513,7 +547,7 @@ This project builds: Documentation, system design, information architecture, aut
 
 # Project Registry (Auto-Generated)
 
-**Last Updated:** 2026-07-27 20:29:43 UTC  
+**Last Updated:** 2026-07-27 20:38:42 UTC  
 **Status:** Active registry  
 **Purpose:** Consolidated inventory of all active, paused, and archived projects
 
@@ -547,15 +581,11 @@ This project builds: Documentation, system design, information architecture, aut
 ## 6. Active Workspace Changes (Git Status)
 
 ```
-M memory/ACTIVE_PROJECT_v2.md
- M memory/BOOTSTRAP_v2.md
- M memory/PROJECT_REGISTRY.md
- M memory/SESSION_LOG_v2.md
+M memory/PROJECT_REGISTRY.md
  M memory/STAGING_INTENT.md
  M projects/tars-face/tars_face_v1.html
-?? tools/memory_promoter.py
-?? tools/tars_intent_schema.json
-?? tools/tars_llm_prompt.md
+ M tools/tars_intent_schema.json
+ M tools/tars_llm_prompt.md
 ```
 
 ---
@@ -563,55 +593,55 @@ M memory/ACTIVE_PROJECT_v2.md
 ## 7. Current Code Diffs (Capped at 50 Lines)
 
 ```diff
-diff --git a/memory/ACTIVE_PROJECT_v2.md b/memory/ACTIVE_PROJECT_v2.md
-index ac2c991..2e8c392 100644
---- a/memory/ACTIVE_PROJECT_v2.md
-+++ b/memory/ACTIVE_PROJECT_v2.md
-@@ -1,40 +1,40 @@
- ## Current Priority
+diff --git a/memory/PROJECT_REGISTRY.md b/memory/PROJECT_REGISTRY.md
+index c352bab..d659c1a 100644
+--- a/memory/PROJECT_REGISTRY.md
++++ b/memory/PROJECT_REGISTRY.md
+@@ -1,6 +1,6 @@
+ # Project Registry (Auto-Generated)
  
--**TARS World Engine** (Phase 1 ✅, Phase 2 ✅) — Single-file Three.js visual frontend with autonomous needs system. Zero LLM dependency. `https://localhost:[REDACTED_PASSWORD]@@ -1,7 +1,7 @@
- # Amir OS Session Resume Bootstrap (v2 Fast-Boot)
--> Generated: 2026-07-27 19:11:03 UTC
-+> Generated: 2026-07-27 20:28:35 UTC
- > Amir OS Version: v0.8.0 (Single-File Fast-Boot Engine)
--> Memory Efficiency: 4269 / 5,500 chars used
-+> Memory Efficiency: 4714 / 5,500 chars used
+-**Last Updated:** 2026-07-27 20:29:43 UTC  
++**Last Updated:** 2026-07-27 20:38:42 UTC  
+ **Status:** Active registry  
+ **Purpose:** Consolidated inventory of all active, paused, and archived projects
  
- This file contains the consolidated runtime state of Amir OS v0.8.0.
- Single-File Fast Boot: Reading this file provides 100% of the active context in 1 tool call.
-@@ -348,6 +348,44 @@ This project builds: Documentation, system design, information architecture, aut
- ---
+diff --git a/memory/STAGING_INTENT.md b/memory/STAGING_INTENT.md
+index 2b3a2bc..df5ddb2 100644
+--- a/memory/STAGING_INTENT.md
++++ b/memory/STAGING_INTENT.md
+@@ -172,7 +172,41 @@ After each meaningful change:
+ - [x] "Stay too long" penalty in scoring
+ - [x] Console logging of scores + needs every decision
  
- 
+-## Phase 3 (Planned) — LLM Intent → Behavioral JSON
++## Phase 3 (In Progress) — LLM Intent → Behavioral JSON
 +
++### Audit Completed — 2026-07-27
 +
++**Verified:**
++- Every supported mock intent produces valid JSON that passes schema validation
++- Invalid emotions/gestures/targets are silently stripped by validate(); no crashes
++- Intents route through World Engine: `TARS_INTENT.parse()` → `TARS.setBehavior()` → `lookAt()` → `setTARSActivity()` → `logActivityEvent()`, all updating `worldState`
++- Intent updates: location, activity, activityReason, previousActivity, activityStartedAt, activityLog, worldState.tars.energy
++- Autonomy and intents share the same `worldState`, activity state, event logging, and visual execution pipeline
++- LLM prompt template now describes actual BEHAVIOR_PRESETS (14 emotions) and real capabilities
++- Mock system is a replaceable dev layer — a real LLM would call `TARS.setBehavior()` directly with no changes to the World Engine
++- 12 keyword rules cover all 7 representative intent flows (window left/right, game, work, rack, tv, alert)
 +
++**Bugs Fixed During Audit:**
++1. Schema emotion enum listed 8 values; only 3 (`think`, `listen`, `chill`) existed in `BEHAVIOR_PRESETS`. `neutral`, `curious`, `happy`, `concerned`, `alert` were silent no-ops. Updated to all 14 actual presets.
++2. Mock keyword rules used invalid emotions (`curious`, `happy`, `alert`, `concerned`) → mapped to valid equivalents (`think`, `amused`, `warning`, `confused`)
++3. `currentState.energy` and `worldState.tars.energy` were independent copies. `setBehavior()` now syncs both.
++4. `updateActivityDisplay()` was dead code — only called inside wrapper `lookAt()` whose condition always evaluated to false. Added periodic call to animate loop (every 1s).
++5. Keyword "window" matched the chill rule (gaze: window_left) even for "right window" intents. Split into "right window" (rule 5) and "left window" (rule 6) for disambiguation.
++6. Schema and LLM prompt documented "speak" capability that doesn't exist. Changed to "Future: speech bubble text (not yet implemented)".
 +
-+
-+
-+
-+
-+
-+
-+
-+
-+
-+
-+
-+
-+
-+
-+
-+
-+
-+
-+
-+## Session 2026-07-27-1528
-+
-+**Start Time:** 2026-07-27 20:28
-+**Status:** In Progress
-+**Objective:** session end
++**Architectural Weaknesses Discovered:**
++1. **No priority/interruption system** — LLM intents immediately override autonomous behavior. The autonomous system tries to override back after 1-3s. No `controlMode` or priority field exists. Currently not a problem for demos, but needed before real LLM integration.
++2. **Wrapper lookAt has dead code** — the wrapped lookAt's activity map (`observing_weather`, `interacting_with_user`) and extra event push are unreachable because the original lookAt already sets `worldState.tars.location`. No runtime impact but misleading.
++3. **worldState.tars.energy vs worldState.tars.needs.energy** — same name, different semantics. `energy` is a 0-1 general state; `needs.energy` is a specific need for the autonomy system. Confusing but functionally separate.
++4. **Activity reason always "autonomous_move"** — `lookAt()` hardcodes the reason, so LLM-driven moves don't show "llm_intent" in the log. Metadata-only issue.
++5. **Mock intent "investigate an alert" has no gaze** — shows warning face but doesn't look toward any location. Acceptable for Phase 3 foundation.
 +
 
 ... [DIFF TRUNCATED TO 50 LINES FOR BREVITY] ...

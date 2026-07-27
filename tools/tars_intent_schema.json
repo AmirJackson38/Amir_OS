@@ -5,8 +5,8 @@
   "properties": {
     "emotion": {
       "type": "string",
-      "enum": ["neutral", "think", "curious", "listen", "chill", "happy", "concerned", "alert"],
-      "description": "Visual emotion displayed on TARS face"
+      "enum": ["idle", "listen", "think", "speak", "sarcastic", "amused", "confused", "serious", "warning", "critical", "celebrate", "chill", "disapproving", "excited"],
+      "description": "Visual emotion displayed on TARS face (maps to BEHAVIOR_PRESETS)"
     },
     "intensity": {
       "type": "number",
@@ -49,15 +49,15 @@
     "speak": {
       "type": "string",
       "maxLength": 200,
-      "description": "Optional speech bubble text (future feature)"
+      "description": "Future: speech bubble text (not yet implemented)"
     }
   },
   "required": [],
   "examples": [
-    { "emotion": "curious", "intensity": 0.8, "gaze": "window_right", "gesture": "pulse" },
+    { "emotion": "think", "intensity": 0.8, "gaze": "window_right", "gesture": "pulse" },
     { "emotion": "think", "energy": 0.6, "gaze": "desk" },
     { "emotion": "listen", "gaze": "rack-a", "movement": "walk", "target": "rack-a" },
     { "emotion": "chill", "intensity": 0.3, "gaze": "window_left" },
-    { "gesture": "nod", "emotion": "happy", "intensity": 0.5 }
+    { "gesture": "nod", "emotion": "amused", "intensity": 0.5 }
   ]
 }

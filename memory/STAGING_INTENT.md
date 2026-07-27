@@ -172,7 +172,41 @@ After each meaningful change:
 - [x] "Stay too long" penalty in scoring
 - [x] Console logging of scores + needs every decision
 
-## Phase 3 (Planned) — LLM Intent → Behavioral JSON
+## Phase 3 (In Progress) — LLM Intent → Behavioral JSON
+
+### Audit Completed — 2026-07-27
+
+**Verified:**
+- Every supported mock intent produces valid JSON that passes schema validation
+- Invalid emotions/gestures/targets are silently stripped by validate(); no crashes
+- Intents route through World Engine: `TARS_INTENT.parse()` → `TARS.setBehavior()` → `lookAt()` → `setTARSActivity()` → `logActivityEvent()`, all updating `worldState`
+- Intent updates: location, activity, activityReason, previousActivity, activityStartedAt, activityLog, worldState.tars.energy
+- Autonomy and intents share the same `worldState`, activity state, event logging, and visual execution pipeline
+- LLM prompt template now describes actual BEHAVIOR_PRESETS (14 emotions) and real capabilities
+- Mock system is a replaceable dev layer — a real LLM would call `TARS.setBehavior()` directly with no changes to the World Engine
+- 12 keyword rules cover all 7 representative intent flows (window left/right, game, work, rack, tv, alert)
+
+**Bugs Fixed During Audit:**
+1. Schema emotion enum listed 8 values; only 3 (`think`, `listen`, `chill`) existed in `BEHAVIOR_PRESETS`. `neutral`, `curious`, `happy`, `concerned`, `alert` were silent no-ops. Updated to all 14 actual presets.
+2. Mock keyword rules used invalid emotions (`curious`, `happy`, `alert`, `concerned`) → mapped to valid equivalents (`think`, `amused`, `warning`, `confused`)
+3. `currentState.energy` and `worldState.tars.energy` were independent copies. `setBehavior()` now syncs both.
+4. `updateActivityDisplay()` was dead code — only called inside wrapper `lookAt()` whose condition always evaluated to false. Added periodic call to animate loop (every 1s).
+5. Keyword "window" matched the chill rule (gaze: window_left) even for "right window" intents. Split into "right window" (rule 5) and "left window" (rule 6) for disambiguation.
+6. Schema and LLM prompt documented "speak" capability that doesn't exist. Changed to "Future: speech bubble text (not yet implemented)".
+
+**Architectural Weaknesses Discovered:**
+1. **No priority/interruption system** — LLM intents immediately override autonomous behavior. The autonomous system tries to override back after 1-3s. No `controlMode` or priority field exists. Currently not a problem for demos, but needed before real LLM integration.
+2. **Wrapper lookAt has dead code** — the wrapped lookAt's activity map (`observing_weather`, `interacting_with_user`) and extra event push are unreachable because the original lookAt already sets `worldState.tars.location`. No runtime impact but misleading.
+3. **worldState.tars.energy vs worldState.tars.needs.energy** — same name, different semantics. `energy` is a 0-1 general state; `needs.energy` is a specific need for the autonomy system. Confusing but functionally separate.
+4. **Activity reason always "autonomous_move"** — `lookAt()` hardcodes the reason, so LLM-driven moves don't show "llm_intent" in the log. Metadata-only issue.
+5. **Mock intent "investigate an alert" has no gaze** — shows warning face but doesn't look toward any location. Acceptable for Phase 3 foundation.
+
+**Architecture Readiness for Real LLM Integration:**
+- Ready for controlled integration. The pipeline exists (`TARS.setBehavior()` → World Engine), schema is now accurate, and validate() catches invalid fields.
+- **Required before production use:**
+  1. Add `worldState.tars.controlMode` ("autonomous" | "llm") to prevent autonomy from overriding active LLM sessions
+  2. Add explicit priority/interruption system
+  3. Wire `reason` through `lookAt()` so LLM intents are distinguishable from autonomous moves in the activity log
 
 ### Objective
 Create a structured pipeline that translates natural language intent (from an LLM or human) into TARS behavioral JSON consumed by `TARS.setBehavior()`.

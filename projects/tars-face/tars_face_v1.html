@@ -2975,14 +2975,16 @@ window.TARS = {
     setBehavior(obj) {
         console.log(`[TARS] setBehavior:`, obj);
         if (obj.emotion) this.setEmotion(obj.emotion, obj.intensity || 0.5);
-        if (obj.energy !== undefined) currentState.energy = obj.energy;
+        if (obj.energy !== undefined) {
+            currentState.energy = obj.energy;
+            worldState.tars.energy = obj.energy;
+        }
         if (obj.urgency !== undefined) this.setUrgency(obj.urgency);
         if (obj.gaze) this.lookAt(obj.gaze);
         if (obj.movement && obj.target && TARGET_POSITIONS[obj.target]) {
             this.moveTo(TARGET_POSITIONS[obj.target]);
         }
         if (obj.gesture) {
-            // Trigger gesture-specific micro-behavior
             this.triggerGesture(obj.gesture);
         }
     },
@@ -3584,18 +3586,21 @@ window.TARS_INTENT = {
         const result = {};
 
         const keywordMap = [
-            { keywords: ["storm", "thunder", "lightning", "rain"], emotion: "curious", gaze: "window_right", gesture: "pulse" },
-            { keywords: ["work", "code", "write", "build", "think"], emotion: "think", gaze: "desk" },
+            { keywords: ["storm", "thunder", "lightning", "rain"], emotion: "think", gaze: "window_right", gesture: "pulse" },
+            { keywords: ["work", "code", "write", "build", "computer"], emotion: "think", gaze: "desk" },
             { keywords: ["check", "server", "rack", "monitor", "status"], emotion: "listen", gaze: "rack-a", movement: "walk", target: "rack-a" },
-            { keywords: ["chill", "relax", "calm", "view", "window"], emotion: "chill", gaze: "window_left" },
-            { keywords: ["hello", "hi", "hey", "look"], emotion: "happy", gaze: "user", gesture: "nod" },
-            { keywords: ["watch", "observe", "bridge", "city"], emotion: "curious", gaze: "window_right", gesture: "expand" },
+            { keywords: ["chill", "relax", "calm", "sleep"], emotion: "chill", gaze: "window_left", gesture: "expand" },
+            { keywords: ["hello", "hi", "hey", "look"], emotion: "amused", gaze: "user", gesture: "nod" },
+            { keywords: ["watch", "observe", "bridge", "city", "right window"], emotion: "think", gaze: "window_right", gesture: "expand" },
+            { keywords: ["left window"], emotion: "chill", gaze: "window_left" },
             { keywords: ["night", "dark", "sleep"], emotion: "chill", energy: 0.2, gaze: "window_left" },
-            { keywords: ["alarm", "warning", "danger", "critical"], emotion: "alert", urgency: 0.8, gesture: "pulse" },
-            { keywords: ["nod", "agree", "yes"], gesture: "nod", emotion: "happy", intensity: 0.4 },
-            { keywords: ["spin", "dance", "celebrate"], gesture: "spin", emotion: "happy", intensity: 0.9 },
-            { keywords: ["expand", "show", "big"], gesture: "expand", emotion: "curious" },
-            { keywords: ["shake", "no", "disagree"], gesture: "shake", emotion: "concerned" },
+            { keywords: ["alarm", "warning", "danger", "critical", "alert"], emotion: "warning", urgency: 0.8, gesture: "pulse" },
+            { keywords: ["nod", "agree", "yes"], gesture: "nod", emotion: "amused", intensity: 0.4 },
+            { keywords: ["spin", "dance", "celebrate"], gesture: "spin", emotion: "celebrate", intensity: 0.9 },
+            { keywords: ["expand", "show", "big"], gesture: "expand", emotion: "think" },
+            { keywords: ["shake", "no", "disagree"], gesture: "shake", emotion: "confused" },
+            { keywords: ["game", "play"], emotion: "amused", gaze: "desk", gesture: "pulse" },
+            { keywords: ["tv", "television", "watch"], emotion: "chill", gaze: "user" },
         ];
 
         for (const rule of keywordMap) {
@@ -3615,7 +3620,7 @@ window.TARS_INTENT = {
     },
 
     validate(obj) {
-        const emotionValues = ["neutral", "think", "curious", "listen", "chill", "happy", "concerned", "alert"];
+        const emotionValues = ["idle", "listen", "think", "speak", "sarcastic", "amused", "confused", "serious", "warning", "critical", "celebrate", "chill", "disapproving", "excited"];
         const gestureValues = ["nod", "shake", "pulse", "expand", "spin"];
         const targetValues = ["window_left", "window_right", "desk", "rack-a", "user"];
         const movementValues = ["walk", "drift", "rush"];
@@ -3634,15 +3639,18 @@ window.TARS_INTENT = {
 
     mock() {
         const intents = [
+            "go to the left window",
+            "go to the right window",
+            "play a game",
+            "work on the computer",
+            "check the server rack",
+            "watch tv",
             "storm is coming outside",
             "time to check the servers",
             "lets write some code",
             "just relax and watch the rain",
             "hello there",
-            "look at the bridge",
-            "nod if you agree",
-            "spin around",
-            "critical system alert",
+            "stop current activity and investigate an alert",
         ];
         const pick = intents[Math.floor(Math.random() * intents.length)];
         console.log(`[TARS INTENT] Mock: "${pick}"`);
@@ -3668,6 +3676,7 @@ window.addEventListener("pointermove", event => {
 const clock = new THREE.Clock();
 let dayNightAccum = 0;
 let clockAccum = 0;
+let displayAccum = 0;
 
 function animate() {
     requestAnimationFrame(animate);
@@ -3696,6 +3705,13 @@ function animate() {
     // 2b. Autonomous Needs & Decision Making
     updateNeeds(dt);
     makeAutonomousDecision();
+
+    // Refresh activity log display (called periodically, not just on change)
+    displayAccum += dt;
+    if (displayAccum > 1) {
+        displayAccum = 0;
+        updateActivityDisplay();
+    }
 
     // Monitor idle/screensaver system (BUG 3 fix)
     updateMonitorIdle(dt);
