@@ -7,10 +7,10 @@
 
 ## Active Staged Action
 
-- **Timestamp:** 2026-07-27 20:30:00 UTC
+- **Timestamp:** 2026-07-27 20:50:00 UTC
 - **Target Component:** T.A.R.S. World Engine — Phase 3: LLM Intent Parsing & Behavioral JSON
-- **Planned Action:** Phase 3 Implementation — Intent schema + mock generator + LLM prompt template built. Needs integration testing and real LLM hookup.
-- **Status:** In Progress (Schema, Mock Generator, Prompt Template — built; Integration — pending)
+- **Planned Action:** Phase 3a (Foundation Audit) + Phase 3b (Priority & Control Integration) complete. Ready for real LLM integration.
+- **Status:** Completed (Schema, Mock Generator, Prompt Template, Audit, Control Mode, Priority Gate, Reason Propagation — all built)
 
 ---
 
@@ -254,5 +254,36 @@ LLM / Human Input
 4. Create LLM prompt template
 5. Integrate with world state logging
 6. Test with mock generator, then real LLM
+
+## Phase 3b (Complete) — Priority & Control Integration
+
+### Implemented
+- [x] `worldState.tars.controlMode` — centralized state with "autonomous" and "llm" values
+- [x] `makeAutonomousDecision()` defers when `controlMode === "llm"` — needs continue, movement stops
+- [x] `TARS.setBehavior()` sets controlMode to "llm" on intent, starts 60s auto-release timer
+- [x] `TARS.releaseControl()` — explicit release back to autonomous
+- [x] `window.TARS_CONTROL` — exposes `setMode()`, `getMode()`, `release()` for external control
+- [x] `lookAt(targetKey, reason)` — reason parameter propagated through to `setTARSActivity()`
+- [x] Activity reasons: `autonomous_move`, `llm_intent` (extensible: `environmental_event`, `scheduled_routine`, `user_interaction`, `system_alert`)
+- [x] UI control panel buttons for AUTO / LLM / RELEASE
+- [x] `getTARSActivitySummary()` includes `controlMode` in output
+- [x] Emotion map fixed: `"curious"` → `"think"` for window_right (valid BEHAVIOR_PRESETS key)
+
+### Architecture
+```
+LLM → TARS.setBehavior({gaze, emotion, ...})
+       ├── sets worldState.tars.controlMode = "llm"
+       ├── starts 60s auto-release timer
+       ├── this.lookAt(target, "llm_intent")
+       │     └── setTARSActivity(activity, location, "llm_intent")
+       │           ├── updates worldState.tars.activity / location / reason
+       │           └── logActivityEvent() → worldState.activityLog
+       └── gesture / emotion → Three.js visual pipeline
+
+Autonomy → makeAutonomousDecision()
+            ├── if controlMode === "llm" → return (defer)
+            ├── else → score locations → move → "autonomous_move"
+            └── needs continue updating regardless
+```
 
 ## Phase 4 (Planned) — Cross-Session Persistence

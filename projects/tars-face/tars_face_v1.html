@@ -221,6 +221,15 @@
     </div>
 
     <div class="ctrl-group">
+        <label>CONTROL MODE: <span id="ctrl-mode-display">AUTO</span></label>
+        <div class="ctrl-buttons">
+            <button class="btn" onclick="window.TARS_CONTROL.setMode('autonomous'); document.getElementById('ctrl-mode-display').innerText='AUTO'">AUTO</button>
+            <button class="btn" onclick="window.TARS_CONTROL.setMode('llm'); document.getElementById('ctrl-mode-display').innerText='LLM'">LLM</button>
+            <button class="btn" onclick="window.TARS_CONTROL.release(); document.getElementById('ctrl-mode-display').innerText='AUTO'">RELEASE</button>
+        </div>
+    </div>
+
+    <div class="ctrl-group">
         <label>LLM BEHAVIOR INTENT TEST</label>
         <div class="ctrl-buttons">
             <button class="btn" onclick="window.TARS.setBehavior({emotion:'excited', intensity:0.8, energy:0.9, urgency:0.7, gesture:'pulse', gaze:'user'})">EXCITED</button>
@@ -2035,6 +2044,7 @@ const worldState = {
     },
     tars: {
         location: "spawn",               // current location key
+        controlMode: "autonomous",       // "autonomous" | "llm"
         activity: "idle",                // current activity
         activityStartedAt: Date.now(),   // timestamp when current activity started
         activityReason: "spawn",         // why TARS started this activity
@@ -2119,6 +2129,7 @@ function setTARSActivity(activity, location, reason, metadata = {}) {
 // Helper: Get current activity summary for LLM queries
 function getTARSActivitySummary() {
     return {
+        controlMode: worldState.tars.controlMode,
         location: worldState.tars.location,
         activity: worldState.tars.activity,
         activityStartedAt: new Date(worldState.tars.activityStartedAt).toISOString(),
@@ -2939,23 +2950,19 @@ window.TARS = {
             if (!currentState.speaking) this.trigger("idle");
         }, 500);
     },
-    lookAt(targetKey) {
+    lookAt(targetKey, reason = "autonomous_move") {
         currentState.gazeTarget = targetKey;
-        console.log(`[TARS] Look at: ${targetKey}`);
+        console.log(`[TARS] Look at: ${targetKey} (reason: ${reason})`);
         if (TARGET_POSITIONS[targetKey]) {
-            // Actually MOVE to the target location
             currentState.targetPos.copy(TARGET_POSITIONS[targetKey]);
-            // Face the target immediately
             const targetVec = TARGET_POSITIONS[targetKey];
             const dx = targetVec.x - tarsEntityGroup.position.x;
             const dz = targetVec.z - tarsEntityGroup.position.z;
             const angle = Math.atan2(dx, dz);
             tarsEntityGroup.rotation.y = angle;
             
-            // Trigger location-specific behaviors
             triggerLocationBehavior(targetKey);
             
-            // Update activity tracking (BUG 4 fix)
             const activityMap = {
                 "window_left": "weather_observation",
                 "window_right": "weather_observation", 
@@ -2964,7 +2971,7 @@ window.TARS = {
                 "user": "user_interaction"
             };
             const activity = activityMap[targetKey] || "idle";
-            setTARSActivity(activity, targetKey, "autonomous_move");
+            setTARSActivity(activity, targetKey, reason);
         }
     },
     moveTo(pos) {
@@ -2980,13 +2987,27 @@ window.TARS = {
             worldState.tars.energy = obj.energy;
         }
         if (obj.urgency !== undefined) this.setUrgency(obj.urgency);
-        if (obj.gaze) this.lookAt(obj.gaze);
+        if (obj.gaze) this.lookAt(obj.gaze, "llm_intent");
         if (obj.movement && obj.target && TARGET_POSITIONS[obj.target]) {
             this.moveTo(TARGET_POSITIONS[obj.target]);
         }
         if (obj.gesture) {
             this.triggerGesture(obj.gesture);
         }
+        // LLM intent takes control, start auto-release timer
+        worldState.tars.controlMode = "llm";
+        clearTimeout(window._llmReleaseTimer);
+        window._llmReleaseTimer = setTimeout(() => {
+            if (worldState.tars.controlMode === "llm") {
+                worldState.tars.controlMode = "autonomous";
+                console.log(`[TARS Control] Auto-release to autonomous (60s timeout)`);
+            }
+        }, 60000);
+    },
+    releaseControl() {
+        worldState.tars.controlMode = "autonomous";
+        clearTimeout(window._llmReleaseTimer);
+        console.log(`[TARS Control] Explicit release to autonomous`);
     },
     triggerGesture(gesture) {
         console.log(`[TARS] Gesture: ${gesture}`);
@@ -3506,6 +3527,9 @@ function makeAutonomousDecision() {
     // Only decide every 1-3 seconds (faster for testing)
     if (now - worldState.tars.lastDecisionTime < 1000 + Math.random() * 2000) return;
     
+    // Defer to LLM control — autonomy reads needs but does not move
+    if (worldState.tars.controlMode === "llm") return;
+    
     // Don't interrupt active one-shot FX states (not ambient emotions)
     const blockingFx = ["strobe_orange", "strobe_red", "strobe", "bounce", "expansive"];
     if (currentState.fx && blockingFx.includes(currentState.fx)) return;
@@ -3536,7 +3560,7 @@ function makeAutonomousDecision() {
         const emotionMap = {
             desk: "think",
             "rack-a": "listen",
-            "window_right": "curious",
+            "window_right": "think",
             "window_left": "chill",
             user: "listen"
         };
@@ -3552,6 +3576,22 @@ window.TARS_AUTONOMY = {
     getScores: () => LOCATIONS.map(loc => ({ location: loc, score: scoreLocation(loc) })),
     forceDecision: makeAutonomousDecision,
     setNeed: (need, value) => { worldState.tars.needs[need] = Math.max(0, Math.min(1, value)); }
+};
+
+// Expose control mode for LLM integration
+window.TARS_CONTROL = {
+    getMode: () => worldState.tars.controlMode,
+    setMode: (mode) => {
+        if (mode !== "autonomous" && mode !== "llm") return;
+        worldState.tars.controlMode = mode;
+        if (mode === "autonomous") {
+            clearTimeout(window._llmReleaseTimer);
+        }
+        console.log(`[TARS Control] Mode set to: ${mode}`);
+    },
+    release: () => {
+        if (window.TARS.releaseControl) window.TARS.releaseControl();
+    }
 };
 
 // ============================================================

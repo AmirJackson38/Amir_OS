@@ -1,5 +1,5 @@
 # Amir OS Session Resume Bootstrap (v2 Fast-Boot)
-> Generated: 2026-07-27 20:38:42 UTC
+> Generated: 2026-07-27 20:46:45 UTC
 > Amir OS Version: v0.8.0 (Single-File Fast-Boot Engine)
 > Memory Efficiency: 4833 / 5,500 chars used
 
@@ -39,10 +39,10 @@ Single-File Fast Boot: Reading this file provides 100% of the active context in 
 
 ## Active Staged Action
 
-- **Timestamp:** 2026-07-27 20:30:00 UTC
+- **Timestamp:** 2026-07-27 20:50:00 UTC
 - **Target Component:** T.A.R.S. World Engine — Phase 3: LLM Intent Parsing & Behavioral JSON
-- **Planned Action:** Phase 3 Implementation — Intent schema + mock generator + LLM prompt template built. Needs integration testing and real LLM hookup.
-- **Status:** In Progress (Schema, Mock Generator, Prompt Template — built; Integration — pending)
+- **Planned Action:** Phase 3a (Foundation Audit) + Phase 3b (Priority & Control Integration) complete. Ready for real LLM integration.
+- **Status:** Completed (Schema, Mock Generator, Prompt Template, Audit, Control Mode, Priority Gate, Reason Propagation — all built)
 
 ---
 
@@ -286,6 +286,37 @@ LLM / Human Input
 4. Create LLM prompt template
 5. Integrate with world state logging
 6. Test with mock generator, then real LLM
+
+## Phase 3b (Complete) — Priority & Control Integration
+
+### Implemented
+- [x] `worldState.tars.controlMode` — centralized state with "autonomous" and "llm" values
+- [x] `makeAutonomousDecision()` defers when `controlMode === "llm"` — needs continue, movement stops
+- [x] `TARS.setBehavior()` sets controlMode to "llm" on intent, starts 60s auto-release timer
+- [x] `TARS.releaseControl()` — explicit release back to autonomous
+- [x] `window.TARS_CONTROL` — exposes `setMode()`, `getMode()`, `release()` for external control
+- [x] `lookAt(targetKey, reason)` — reason parameter propagated through to `setTARSActivity()`
+- [x] Activity reasons: `autonomous_move`, `llm_intent` (extensible: `environmental_event`, `scheduled_routine`, `user_interaction`, `system_alert`)
+- [x] UI control panel buttons for AUTO / LLM / RELEASE
+- [x] `getTARSActivitySummary()` includes `controlMode` in output
+- [x] Emotion map fixed: `"curious"` → `"think"` for window_right (valid BEHAVIOR_PRESETS key)
+
+### Architecture
+```
+LLM → TARS.setBehavior({gaze, emotion, ...})
+       ├── sets worldState.tars.controlMode = "llm"
+       ├── starts 60s auto-release timer
+       ├── this.lookAt(target, "llm_intent")
+       │     └── setTARSActivity(activity, location, "llm_intent")
+       │           ├── updates worldState.tars.activity / location / reason
+       │           └── logActivityEvent() → worldState.activityLog
+       └── gesture / emotion → Three.js visual pipeline
+
+Autonomy → makeAutonomousDecision()
+            ├── if controlMode === "llm" → return (defer)
+            ├── else → score locations → move → "autonomous_move"
+            └── needs continue updating regardless
+```
 
 ## Phase 4 (Planned) — Cross-Session Persistence
 
@@ -547,7 +578,7 @@ This project builds: Documentation, system design, information architecture, aut
 
 # Project Registry (Auto-Generated)
 
-**Last Updated:** 2026-07-27 20:38:42 UTC  
+**Last Updated:** 2026-07-27 20:46:45 UTC  
 **Status:** Active registry  
 **Purpose:** Consolidated inventory of all active, paused, and archived projects
 
@@ -584,8 +615,6 @@ This project builds: Documentation, system design, information architecture, aut
 M memory/PROJECT_REGISTRY.md
  M memory/STAGING_INTENT.md
  M projects/tars-face/tars_face_v1.html
- M tools/tars_intent_schema.json
- M tools/tars_llm_prompt.md
 ```
 
 ---
@@ -594,55 +623,55 @@ M memory/PROJECT_REGISTRY.md
 
 ```diff
 diff --git a/memory/PROJECT_REGISTRY.md b/memory/PROJECT_REGISTRY.md
-index c352bab..d659c1a 100644
+index d659c1a..1b8588a 100644
 --- a/memory/PROJECT_REGISTRY.md
 +++ b/memory/PROJECT_REGISTRY.md
 @@ -1,6 +1,6 @@
  # Project Registry (Auto-Generated)
  
--**Last Updated:** 2026-07-27 20:29:43 UTC  
-+**Last Updated:** 2026-07-27 20:38:42 UTC  
+-**Last Updated:** 2026-07-27 20:38:42 UTC  
++**Last Updated:** 2026-07-27 20:46:45 UTC  
  **Status:** Active registry  
  **Purpose:** Consolidated inventory of all active, paused, and archived projects
  
 diff --git a/memory/STAGING_INTENT.md b/memory/STAGING_INTENT.md
-index 2b3a2bc..df5ddb2 100644
+index df5ddb2..f68a634 100644
 --- a/memory/STAGING_INTENT.md
 +++ b/memory/STAGING_INTENT.md
-@@ -172,7 +172,41 @@ After each meaningful change:
- - [x] "Stay too long" penalty in scoring
- - [x] Console logging of scores + needs every decision
+@@ -7,10 +7,10 @@
  
--## Phase 3 (Planned) — LLM Intent → Behavioral JSON
-+## Phase 3 (In Progress) — LLM Intent → Behavioral JSON
+ ## Active Staged Action
+ 
+-- **Timestamp:** 2026-07-27 20:30:00 UTC
++- **Timestamp:** 2026-07-27 20:50:00 UTC
+ - **Target Component:** T.A.R.S. World Engine — Phase 3: LLM Intent Parsing & Behavioral JSON
+-- **Planned Action:** Phase 3 Implementation — Intent schema + mock generator + LLM prompt template built. Needs integration testing and real LLM hookup.
+-- **Status:** In Progress (Schema, Mock Generator, Prompt Template — built; Integration — pending)
++- **Planned Action:** Phase 3a (Foundation Audit) + Phase 3b (Priority & Control Integration) complete. Ready for real LLM integration.
++- **Status:** Completed (Schema, Mock Generator, Prompt Template, Audit, Control Mode, Priority Gate, Reason Propagation — all built)
+ 
+ ---
+ 
+@@ -255,4 +255,35 @@ LLM / Human Input
+ 5. Integrate with world state logging
+ 6. Test with mock generator, then real LLM
+ 
++## Phase 3b (Complete) — Priority & Control Integration
 +
-+### Audit Completed — 2026-07-27
++### Implemented
++- [x] `worldState.tars.controlMode` — centralized state with "autonomous" and "llm" values
++- [x] `makeAutonomousDecision()` defers when `controlMode === "llm"` — needs continue, movement stops
++- [x] `TARS.setBehavior()` sets controlMode to "llm" on intent, starts 60s auto-release timer
++- [x] `TARS.releaseControl()` — explicit release back to autonomous
++- [x] `window.TARS_CONTROL` — exposes `setMode()`, `getMode()`, `release()` for external control
++- [x] `lookAt(targetKey, reason)` — reason parameter propagated through to `setTARSActivity()`
++- [x] Activity reasons: `autonomous_move`, `llm_intent` (extensible: `environmental_event`, `scheduled_routine`, `user_interaction`, `system_alert`)
++- [x] UI control panel buttons for AUTO / LLM / RELEASE
++- [x] `getTARSActivitySummary()` includes `controlMode` in output
++- [x] Emotion map fixed: `"curious"` → `"think"` for window_right (valid BEHAVIOR_PRESETS key)
 +
-+**Verified:**
-+- Every supported mock intent produces valid JSON that passes schema validation
-+- Invalid emotions/gestures/targets are silently stripped by validate(); no crashes
-+- Intents route through World Engine: `TARS_INTENT.parse()` → `TARS.setBehavior()` → `lookAt()` → `setTARSActivity()` → `logActivityEvent()`, all updating `worldState`
-+- Intent updates: location, activity, activityReason, previousActivity, activityStartedAt, activityLog, worldState.tars.energy
-+- Autonomy and intents share the same `worldState`, activity state, event logging, and visual execution pipeline
-+- LLM prompt template now describes actual BEHAVIOR_PRESETS (14 emotions) and real capabilities
-+- Mock system is a replaceable dev layer — a real LLM would call `TARS.setBehavior()` directly with no changes to the World Engine
-+- 12 keyword rules cover all 7 representative intent flows (window left/right, game, work, rack, tv, alert)
-+
-+**Bugs Fixed During Audit:**
-+1. Schema emotion enum listed 8 values; only 3 (`think`, `listen`, `chill`) existed in `BEHAVIOR_PRESETS`. `neutral`, `curious`, `happy`, `concerned`, `alert` were silent no-ops. Updated to all 14 actual presets.
-+2. Mock keyword rules used invalid emotions (`curious`, `happy`, `alert`, `concerned`) → mapped to valid equivalents (`think`, `amused`, `warning`, `confused`)
-+3. `currentState.energy` and `worldState.tars.energy` were independent copies. `setBehavior()` now syncs both.
-+4. `updateActivityDisplay()` was dead code — only called inside wrapper `lookAt()` whose condition always evaluated to false. Added periodic call to animate loop (every 1s).
-+5. Keyword "window" matched the chill rule (gaze: window_left) even for "right window" intents. Split into "right window" (rule 5) and "left window" (rule 6) for disambiguation.
-+6. Schema and LLM prompt documented "speak" capability that doesn't exist. Changed to "Future: speech bubble text (not yet implemented)".
-+
-+**Architectural Weaknesses Discovered:**
-+1. **No priority/interruption system** — LLM intents immediately override autonomous behavior. The autonomous system tries to override back after 1-3s. No `controlMode` or priority field exists. Currently not a problem for demos, but needed before real LLM integration.
-+2. **Wrapper lookAt has dead code** — the wrapped lookAt's activity map (`observing_weather`, `interacting_with_user`) and extra event push are unreachable because the original lookAt already sets `worldState.tars.location`. No runtime impact but misleading.
-+3. **worldState.tars.energy vs worldState.tars.needs.energy** — same name, different semantics. `energy` is a 0-1 general state; `needs.energy` is a specific need for the autonomy system. Confusing but functionally separate.
-+4. **Activity reason always "autonomous_move"** — `lookAt()` hardcodes the reason, so LLM-driven moves don't show "llm_intent" in the log. Metadata-only issue.
-+5. **Mock intent "investigate an alert" has no gaze** — shows warning face but doesn't look toward any location. Acceptable for Phase 3 foundation.
-+
++### Architecture
++```
 
 ... [DIFF TRUNCATED TO 50 LINES FOR BREVITY] ...
 ```
