@@ -59,14 +59,19 @@ def find_projects(base_dirs):
                 has_nodejs = 'package.json' in files
                 has_docker = 'Dockerfile' in files or 'docker-compose.yml' in files
                 
-                is_project = has_git or has_python or has_nodejs or has_docker
+                # Special detection for TARS face project (single HTML file)
+                has_tars_face = 'tars_face_v1.html' in files
+                
+                is_project = has_git or has_python or has_nodejs or has_docker or has_tars_face
                 
                 if is_project:
                     project_name = os.path.basename(root)
                     rel_path = os.path.relpath(root, get_repo_root())
                     
                     # Determine type
-                    if 'TARS' in project_name or 'tars' in project_name.lower():
+                    if has_tars_face:
+                        proj_type = "Three.js Visual Frontend"
+                    elif 'TARS' in project_name or 'tars' in project_name.lower():
                         proj_type = "Backend + Agent"
                     elif has_docker:
                         proj_type = "Containerized"

@@ -1,6 +1,6 @@
 # Project Registry (Auto-Generated)
 
-**Last Updated:** 2026-07-27 02:34:07 UTC  
+**Last Updated:** 2026-07-27 19:11:03 UTC  
 **Status:** Active registry  
 **Purpose:** Consolidated inventory of all active, paused, and archived projects
 
@@ -11,7 +11,6 @@
 | Project | Location | Type | Status | Git | Purpose |
 |---------|----------|------|--------|-----|---------|
 | **my-agent** | `projects\my-agent/` | Python | Active | ❌ | Terminal AI client (v1.1.0). Python + Rich TUI. Talks to OmniRoute. |
-| **TARS (tars-face)** | `projects\tars-face/` | HTML/JS | Active | ✅ | T.A.R.S. World Engine — Three.js visual frontend, autonomous needs system, dual windows, bridge scene. Phase 1-2 complete. |
 
 ---
 
@@ -33,7 +32,9 @@
 
 ## Newly Discovered Projects
 
-(No new projects detected)
+| Project | Location | Type | Action |
+|---------|----------|------|--------|
+| tars-face | `projects\tars-face/` | Three.js Visual Frontend | ⚠ Document in CURRENT_STATE_v2.md |
 
 ---
 
@@ -70,7 +71,7 @@ When starting a new project:
 
 ## Project Statistics
 
-- **Total Projects:** 2 active, 0 paused, 0 archived
+- **Total Projects:** 2 discovered, 1 known, 1 new
 - **Primary System:** Amir OS (v0.8.0)
 - **Distributed Infrastructure:** Home Lab
 - **Key Deployment:** TSE-Production-Lab / T.A.R.S.

@@ -1,7 +1,7 @@
 # Amir OS Session Resume Bootstrap (v2 Fast-Boot)
-> Generated: 2026-07-27 02:34:09 UTC
+> Generated: 2026-07-27 19:11:03 UTC
 > Amir OS Version: v0.8.0 (Single-File Fast-Boot Engine)
-> Memory Efficiency: 4416 / 5,500 chars used
+> Memory Efficiency: 4269 / 5,500 chars used
 
 This file contains the consolidated runtime state of Amir OS v0.8.0.
 Single-File Fast Boot: Reading this file provides 100% of the active context in 1 tool call.
@@ -39,12 +39,174 @@ Single-File Fast Boot: Reading this file provides 100% of the active context in 
 
 ## Active Staged Action
 
-- **Timestamp:** 2026-07-26 23:59:00 UTC
-- **Target Component:** T.A.R.S. Embodiment System (v0.3 Frontend ➡️ Emotion-Driven Digital Entity Engine)
-- **Planned Action:** Implement procedural T.A.R.S. entity (energy core, translucent body, deforming surface, particles, gaze/attention), behavior presets engine, emotion mixer, speech-reactive hooks, and test controls without altering room baseline.
-- **Status:** In-Progress
+- **Timestamp:** 2026-07-27 23:30:00 UTC
+- **Target Component:** T.A.R.S. World Engine — Phase 3: LLM Intent Parsing & Behavioral JSON
+- **Planned Action:** Phase 3 Implementation — LLM intent parsing to behavioral JSON, cross-session memory persistence
+- **Status:** Planned (Phase 1 & 2 Complete)
 
 ---
+
+## Phase 1 Objective
+
+Build the foundation layer for the TARS World Engine. Establish a clean separation between:
+- TARS LLM / Agent (queries World State)
+- World State Interface (centralized authoritative state)
+- Autonomy / World Simulation Layer (Environment, Weather, TARS State, Activity State, Preferences, Event Logging)
+- Existing Three.js / Visual Frontend (Room, TARS, Windows, Weather Visuals, Animations, Objects)
+
+The system should be designed so the visual world can eventually run autonomously without requiring constant LLM calls.
+
+---
+
+## Phase 1 Scope (Implementation Order)
+
+1. **Generalized World State** - Centralized world-state representation
+2. **Two Windows** - Add left-side window (`window_left`), keep existing as `window_right`
+3. **Window Navigation** - TARS can navigate to either window, location tracked in state
+4. **Window-Specific Activities & Events** - Distinct activities per window, events identify specific window
+5. **Generalized TARS Preferences / Affinities** - Foundation for activities, locations, objects, environmental conditions, routines
+6. **Generalized Weather System** - Weather as environment state, not just rain; extensible conditions
+7. **Weather Visual Engine Foundation** - Refactor rain into generalized weather visual engine
+8. **Weather Independence** - Weather exists independently of TARS
+9. **Future Houston Weather API Compatibility** - Architecture ready for live data
+9. **Current Visual Activity State** - Authoritative current activity state (location, activity, start time, reason, previous activity)
+10. **Rolling Visual Activity Log** - Meaningful events only, rolling window
+11. **Event Structure** - Structured events with timestamps, types, locations, metadata
+12. **Existing Behavior Integration** - Connect existing movement/behavior to new state/event system
+13. **Zero LLM Requirement** - Phase 1 works entirely locally
+14. **Future Autonomy Compatibility** - Architecture ready for Phase 2 scheduler
+
+---
+
+## Architecture Being Introduced
+
+### World State Structure
+```js
+worldState = {
+    room: { currentRoom: "main_room", locations: { workstation, window_left, window_right, server_rack } },
+    environment: { weather: { condition, intensity, precipitation, wind, lightning, visibility }, temperature, wind, visibility, timeOfDay },
+    tars: { location, activity, activityStartedAt, mood, energy, preferences, previousActivity },
+    activityLog: [ { id, timestamp, eventType, activity, location, reason, metadata }, ... ],
+    preferences: { activities: {...}, locations: {...}, objects: {...}, conditions: {...}, routines: {...} }
+}
+```
+
+### Dual Windows
+- Existing window → `window_right` (position: WIN_X=2.5, WALL_Z=-6)
+- New window → `window_left` (position: x≈-6.5, z=-6, same dimensions)
+- Both navigable destinations with unique IDs
+- Movement system supports both
+- Activity system distinguishes them
+
+### Generalized Weather State
+```js
+weather: {
+    condition: "thunderstorm",      // clear, sunny, cloudy, overcast, rain, thunderstorm, snow, fog, etc.
+    intensity: "heavy",             // light, moderate, heavy, severe
+    precipitation: "rain",          // rain, snow, sleet, none
+    wind: { intensity: "strong", direction: 270 },
+    lightning: true,
+    visibility: "reduced",          // clear, reduced, poor
+    cloudCover: 0.9
+}
+```
+
+### Preferences / Affinities (Generalized)
+```js
+preferences: {
+    activities: { gaming: 0.8, computer_work: 0.7, server_check: 0.9, weather_observation: 0.6 },
+    locations: { window_right: 0.9, window_left: 0.5, workstation: 0.8, server_rack: 0.85 },
+    objects: { computer: 0.8, television: 0.6, radio: 0.7 },
+    conditions: { thunderstorm: 0.8, rain: 0.6, clear: 0.4, night: 0.7 }
+}
+```
+
+---
+
+## Files / Components Expected to Change
+
+| File | Changes |
+|------|---------|
+| `projects/tars-face/tars_face_v1.html` | All Phase 1 implementation |
+| `memory/STAGING_INTENT.md` | This log (updated as work progresses) |
+
+### Key Integration Points in `tars_face_v1.html`
+
+1. **World State Module** - New centralized state object (after `currentState`)
+2. **Window System** - Add `window_left` to `TARGET_POSITIONS`, create visual window on left wall
+3. **Navigation** - Update `lookAt()` and collision to support both windows
+3. **Weather Module** - New `environment` state + generalized weather visual engine
+4. **Preferences Module** - New `preferences` state in `currentState` or `worldState`
+5. **Activity State** - `currentActivity` with location, startedAt, reason, previousActivity
+6. **Event System** - `activityLog` array + `logEvent()` function
+7. **Visual Engine** - Refactor rain into `weatherVisualEngine` that reads `environment.weather`
+7. **Preferences Module** - Generalized `preferences` object in `currentState` or `worldState`
+8. **Activity Log** - `activityLog` array + `logActivityEvent()` function
+9. **Integration** - Hook existing `lookAt()`, `triggerLocationBehavior()`, `setBehavior()` to update new state
+
+---
+
+## Validation Strategy
+
+After each meaningful change:
+1. **Syntax check** - No JS syntax errors
+2. **Load test** - Page loads, Three.js initializes
+3. **Console check** - No runtime errors in browser console
+3. **Room renders** - Floor, walls, ceiling, windows visible
+3. **TARS renders** - Core, body, face, particles, gaze indicator
+3. **Existing windows** - Both windows visible, glass, frame, exterior
+3. **TARS movement** - `lookAt('window_left')`, `lookAt('window_right')`, `lookAt('desk')`, `lookAt('user')` all work
+3. **Collision avoidance** - Still steers around desk, racks, plants
+3. **Desk/rack wiggle** - Still triggers on near-contact
+3. **Location behaviors** - Both windows trigger distinct behaviors
+3. **Weather** - Rain still works, weather state readable
+3. **Preferences** - State accessible, no errors
+3. **Activity log** - Events created on location arrival, readable
+3. **Control panel** - All buttons still functional
+
+---
+
+## Rollback Considerations
+
+- Single file (`tars_face_v1.html`) - git checkout restores previous version
+- `STAGING_INTENT.md` documents intent for recovery
+- Changes are additive (new state modules, new window) - minimal risk to existing systems
+- If critical failure: `git checkout HEAD -- projects/tars-face/tars_face_v1.html`
+
+---
+
+## Current Implementation Status
+
+- [x] World State module created
+- [x] Dual windows (window_left added)
+- [x] Window navigation & location tracking
+- [x] Window-specific activities & events
+- [x] Generalized preferences/affinities foundation
+- [x] Generalized weather state model
+- [x] Weather visual engine foundation (rain refactored)
+- [x] Weather independence from TARS
+- [x] Current Visual Activity State
+- [x] Rolling Visual Activity Log
+- [x] Event system with structured events
+- [x] Existing behavior integration
+- [x] Zero LLM verification (Phase 1)
+- [x] Future autonomy compatibility (Phase 2 implemented)
+- [x] Final validation pass
+- [x] STAGING_INTENT.md finalized
+
+## Phase 2 (Autonomous Scheduler / Needs System) — COMPLETE
+
+- [x] 5 needs: energy, curiosity, social, maintenance, comfort
+- [x] 6 autonomous activities with scoring (time/weather/preference/recency/distance)
+- [x] Decisions every 2-5s, fx gate only blocks blocking fx
+- [x] `setTARSActivity()` called in lookAt hook for activityStartedAt tracking
+- [x] Need decay/restoration by location, time-of-day, weather
+- [x] "Stay too long" penalty in scoring
+- [x] Console logging of scores + needs every decision
+
+## Phase 3 (Planned) — LLM Intent → Behavioral JSON
+
+## Phase 4 (Planned) — Cross-Session Persistence
 
 ---
 
@@ -84,40 +246,44 @@ For full release history and milestone details (v0.1.0 – v0.8.0), see: [docs/C
 **Last Updated:** July 26, 2026
 
 ### Current State
-# Current State (v2 — Compressed to 1,500 chars max)
-
-**Last Updated:** July 26, 2026  
-**Character Budget:** 1,500 chars | **Current:** 1,288 chars | **Status:** ✅ Within limit
-
----
-
 ## Active Focus
 
-Building strong technical foundation for TSE/CSE roles through **hands-on systems work** (Home Lab, TARS Pi, Docker, APIs).
-
-Currently studying: **Networking fundamentals, Linux, Docker, APIs, Security, troubleshooting methodology.**
+TARS World Engine Foundation (Phase 1) + Autonomous Scheduler (Phase 2) complete in single-file `tars_face_v1.html`. Zero LLM dependency - all local.
 
 ---
+
 
 ## Active Projects
 
-1. **Amir OS** (v0.8.0) — Personal AI operating environment. Just completed memory consolidation.
-2. **TSE-Production-Lab** (FastAPI + PostgreSQL) — T.A.R.S. backend running on TARS Pi. Hybrid online/offline AI assistant.
-3. **Home Lab** — Network infrastructure: TrueNAS, TARS Pi, ER605 router, dual-subnet topology.
-4. **My Agent** (v1.1.0) — Terminal AI client for OmniRoute, integrated in Amir OS.
+1. **TARS World Engine** (Phase 1 ✅, Phase 2 ✅) — Centralized worldState, dual windows (city + bridge), generalized weather (10+ conditions), preferences/affinities, activity logging, autonomous needs scheduler. Deployed at `http://localhost:8080/tars_face_v1.html`.
+
+2. **Amir OS** — Personal AI environment with memory system. Memory files at `/memory/*_v2.md`.
+
+3. **Home Lab** — TrueNAS, TARS Pi, ER605, dual-subnet.
 
 ---
+
 
 ## Next Actions
 
-1. Test TSE-Production-Lab deployment on TARS Pi
-2. Integrate deterministic memory with session management
-3. Continue Networking + Security+ prep (hands-on)
-4. Build Home Lab monitoring stack
+1. Verify overnight autonomy run (browser tab throttling)
+2. Phase 3: LLM intent parsing → behavioral JSON
+3. Phase 4: Cross-session memory persistence
 
 ---
 
-**See:** `ACTIVE_PROJECT_v2.md` for current priority. `PROJECT_REGISTRY.md` for full inventory.
+
+## Key Files
+
+- `projects/tars-face/tars_face_v1.html` — Single-file Three.js app (no build)
+- `memory/*_v2.md` — Consolidated memory
+
+---
+
+
+## See
+
+`PROJECT_REGISTRY.md` for full inventory. `ACTIVE_PROJECT_v2.md` for current priority.
 
 ### Active Project
 # Active Project (v2 — Compressed to 1,500 chars max)
@@ -176,10 +342,11 @@ This project builds: Documentation, system design, information architecture, aut
 
 # Session Log (v2 — Flight Recorder, 2,500 chars max)
 
-**Last Updated:** July 26, 2026  
-**Character Budget:** 2,500 chars | **Current:** 2,387 chars | **Status:** ✅ Within limit
+**Last Updated:** July 27, 2026  
+**Character Budget:** 2,500 chars | **Current:** ~2,200 chars | **Status:** ✅ Within limit
 
 ---
+
 
 ## Session 2026-07-24-03
 
@@ -197,7 +364,6 @@ This project builds: Documentation, system design, information architecture, aut
 ---
 
 
-
 ## Session 2026-07-24-02
 
 **Start Time:** 2026-07-24  
@@ -213,7 +379,6 @@ This project builds: Documentation, system design, information architecture, aut
 * **Known Limitation:** OmniRoute strips tool capabilities—model can't call tools through it. Needs local/CLI-native model
 
 ---
-
 
 
 ## Session 2026-07-23-01
@@ -239,7 +404,7 @@ This project builds: Documentation, system design, information architecture, aut
 
 # Project Registry (Auto-Generated)
 
-**Last Updated:** 2026-07-27 02:34:07 UTC  
+**Last Updated:** 2026-07-27 19:11:03 UTC  
 **Status:** Active registry  
 **Purpose:** Consolidated inventory of all active, paused, and archived projects
 
@@ -273,11 +438,16 @@ This project builds: Documentation, system design, information architecture, aut
 ## 6. Active Workspace Changes (Git Status)
 
 ```
-M memory/PROJECT_REGISTRY.md
+M memory/BOOTSTRAP_v2.md
+ M memory/CURRENT_STATE_v2.md
+ M memory/DECISIONS_v2.md
+ M memory/LESSONS_v2.md
+ M memory/PROJECT_REGISTRY.md
+ M memory/SESSION_LOG_v2.md
  M memory/STAGING_INTENT.md
- M projects/my-agent/src/myagent/__pycache__/agent_loop.cpython-312.pyc
- M projects/my-agent/src/myagent/__pycache__/chat.cpython-312.pyc
-?? projects/tars-face/
+ M tools/character_limiter.py
+ M tools/project_autodiscovery.py
+?? memory/ACTIVE_PROJECT_v2.md
 ```
 
 ---
@@ -285,40 +455,7 @@ M memory/PROJECT_REGISTRY.md
 ## 7. Current Code Diffs (Capped at 50 Lines)
 
 ```diff
-diff --git a/memory/PROJECT_REGISTRY.md b/memory/PROJECT_REGISTRY.md
-index 57b9d02..fd635e6 100644
---- a/memory/PROJECT_REGISTRY.md
-+++ b/memory/PROJECT_REGISTRY.md
-@@ -1,6 +1,6 @@
- # Project Registry (Auto-Generated)
- 
--**Last Updated:** 2026-07-27 00:28:25 UTC  
-+**Last Updated:** 2026-07-27 02:34:07 UTC  
- **Status:** Active registry  
- **Purpose:** Consolidated inventory of all active, paused, and archived projects
- 
-diff --git a/memory/STAGING_INTENT.md b/memory/STAGING_INTENT.md
-index c0357c5..b38357c 100644
---- a/memory/STAGING_INTENT.md
-+++ b/memory/STAGING_INTENT.md
-@@ -8,8 +8,8 @@
- ## Active Staged Action
- 
- - **Timestamp:** 2026-07-26 23:59:00 UTC
--- **Target Component:** Amir OS v0.9.0 — T.A.R.S. Cognitive Kernel Engine
--- **Planned Action:** Implemented `tools/auto_heal.py` (self-remediating engine), dynamic secret shielding for git diffs/summaries, updated `version.md` and `docs/CHANGELOG.md` to v0.9.0.
--- **Status:** Completed
-+- **Target Component:** T.A.R.S. Embodiment System (v0.3 Frontend ➡️ Emotion-Driven Digital Entity Engine)
-+- **Planned Action:** Implement procedural T.A.R.S. entity (energy core, translucent body, deforming surface, particles, gaze/attention), behavior presets engine, emotion mixer, speech-reactive hooks, and test controls without altering room baseline.
-+- **Status:** In-Progress
- 
- ---
-diff --git a/projects/my-agent/src/myagent/__pycache__/agent_loop.cpython-312.pyc b/projects/my-agent/src/myagent/__pycache__/agent_loop.cpython-312.pyc
-index 4035782..037fff4 100644
-Binary files a/projects/my-agent/src/myagent/__pycache__/agent_loop.cpython-312.pyc and b/projects/my-agent/src/myagent/__pycache__/agent_loop.cpython-312.pyc differ
-diff --git a/projects/my-agent/src/myagent/__pycache__/chat.cpython-312.pyc b/projects/my-agent/src/myagent/__pycache__/chat.cpython-312.pyc
-index dde465b..e4b4dc0 100644
-Binary files a/projects/my-agent/src/myagent/__pycache__/chat.cpython-312.pyc and b/projects/my-agent/src/myagent/__pycache__/chat.cpython-312.pyc differ
+No active diff or diff unavailable.
 ```
 
 ---

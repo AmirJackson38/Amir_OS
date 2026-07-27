@@ -5,21 +5,6 @@
 
 ---
 
-## Session 2026-07-27-01
-
-**Start Time:** 2026-07-27 00:00  
-**Status:** Completed  
-**Objective:** TARS World Engine Foundation (Phase 1) + Autonomous Scheduler (Phase 2) in single-file `tars_face_v1.html`
-
-### Log
-
-* **Phase 1 Complete**: Centralized `worldState` (room, environment, tars, activityLog, preferences), dual windows (right=city with parallax, left=bridge/river with towers/deck/cables/water/cars), generalized weather engine (clear/rain/thunderstorm/snow/fog/overcast/sunny/cloudy/heavy_rain), preferences/affinities (activities/locations/objects/conditions/routines), rolling activity log (50 events), control panel with window buttons
-* **Phase 2 Complete**: 5 needs (energy/curiosity/social/maintenance/comfort), 6 autonomous activities with scoring (time/weather/preference/recency/distance), decisions every 2-5s, fx gate only blocks truly blocking fx
-* **Left Window Visuals**: Bridge with suspension towers, deck, cables, water plane with animation, parallax layers (hills/bridge/water), cars with animated headlights/taillights, day/night cycle synced with right window
-* **Bug Fixes**: Left window hole in wall (rotated frame 90°, moved exterior to X-axis), rack LED/spark triggers on proximity, monitor state machine (terminal/tarsOS/matrix/starfield/syslogs/codeReview/logCleanup) replaces find-by-drawFn pattern, autonomy fx gate, activityStartedAt tracking for "stay too long" penalty
-* **Memory**: Non-v2 files removed, v2 files updated
-
----
 
 ## Session 2026-07-24-03
 
@@ -36,6 +21,7 @@
 
 ---
 
+
 ## Session 2026-07-24-02
 
 **Start Time:** 2026-07-24  
@@ -51,6 +37,7 @@
 * **Known Limitation:** OmniRoute strips tool capabilities—model can't call tools through it. Needs local/CLI-native model
 
 ---
+
 
 ## Session 2026-07-23-01
 
