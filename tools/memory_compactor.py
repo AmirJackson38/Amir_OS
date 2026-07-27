@@ -20,24 +20,37 @@ def strip_noise(text):
     lines = text.split('\n')
     cleaned_lines = []
     
-    in_raw_block = False
-    
     for line in lines:
-        # Strip ping output lines except summary
         if re.search(r'64 bytes from|Reply from|bytes=32 time=', line, re.IGNORECASE):
             continue
             
-        # Strip progress bar lines (Nmap, pip, docker)
         if re.search(r'\[[=\s>-]+\] \d+%', line) or re.search(r'Reading package lists\.\.\.', line):
             continue
             
-        # Strip raw copy-pasted PowerShell syntax error traces if resolved
         if "The term" in line and "is not recognized as the name of a cmdlet" in line:
             continue
             
         cleaned_lines.append(line)
         
     return '\n'.join(cleaned_lines)
+
+def archive_old_sessions(root, archived_sessions):
+    """Archive omitted sessions into SESSION_LOG_ARCHIVE.md."""
+    if not archived_sessions:
+        return
+    archive_path = os.path.join(root, "memory", "SESSION_LOG_ARCHIVE.md")
+    archive_content = "\n\n".join(archived_sessions) + "\n\n"
+    
+    try:
+        header = "# Session Log Archive\n\nThis file contains archived session logs rotated from SESSION_LOG_v2.md.\n\n---\n\n"
+        if not os.path.exists(archive_path):
+            with open(archive_path, 'w', encoding='utf-8') as f:
+                f.write(header + archive_content)
+        else:
+            with open(archive_path, 'a', encoding='utf-8') as f:
+                f.write(archive_content)
+    except Exception as e:
+        print(f"[WARN] Failed to write to archive: {e}")
 
 def compact_session_log(session_log_path, char_budget=DEFAULT_CHAR_BUDGET):
     if not os.path.exists(session_log_path):
@@ -61,13 +74,12 @@ def compact_session_log(session_log_path, char_budget=DEFAULT_CHAR_BUDGET):
     header = parts[0]
     sessions = []
     
-    # Reassemble session blocks
     for i in range(1, len(parts), 2):
         if i + 1 < len(parts):
             sessions.append(parts[i] + parts[i+1])
             
-    # Keep newest sessions intact, condense older ones
     compacted_sessions = []
+    omitted_sessions = []
     current_length = len(header)
     
     # Process newest first (reverse)
@@ -87,23 +99,27 @@ def compact_session_log(session_log_path, char_budget=DEFAULT_CHAR_BUDGET):
                 compacted_sessions.insert(0, session_condensed)
                 current_length += len(session_condensed)
             else:
-                # Omit very old sessions beyond budget threshold
-                break
+                omitted_sessions.insert(0, session)
                 
-    compacted_content = header + '\n' + '\n'.join(compacted_sessions)
+    compacted_content = header.strip() + '\n\n' + '\n\n'.join(compacted_sessions).strip() + '\n'
     compacted_char_count = len(compacted_content)
     
     with open(session_log_path, 'w', encoding='utf-8') as f:
         f.write(compacted_content)
         
+    root = get_repo_root()
+    if omitted_sessions:
+        archive_old_sessions(root, omitted_sessions)
+        
     saved_chars = original_char_count - compacted_char_count
     est_tokens_saved = saved_chars // 4
     
     msg = (
-        f"[SUCCESS] Session log compacted.\n"
-        f"Original Size:  {original_char_count} chars\n"
-        f"Compacted Size: {compacted_char_count} chars (Budget: {char_budget})\n"
-        f"Saved:          {saved_chars} chars (~{est_tokens_saved} tokens saved per prompt)"
+        f"[SUCCESS] Session log compacted & archived.\n"
+        f"Original Size:  {original_char_count:,} chars\n"
+        f"Compacted Size: {compacted_char_count:,} chars (Budget: {char_budget:,})\n"
+        f"Archived:       {len(omitted_sessions)} old session(s) moved to SESSION_LOG_ARCHIVE.md\n"
+        f"Saved:          {saved_chars:,} chars (~{est_tokens_saved:,} tokens saved per prompt)"
     )
     return True, msg
 

@@ -75,10 +75,23 @@ def get_file_stats(file_path):
     except:
         return 0
 
+def run_project_autodiscovery(root):
+    """Auto-run project autodiscovery tool to keep registry fresh."""
+    autodiscovery_script = os.path.join(root, "tools", "project_autodiscovery.py")
+    if os.path.exists(autodiscovery_script):
+        try:
+            subprocess.run([sys.executable, autodiscovery_script], cwd=root, check=False)
+        except Exception as e:
+            print(f"[WARN] Auto-discovery execution skipped: {e}")
+
 def main():
     root = get_repo_root()
     print(f"Initializing Amir OS Continuity Bootstrap Compiler v2...")
     print(f"Working Directory: {root}\n")
+    
+    # 0. Run Project Auto-Discovery
+    print("Executing project auto-discovery...")
+    run_project_autodiscovery(root)
     
     # 1. Gather Git Status & Diff (Capped at 50 lines max)
     print("Gathering Git status...")

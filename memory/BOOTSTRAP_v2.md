@@ -1,7 +1,7 @@
 # Amir OS Session Resume Bootstrap (v2 Fast-Boot)
-> Generated: 2026-07-26 23:58:38 UTC
+> Generated: 2026-07-27 00:19:05 UTC
 > Amir OS Version: v0.8.0 (Single-File Fast-Boot Engine)
-> Memory Efficiency: 6819 / 5,500 chars used
+> Memory Efficiency: 4416 / 5,500 chars used
 
 This file contains the consolidated runtime state of Amir OS v0.8.0.
 Single-File Fast Boot: Reading this file provides 100% of the active context in 1 tool call.
@@ -40,9 +40,11 @@ Single-File Fast Boot: Reading this file provides 100% of the active context in 
 ## Active Staged Action
 
 - **Timestamp:** 2026-07-26 23:59:00 UTC
-- **Target Component:** Memory Engine Architecture (v0.8.1)
-- **Planned Action:** Implement `STAGING_INTENT.md` state machine across `continuity_bootstrap_v2.py`, `BOOTSTRAP_v2.md`, `AGENT_RULES.md`, and `.agents/AGENTS.md`.
+- **Target Component:** System Health Diagnostics & Governance Rule Hardening
+- **Planned Action:** Created `tools/health_check.py`, integrated project auto-discovery, verified session log auto-archiving, updated `.agents/AGENTS.md` & `AGENT_RULES.md` with mandatory pre-execution STAGING_INTENT logging + slash command behavioral triggers.
 - **Status:** Completed
+
+---
 
 ---
 
@@ -179,31 +181,6 @@ This project builds: Documentation, system design, information architecture, aut
 
 ---
 
-## Session 2026-07-26-01
-
-**Start Time:** 2026-07-26 17:11:18  
-**Status:** Active  
-**Objective:** Boot Amir OS with Claude, discover TSE-Production-Lab, consolidate memory architecture
-
-### Log
-
-* **17:11** - Session started. Asked where to find Amir_OS project on machine
-* **17:13** - Located Amir_OS at `C:\Users\Admin\Documents\Amir_OS\`. Confirmed it's been pushed to GitHub with email amirjacksonmusic@gmail.com
-* **17:19** - Pushed project to github.com/AmirJackson38/Amir_OS using PAT token
-* **17:25** - Discovered scattered AGENTS.md files: `.agents/AGENTS.md` + `TSE-Production-Lab/AGENTS.md` + `TSE-Production-Lab/GEMINI.md`
-* **17:25** - Located TSE-Production-Lab (FastAPI + PostgreSQL on TARS Pi). Found it undocumented in memory files
-* **17:38** - Loaded all memory files, agent rules, bootstrap scripts, tools (continuity_bootstrap.py, memory_compactor.py)
-* **17:38** - Analyzed complete architecture: Boot.md → AGENT_RULES.md → identity → memory → projects structure working correctly
-* **17:41** - Identified 5 key issues: TSE-Production-Lab invisible, scattered AGENTS.md, no bootstrap precedence rules, no hard character limits, no project auto-discovery
-* **17:46** - Began implementing v2 architecture: hard character limits, BOOT_PRECEDENCE.md, new tools, v2 memory files
-* **18:10** - Standardized UTC timestamp generation (`%Y-%m-%d %H:%M:%S UTC`) and UTF-8 encoding across `continuity_bootstrap_v2.py`, `project_autodiscovery.py`, `character_limiter.py`, and `memory_compactor.py`.
-* **18:10** - Switched core boot sequences in [Boot.md](file:///C:/Users/Admin/Documents/Amir_OS/Boot.md), [AGENT_RULES.md](file:///C:/Users/Admin/Documents/Amir_OS/AGENT_RULES.md), and [.agents/AGENTS.md](file:///C:/Users/Admin/.agents/AGENTS.md) to target v2 memory files and `BOOT_PRECEDENCE.md`.
-* **18:10** - Validated all v2 python tools (`character_limiter.py`, `continuity_bootstrap_v2.py`, `project_autodiscovery.py`) — generated fresh [BOOTSTRAP_v2.md](file:///C:/Users/Admin/Documents/Amir_OS/memory/BOOTSTRAP_v2.md).
-* **18:28** - Implemented Single-File Fast Boot, created `docs/CHANGELOG.md`, embedded System File Index (Memory Map), capped `git diff` to 50 lines. Reduced boot calls from 6 to 1 and tokens by ~80%.
-* **18:40** - Configured local Git remote URL with authenticated PAT token. Pushed commit `7f79be8` to `github.com/AmirJackson38/Amir_OS` on branch `master`.
-
----
-
 ## Session 2026-07-24-03
 
 **Start Time:** 2026-07-24 00:47  
@@ -218,6 +195,8 @@ This project builds: Documentation, system design, information architecture, aut
 * Boot automation live — OmniRoute + boot menu now trigger on system restart
 
 ---
+
+
 
 ## Session 2026-07-24-02
 
@@ -234,6 +213,8 @@ This project builds: Documentation, system design, information architecture, aut
 * **Known Limitation:** OmniRoute strips tool capabilities—model can't call tools through it. Needs local/CLI-native model
 
 ---
+
+
 
 ## Session 2026-07-23-01
 
@@ -258,7 +239,7 @@ This project builds: Documentation, system design, information architecture, aut
 
 # Project Registry (Auto-Generated)
 
-**Last Updated:** 2026-07-26 23:10:46 UTC  
+**Last Updated:** 2026-07-27 00:19:05 UTC  
 **Status:** Active registry  
 **Purpose:** Consolidated inventory of all active, paused, and archived projects
 
@@ -292,9 +273,18 @@ This project builds: Documentation, system design, information architecture, aut
 ## 6. Active Workspace Changes (Git Status)
 
 ```
-M memory/BOOTSTRAP_v2.md
+M AGENT_RULES.md
+ M memory/PROJECT_REGISTRY.md
+ M memory/SESSION_LOG_v2.md
+ M memory/STAGING_INTENT.md
  M tools/continuity_bootstrap_v2.py
-?? memory/STAGING_INTENT.md
+ M tools/memory_compactor.py
+?? memory/SESSION_LOG_ARCHIVE.md
+?? tools/__pycache__/continuity_bootstrap_v2.cpython-312.pyc
+?? tools/__pycache__/health_check.cpython-312.pyc
+?? tools/__pycache__/memory_compactor.cpython-312.pyc
+?? tools/__pycache__/project_autodiscovery.cpython-312.pyc
+?? tools/health_check.py
 ```
 
 ---
@@ -302,7 +292,58 @@ M memory/BOOTSTRAP_v2.md
 ## 7. Current Code Diffs (Capped at 50 Lines)
 
 ```diff
-No active diff or diff unavailable.
+diff --git a/AGENT_RULES.md b/AGENT_RULES.md
+index 3b6bd65..edb3f19 100644
+--- a/AGENT_RULES.md
++++ b/AGENT_RULES.md
+@@ -171,9 +171,11 @@ Capture:
+ The system should make future continuation easier.
+ 
+ To ensure resilience against unexpected cutoffs:
+-1. Log progress incrementally in `memory/SESSION_LOG_v2.md` (the flight recorder).
+-2. Periodically run the `tools/continuity_bootstrap_v2.py` compiler to refresh the `memory/BOOTSTRAP_v2.md` write-ahead log.
+-3. If rate limits or session drops occur, the next session can immediately boot using `memory/BOOTSTRAP_v2.md`.
++1. BEFORE major multi-step execution, write `Status: In-Progress` to `memory/STAGING_INTENT.md` (the Write-Ahead Log).
++2. Log progress incrementally in `memory/SESSION_LOG_v2.md` (the flight recorder).
++3. Run `tools/continuity_bootstrap_v2.py` compiler to refresh `memory/BOOTSTRAP_v2.md`.
++4. Upon successful completion, update `STAGING_INTENT.md` to `Status: Completed`.
++5. If rate limits or session drops occur, the next session will read `BOOTSTRAP_v2.md` and immediately resume in-flight work.
+ 
+ ---
+ 
+@@ -189,6 +191,17 @@ The best answer creates understanding, skill, and independence.
+ 
+ ---
+ 
++# Rule 11 — Internalize Command Behaviors
++
++The AI internalizes key workflow commands natively:
++
++* **/plan**: Generate an explicit architectural design and edge-case assessment before executing complex code changes.
++* **/grill-me**: Interview Amir with targeted engineering questions when requirements or trade-offs are ambiguous.
++* **/learn**: Save non-trivial bugs, troubleshooting steps, or Networking/Security insights to `memory/LESSONS_v2.md`.
++* **/goal**: Execute long-running tasks autonomously, validating all outputs via `health_check.py` before declaring success.
++
++---
++
+ # Agent Behavior Summary
+ 
+ A successful Amir OS agent should be:
+@@ -200,3 +213,4 @@ A successful Amir OS agent should be:
+ * A knowledge organizer.
+ 
+ The AI should make Amir more capable over time.
++
+diff --git a/memory/PROJECT_REGISTRY.md b/memory/PROJECT_REGISTRY.md
+index 1c0e78b..1635de0 100644
+--- a/memory/PROJECT_REGISTRY.md
++++ b/memory/PROJECT_REGISTRY.md
+@@ -1,6 +1,6 @@
+ # Project Registry (Auto-Generated)
+ 
+-**Last Updated:** 2026-07-26 23:10:46 UTC  
+
+... [DIFF TRUNCATED TO 50 LINES FOR BREVITY] ...
 ```
 
 ---

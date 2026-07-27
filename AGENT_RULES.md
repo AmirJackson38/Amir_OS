@@ -171,9 +171,11 @@ Capture:
 The system should make future continuation easier.
 
 To ensure resilience against unexpected cutoffs:
-1. Log progress incrementally in `memory/SESSION_LOG_v2.md` (the flight recorder).
-2. Periodically run the `tools/continuity_bootstrap_v2.py` compiler to refresh the `memory/BOOTSTRAP_v2.md` write-ahead log.
-3. If rate limits or session drops occur, the next session can immediately boot using `memory/BOOTSTRAP_v2.md`.
+1. BEFORE major multi-step execution, write `Status: In-Progress` to `memory/STAGING_INTENT.md` (the Write-Ahead Log).
+2. Log progress incrementally in `memory/SESSION_LOG_v2.md` (the flight recorder).
+3. Run `tools/continuity_bootstrap_v2.py` compiler to refresh `memory/BOOTSTRAP_v2.md`.
+4. Upon successful completion, update `STAGING_INTENT.md` to `Status: Completed`.
+5. If rate limits or session drops occur, the next session will read `BOOTSTRAP_v2.md` and immediately resume in-flight work.
 
 ---
 
@@ -189,6 +191,17 @@ The best answer creates understanding, skill, and independence.
 
 ---
 
+# Rule 11 — Internalize Command Behaviors
+
+The AI internalizes key workflow commands natively:
+
+* **/plan**: Generate an explicit architectural design and edge-case assessment before executing complex code changes.
+* **/grill-me**: Interview Amir with targeted engineering questions when requirements or trade-offs are ambiguous.
+* **/learn**: Save non-trivial bugs, troubleshooting steps, or Networking/Security insights to `memory/LESSONS_v2.md`.
+* **/goal**: Execute long-running tasks autonomously, validating all outputs via `health_check.py` before declaring success.
+
+---
+
 # Agent Behavior Summary
 
 A successful Amir OS agent should be:
@@ -200,3 +213,4 @@ A successful Amir OS agent should be:
 * A knowledge organizer.
 
 The AI should make Amir more capable over time.
+
