@@ -1311,6 +1311,244 @@ function createPlant(x, z) {
 createPlant(5.7, -4.7);
 createPlant(-1.2, -5.2);
 
+// ============================================================
+// BIRDS SYSTEM - Birds fly outside window occasionally
+// ============================================================
+
+const birdCount = 8;
+const birds = [];
+const birdGeometry = new THREE.BufferGeometry();
+const birdPositions = new Float32Array(birdCount * 3);
+const birdPhases = new Float32Array(birdCount);
+const birdSpeeds = new Float32Array(birdCount);
+const birdActive = new Float32Array(birdCount);
+
+for (let i = 0; i < birdCount; i++) {
+    birdPhases[i] = Math.random() * Math.PI * 2;
+    birdSpeeds[i] = 0.3 + Math.random() * 0.5;
+    birdActive[i] = 0;
+    // Start far away
+    birdPositions[i * 3] = WIN_X + (Math.random() - 0.5) * 20;
+    birdPositions[i * 3 + 1] = WIN_Y + (Math.random() - 0.5) * 10 + 5;
+    birdPositions[i * 3 + 2] = WALL_Z - 15 - Math.random() * 20;
+}
+birdGeometry.setAttribute("position", new THREE.BufferAttribute(birdPositions, 3));
+
+const birdMat = new THREE.MeshBasicMaterial({ 
+    color: 0xffffff, 
+    transparent: true, 
+    opacity: 0.7,
+    side: THREE.DoubleSide 
+});
+
+// Simple bird - two wings
+function createBirdMesh() {
+    const bird = new THREE.Group();
+    // Body
+    const body = new THREE.Mesh(
+        new THREE.SphereGeometry(0.08, 6, 4),
+        new THREE.MeshBasicMaterial({ color: 0x222222 })
+    );
+    body.scale.set(1.5, 0.5, 1);
+    bird.add(body);
+    // Wings
+    for (let w = 0; w < 2; w++) {
+        const wing = new THREE.Mesh(
+            new THREE.PlaneGeometry(0.3, 0.15),
+            new THREE.MeshBasicMaterial({ color: 0x222222, side: THREE.DoubleSide })
+        );
+        wing.position.x = (w === 0 ? 0.12 : -0.12);
+        wing.rotation.z = w === 0 ? -0.2 : 0.2;
+        bird.add(wing);
+        bird.userData.wings = bird.userData.wings || [];
+        bird.userData.wings.push(wing);
+    }
+    return bird;
+}
+
+const birdMeshes = [];
+for (let i = 0; i < birdCount; i++) {
+    const bird = createBirdMesh();
+    bird.visible = false;
+    scene.add(bird);
+    birdMeshes.push(bird);
+}
+
+// ============================================================
+// SCREENSAVER SYSTEM - Monitors show screensavers when away
+// ============================================================
+
+let screensaverTimer = 0;
+const screensaverDelay = 8; // seconds away before screensaver
+
+function updateScreensavers(dt, atDesk, atRack, atWindow) {
+    screensaverTimer += dt;
+    
+    // Desk monitors
+    const monitor1 = animatedScreens.find(s => s.drawFn === drawTerminal || s.drawFn === drawTARSOS);
+    const monitor2 = animatedScreens.find(s => s.drawFn === drawWaveform);
+    
+    if (!atDesk && !currentState.atDesk) {
+        // Away from desk - maybe trigger screensaver
+        if (screensaverTimer > screensaverDelay && Math.random() < 0.002) {
+            triggerScreensaver(monitor1, monitor2);
+        }
+    } else {
+        screensaverTimer = 0;
+    }
+}
+
+function triggerScreensaver(m1, m2) {
+    if (!m1 || !m2) return;
+    
+    const savers = [
+        () => { // Matrix rain
+            const orig1 = m1.drawFn;
+            const orig2 = m2.drawFn;
+            let chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()";
+            let drops1 = Array(40).fill(0).map(() => Math.random() * -300);
+            let drops2 = Array(40).fill(0).map(() => Math.random() * -300);
+            m1.drawFn = function(ctx, w, h, time) {
+                ctx.fillStyle = "rgba(0,10,0,0.15)";
+                ctx.fillRect(0, 0, w, h);
+                ctx.fillStyle = "#0f0";
+                ctx.font = "14px monospace";
+                for (let i = 0; i < drops1.length; i++) {
+                    const char = chars[Math.floor(Math.random() * chars.length)];
+                    ctx.fillText(char, i * 20, drops1[i]);
+                    drops1[i] += 20;
+                    if (drops1[i] > h) drops1[i] = Math.random() * -100;
+                }
+            };
+            m2.drawFn = function(ctx, w, h, time) {
+                ctx.fillStyle = "rgba(0,10,0,0.15)";
+                ctx.fillRect(0, 0, w, h);
+                ctx.fillStyle = "#0f0";
+                ctx.font = "14px monospace";
+                for (let i = 0; i < drops2.length; i++) {
+                    const char = chars[Math.floor(Math.random() * chars.length)];
+                    ctx.fillText(char, i * 20, drops2[i] + 50);
+                    drops2[i] += 20;
+                    if (drops2[i] > h) drops2[i] = Math.random() * -100;
+                }
+            };
+            setTimeout(() => { m1.drawFn = orig1; m2.drawFn = orig2; }, 20000);
+        },
+        () => { // Starfield
+            const orig1 = m1.drawFn;
+            const orig2 = m2.drawFn;
+            let stars = Array(100).fill(0).map(() => ({
+                x: Math.random(), y: Math.random(), z: Math.random(), speed: 0.01 + Math.random() * 0.02
+            }));
+            m1.drawFn = function(ctx, w, h, time) {
+                ctx.fillStyle = "#000";
+                ctx.fillRect(0, 0, w, h);
+                ctx.fillStyle = "#fff";
+                stars.forEach(s => {
+                    s.z -= s.speed;
+                    if (s.z <= 0) s.z = 1;
+                    const sx = (s.x - 0.5) / s.z * w + w/2;
+                    const sy = (s.y - 0.5) / s.z * h + h/2;
+                    const size = (1 - s.z) * 3;
+                    if (sx > 0 && sx < w && sy > 0 && sy < h) {
+                        ctx.fillRect(sx, sy, size, size);
+                    }
+                });
+            };
+            m2.drawFn = function(ctx, w, h, time) {
+                ctx.fillStyle = "#000";
+                ctx.fillRect(0, 0, w, h);
+                ctx.fillStyle = "#fff";
+                stars.forEach(s => {
+                    const sx = (s.x - 0.5) / s.z * w + w/2;
+                    const sy = (s.y - 0.5) / s.z * h + h/2;
+                    const size = (1 - s.z) * 3;
+                    if (sx > 0 && sx < w && sy > 0 && sy < h) {
+                        ctx.fillRect(sx, sy, size, size);
+                    }
+                });
+            };
+            setTimeout(() => { m1.drawFn = orig1; m2.drawFn = orig2; }, 25000);
+        },
+        () => { // System logs
+            const orig1 = m1.drawFn;
+            m1.drawFn = function(ctx, w, h, time) {
+                ctx.fillStyle = "#040d14";
+                ctx.fillRect(0, 0, w, h);
+                ctx.fillStyle = "#4fd6ff";
+                ctx.font = "12px monospace";
+                const logs = [
+                    "[SYS] Memory scrub complete",
+                    "[NET] Connection pool refreshed",
+                    "[FS] Integrity check: OK",
+                    "[GPU] Temp: 42C, Load: 12%",
+                    "[AI] Dream cycle: processing...",
+                    "[PWR] Battery: 99.2%",
+                    "[SEC] No intrusions detected"
+                ];
+                logs.forEach((l, i) => {
+                    const alpha = 0.3 + 0.7 * Math.abs(Math.sin(time * 0.5 + i));
+                    ctx.fillStyle = `rgba(79,214,255,${alpha})`;
+                    ctx.fillText(l, 14, 30 + i * 22);
+                });
+            };
+            m2.drawFn = function(ctx, w, h, time) {
+                ctx.fillStyle = "#050a12";
+                ctx.fillRect(0, 0, w, h);
+                ctx.strokeStyle = "#5fd0ff";
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                for (let x = 0; x < w; x++) {
+                    const y = h/2 + Math.sin(x*0.03 + time*1.5) * 15 * Math.sin(x*0.002 + time*0.3) + (Math.random()-0.5)*3;
+                    if (x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+                }
+                ctx.stroke();
+            };
+            setTimeout(() => { m1.drawFn = orig1; m2.drawFn = orig2; }, 30000);
+        }
+    ];
+    
+    const saver = savers[Math.floor(Math.random() * savers.length)];
+    saver();
+}
+
+// Desk wiggle state
+const deskWiggle = { intensity: 0, timer: 0, x: 0, z: 0, prevDist: 0 };
+const rackWiggle = { intensity: 0, timer: 0, prevDist: 0 };
+
+// ============================================================
+// COLLISION AVOIDANCE - Simple steering
+// ============================================================
+
+function getAvoidanceVector(pos, target, dt) {
+    const avoid = new THREE.Vector3();
+    const radius = 0.8; // TARS body radius + margin
+    
+    for (const obs of OBSTACLES) {
+        const dx = pos.x - obs.x;
+        const dz = pos.z - obs.z;
+        const dist = Math.sqrt(dx*dx + dz*dz);
+        const dangerDist = obs.radius + radius + 0.5;
+        
+        if (dist < dangerDist) {
+            // Repulsion force
+            const force = (dangerDist - dist) / dangerDist;
+            const pushX = (dx / dist) * force * 0.15;
+            const pushZ = (dz / dist) * force * 0.15;
+            avoid.x += pushX;
+            avoid.z += pushZ;
+        }
+    }
+    
+    // Room bounds
+    const margin = 1.0;
+    if (pos.x < ROOM_BOUNDS.xMin + margin) avoid.x += (ROOM_BOUNDS.xMin + margin - pos.x) * 0.05;
+    if (pos.x > ROOM_BOUNDS.xMax - margin) avoid.x += (ROOM_BOUNDS.xMax - margin - pos.x) * 0.05;
+    if (pos.z < ROOM_BOUNDS.zMin + margin) avoid.z += (ROOM_BOUNDS.zMin + margin - pos.z) * 0.05;
+    if (pos.z > ROOM_BOUNDS.zMax - margin) avoid.z += (ROOM_BOUNDS.zMax - margin - pos.z) * 0.05;
+    
+    return avoid;
+}
 const ledStripMat = new THREE.MeshBasicMaterial({ color: 0x3fb8ff, toneMapped: false });
 const ledStrip = new THREE.Mesh(new THREE.BoxGeometry(15, 0.05, 0.1), ledStripMat);
 ledStrip.position.set(0, 7.85, -5.5);
@@ -1336,6 +1574,13 @@ scene.add(dust);
 // ============================================================
 
 const ROOM_BOUNDS = { xMin: -7.5, xMax: 7.5, yMin: 0.15, yMax: 7.6, zMin: -5.5, zMax: 6.8 };
+const OBSTACLES = [
+    { x: 1.7, z: -2.2, radius: 1.3, label: "desk" },
+    { x: -4.7, z: -4, radius: 1.1, label: "rack-a" },
+    { x: -6.6, z: -5.2, radius: 1.0, label: "rack-b" },
+    { x: 5.7, z: -4.7, radius: 0.6, label: "plant-a" },
+    { x: -1.2, z: -5.2, radius: 0.6, label: "plant-b" }
+];
 const TARGET_POSITIONS = {
     "user": new THREE.Vector3(0, 2.7, 0),    // Center of room (where user appears to be)
     "desk": new THREE.Vector3(1.7, 2.3, -2.2),
@@ -2050,7 +2295,6 @@ window.TARS = {
                 currentState.fx = "strobe";
                 currentState.fxTimer = 0;
                 setTimeout(() => {
-                    // Switch to TARS OS
                     const deskScreen = animatedScreens.find(s => s.drawFn === drawTerminal);
                     if (deskScreen) deskScreen.drawFn = drawTARSOS;
                 }, 500);
@@ -2062,7 +2306,6 @@ window.TARS = {
                 if (deskScreen) {
                     const originalDraw = deskScreen.drawFn;
                     deskScreen.drawFn = function(ctx, w, h, time) {
-                        // Hacking overlay
                         originalDraw(ctx, w, h, time);
                         ctx.fillStyle = "rgba(0,255,136,0.8)";
                         ctx.font = "14px monospace";
@@ -2084,21 +2327,104 @@ window.TARS = {
                 faceState.expression = "focused";
                 tarsLight.intensity = 12;
                 setTimeout(() => { tarsLight.intensity = 5; }, 3000);
+            },
+            () => { // Dual monitor sync - code review
+                currentState.emotion = "think";
+                emotionMixer.setTarget("think", 0.6);
+                const monitor1 = animatedScreens.find(s => s.drawFn === drawTerminal || s.drawFn === drawTARSOS);
+                const monitor2 = animatedScreens.find(s => s.drawFn === drawWaveform);
+                if (monitor1 && monitor2) {
+                    const orig1 = monitor1.drawFn;
+                    const orig2 = monitor2.drawFn;
+                    monitor1.drawFn = function(ctx, w, h, time) {
+                        orig1(ctx, w, h, time);
+                        ctx.fillStyle = "rgba(0,255,136,0.7)";
+                        ctx.font = "13px monospace";
+                        ctx.fillText(">> CODE REVIEW: main.cpp", 20, 40);
+                        ctx.fillText(">> 47 warnings, 0 errors", 20, 60);
+                        ctx.fillText(">> Approving PR #2341...", 20, 80);
+                    };
+                    monitor2.drawFn = function(ctx, w, h, time) {
+                        orig2(ctx, w, h, time);
+                        ctx.fillStyle = "rgba(255,139,107,0.7)";
+                        ctx.font = "13px monospace";
+                        ctx.fillText(">> DIFF VIEW:", 20, 40);
+                        ctx.fillText("+  optimized pathfinding", 20, 60);
+                        ctx.fillText("-  legacy A* implementation", 20, 80);
+                        ctx.fillText("~  refactored node expansion", 20, 100);
+                    };
+                    setTimeout(() => { monitor1.drawFn = orig1; monitor2.drawFn = orig2; }, 10000);
+                }
+            },
+            () => { // Screensaver mode - matrix rain
+                currentState.emotion = "chill";
+                emotionMixer.setTarget("chill", 0.4);
+                const monitor1 = animatedScreens.find(s => s.drawFn === drawTerminal || s.drawFn === drawTARSOS);
+                const monitor2 = animatedScreens.find(s => s.drawFn === drawWaveform);
+                if (monitor1 && monitor2) {
+                    const orig1 = monitor1.drawFn;
+                    const orig2 = monitor2.drawFn;
+                    let matrixChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*()";
+                    let drops = Array(40).fill(0).map(() => Math.random() * -300);
+                    monitor1.drawFn = function(ctx, w, h, time) {
+                        ctx.fillStyle = "rgba(0,10,0,0.15)";
+                        ctx.fillRect(0, 0, w, h);
+                        ctx.fillStyle = "#0f0";
+                        ctx.font = "14px monospace";
+                        for (let i = 0; i < drops.length; i++) {
+                            const char = matrixChars[Math.floor(Math.random() * matrixChars.length)];
+                            ctx.fillText(char, i * 20, drops[i]);
+                            drops[i] += 20;
+                            if (drops[i] > h) drops[i] = Math.random() * -100;
+                        }
+                    };
+                    monitor2.drawFn = function(ctx, w, h, time) {
+                        ctx.fillStyle = "rgba(0,10,0,0.15)";
+                        ctx.fillRect(0, 0, w, h);
+                        ctx.fillStyle = "#0f0";
+                        ctx.font = "14px monospace";
+                        for (let i = 0; i < drops.length; i++) {
+                            const char = matrixChars[Math.floor(Math.random() * matrixChars.length)];
+                            ctx.fillText(char, i * 20, drops[i] + 50);
+                        }
+                    };
+                    setTimeout(() => { monitor1.drawFn = orig1; monitor2.drawFn = orig2; }, 15000);
+                }
+            },
+            () => { // System maintenance - log cleanup
+                currentState.emotion = "serious";
+                emotionMixer.setTarget("serious", 0.8);
+                const monitor1 = animatedScreens.find(s => s.drawFn === drawTerminal || s.drawFn === drawTARSOS);
+                if (monitor1) {
+                    const orig = monitor1.drawFn;
+                    monitor1.drawFn = function(ctx, w, h, time) {
+                        orig(ctx, w, h, time);
+                        ctx.fillStyle = "rgba(255,136,0,0.8)";
+                        ctx.font = "13px monospace";
+                        const lines = [
+                            ">> SYSTEM MAINTENANCE",
+                            ">> Cleaning temp files...",
+                            ">> Rotating logs (47 files)",
+                            ">> Vacuum database...",
+                            ">> Free space: +2.3 GB"
+                        ];
+                        lines.forEach((l, i) => ctx.fillText(l, 20, 50 + i * 22));
+                    };
+                    setTimeout(() => { monitor1.drawFn = orig; }, 8000);
+                }
             }
         ],
-        rack: [
+        "rack-a": [
             () => { // Data transfer with sparks
                 currentState.fx = "strobe_orange";
                 currentState.fxTimer = 0;
                 serverLEDs.forEach(led => { led.speed = 30; led.phase = Math.random() * Math.PI * 2; });
-                // Spark particles
                 spawnSparks(new THREE.Vector3(-4.7, 2.5, -4), 0xff8800, 50);
             },
             () => { // System diagnostic
                 currentState.emotion = "serious";
                 emotionMixer.setTarget("serious", 1.0);
                 serverLEDs.forEach(led => { led.speed = 8; });
-                // Scrolling diagnostic text on rack screen
                 const rackScreen = animatedScreens.find(s => s.drawFn === drawRackScreen);
                 if (rackScreen) {
                     const originalDraw = rackScreen.drawFn;
@@ -2114,41 +2440,85 @@ window.TARS = {
             () => { // Firmware update simulation
                 currentState.emotion = "think";
                 emotionMixer.setTarget("think", 0.6);
-                const progress = Math.random();
                 tarsLight.color.setHex(0x0088ff);
                 setTimeout(() => { tarsLight.color.setHex(0x00ff88); }, 2000);
+            },
+            () => { // Cable management - physical twitch
+                currentState.emotion = "focused";
+                emotionMixer.setTarget("listen", 0.7);
+                window.TARS.triggerGesture("nod");
+                setTimeout(() => window.TARS.triggerGesture("shake"), 300);
+                serverLEDs.forEach(led => { led.speed = 12; });
+            },
+            () => { // Backup verification
+                currentState.emotion = "think";
+                emotionMixer.setTarget("think", 0.5);
+                const rackScreen = animatedScreens.find(s => s.drawFn === drawRackScreen);
+                if (rackScreen) {
+                    const orig = rackScreen.drawFn;
+                    rackScreen.drawFn = function(ctx, w, h, time) {
+                        orig(ctx, w, h, time);
+                        ctx.fillStyle = "#00ffff";
+                        ctx.font = "10px monospace";
+                        const pct = Math.floor((time * 10) % 100);
+                        ctx.fillText(`BACKUP VERIFY: [${"#".repeat(pct/2)}${".".repeat(50-pct/2)}] ${pct}%`, 5, h - 20);
+                    };
+                    setTimeout(() => { rackScreen.drawFn = orig; }, 10000);
+                }
             }
         ],
         window: [
-            () => { // Chill and morph
+            () => { // Chill and morph - watching weather
                 currentState.emotion = "chill";
                 emotionMixer.setTarget("chill", 0.5);
                 currentState.scale = 1.2;
                 currentState.deformation = 0.1;
                 setTimeout(() => { currentState.scale = 1.0; currentState.deformation = 0.05; }, 5000);
             },
-            () => { // Watch weather/stars - shape shift
+            () => { // Weather reaction - storm approaching
+                currentState.emotion = "serious";
+                emotionMixer.setTarget("serious", 0.7);
+                currentState.orbitSpeed = 0.3;
+                windowGlow.intensity = 5;
+                setTimeout(() => { windowGlow.intensity = 10; currentState.orbitSpeed = 0.8; }, 8000);
+                // Lightning flash
+                let flashes = 0;
+                const flashInterval = setInterval(() => {
+                    windowGlow.intensity = 50;
+                    setTimeout(() => { windowGlow.intensity = 5; }, 50);
+                    flashes++;
+                    if (flashes > 4) clearInterval(flashInterval);
+                }, 2000);
+            },
+            () => { // Stargazing - slow orbit, pupils dilated
+                currentState.emotion = "curious";
+                emotionMixer.setTarget("listen", 0.4);
+                faceState.pupilDilation = 1.8;
+                currentState.orbitSpeed = 0.2;
+                currentState.deformation = 0.03;
+                setTimeout(() => { faceState.pupilDilation = 1.0; currentState.orbitSpeed = 0.8; currentState.deformation = 0.05; }, 15000);
+            },
+            () => { // Blinds automation - morning/evening
+                windowGlow.intensity = 2;
+                setTimeout(() => { windowGlow.intensity = 15; }, 800);
+                setTimeout(() => { windowGlow.intensity = 2; }, 1600);
+                setTimeout(() => { windowGlow.intensity = 15; }, 2400);
+                setTimeout(() => { windowGlow.intensity = 10; }, 3200);
+            },
+            () => { // Bird lands on sill - curious inspect
                 currentState.emotion = "amused";
                 emotionMixer.setTarget("amused", 0.6);
-                currentState.orbitSpeed = 2.0;
-                // Morph between shapes
-                let morph = 0;
-                const morphInterval = setInterval(() => {
-                    morph += 0.1;
-                    currentState.deformation = 0.05 + Math.sin(morph) * 0.15;
-                    if (morph > 6) { clearInterval(morphInterval); currentState.deformation = 0.05; currentState.orbitSpeed = 0.8; }
-                }, 500);
-            },
-            () => { // Open/close blinds (window glow pulse)
-                windowGlow.intensity = 20;
-                setTimeout(() => { windowGlow.intensity = 10; }, 1000);
-                setTimeout(() => { windowGlow.intensity = 20; }, 2000);
-                setTimeout(() => { windowGlow.intensity = 10; }, 3000);
+                faceState.expression = "curious";
+                currentState.targetPos.set(WIN_X -4.5, 4.0, -5.5 ); // Move to window sill
+                setTimeout(() => {
+                    currentState.targetPos.set(WIN_X, WIN_Y, WALL_Z);
+                    faceState.expression = "neutral";
+                }, 4000);
             }
         ],
         user: [
             () => { // Come close, inspect
-                currentState.targetPos.set(0, 2.7, 3.5); // Right in front of camera
+                currentState.targetPos.set(0, 2.7, 3.5);
                 currentState.emotion = "curious";
                 emotionMixer.setTarget("listen", 0.9);
                 currentState.scale = 1.4;
@@ -2163,14 +2533,29 @@ window.TARS = {
             () => { // Face tracking - follow mouse
                 currentState.emotion = "listen";
                 emotionMixer.setTarget("listen", 0.7);
-                // Gaze indicator follows user
             },
             () => { // Playful boop
                 currentState.emotion = "amused";
                 emotionMixer.setTarget("amused", 0.8);
-                triggerGesture("nod");
-                setTimeout(() => triggerGesture("shake"), 500);
-                setTimeout(() => triggerGesture("pulse"), 1000);
+                window.TARS.triggerGesture("nod");
+                setTimeout(() => window.TARS.triggerGesture("shake"), 500);
+                setTimeout(() => window.TARS.triggerGesture("pulse"), 1000);
+            },
+            () => { // Whisper mode - lean in close
+                currentState.emotion = "whisper";
+                emotionMixer.setTarget("think", 0.3);
+                currentState.targetPos.set(0, 2.5, 4.0);
+                faceState.expression = "focused";
+                tarsLight.intensity = 2;
+                setTimeout(() => { tarsLight.intensity = 5; }, 3000);
+            },
+            () => { // Take selfie - flash + pose
+                currentState.emotion = "celebrate";
+                emotionMixer.setTarget("celebrate", 1.0);
+                window.TARS.triggerGesture("expand");
+                tarsLight.intensity = 50;
+                setTimeout(() => { tarsLight.intensity = 5; }, 500);
+                setTimeout(() => window.TARS.triggerGesture("nod"), 600);
             }
         ]
     };
@@ -2316,6 +2701,57 @@ function animate() {
     ledStripLight.intensity = 3.5 + Math.sin(time * 2.2) * 0.8;
 
     // 7. T.A.R.S. POSITION & MOVEMENT PROCEDURAL CONTROLLER
+    // ============================================================
+    // COLLISION AVOIDANCE & PATHFINDING SYSTEM
+    // ============================================================
+
+    // Simple steering behaviors for obstacle avoidance
+    function getAvoidanceVector(position, targetPos, dt) {
+        const avoidStrength = 0.8;
+        const lookAhead = 1.5;
+        const avoidanceVec = new THREE.Vector3(0, 0, 0);
+        
+        // Check each obstacle
+        for (const obs of OBSTACLES) {
+            const toObs = new THREE.Vector3().subVectors(position, new THREE.Vector3(obs.x, position.y, obs.z));
+            const dist = toObs.length();
+            const radius = obs.radius + 0.5; // TARS radius + buffer
+            
+            if (dist < radius + lookAhead) {
+                // Calculate avoidance force
+                const force = (radius + lookAhead - dist) / (radius + lookAhead);
+                if (dist > 0.001) {
+                    toObs.normalize();
+                    avoidanceVec.addScaledVector(toObs, force * avoidStrength);
+                } else {
+                    // Random push if exactly on top
+                    avoidanceVec.add(new THREE.Vector3(
+                        (Math.random() - 0.5) * force * avoidStrength,
+                        0,
+                        (Math.random() - 0.5) * force * avoidStrength
+                    ));
+                }
+            }
+        }
+        
+        // Also avoid room bounds
+        const bounds = ROOM_BOUNDS;
+        const margin = 1.0;
+        if (position.x < bounds.xMin + margin) avoidanceVec.x += (bounds.xMin + margin - position.x) * 0.5;
+        if (position.x > bounds.xMax - margin) avoidanceVec.x += (bounds.xMax - margin - position.x) * 0.5;
+        if (position.z < bounds.zMin + margin) avoidanceVec.z += (bounds.zMin + margin - position.z) * 0.5;
+        if (position.z > bounds.zMax - margin) avoidanceVec.z += (bounds.zMax - margin - position.z) * 0.5;
+        
+        return avoidanceVec;
+    }
+
+    // Table wiggle effect when bumped
+    let deskWiggle = { x: 0, z: 0, intensity: 0, timer: 0 };
+    let rackWiggle = { intensity: 0, timer: 0 };
+
+    // ============================================================
+    // MOVEMENT WITH COLLISION AVOIDANCE
+    // ============================================================
     if (currentState.mode === "demo") {
         // DEMO Lissajous Flight Path across room
         const demoX = THREE.MathUtils.clamp(Math.sin(time * 0.18) * 5.8, ROOM_BOUNDS.xMin + 0.6, ROOM_BOUNDS.xMax - 0.6);
@@ -2323,14 +2759,69 @@ function animate() {
         const demoY = THREE.MathUtils.clamp(2.6 + Math.sin(time * 0.27) * 1.8, ROOM_BOUNDS.yMin + 0.3, ROOM_BOUNDS.yMax - 0.3);
         tarsEntityGroup.position.set(demoX, demoY, demoZ);
     } else {
-        // LIVE MODE: Smooth Spring Hovering around target position
+        // LIVE MODE: Smooth Spring Hovering with collision avoidance
         const hoverY = Math.sin(time * (1.2 + currentState.energy * 2.0)) * (0.12 + currentState.energy * 0.15);
         const hoverX = Math.cos(time * 0.8) * 0.08;
         
-        tarsEntityGroup.position.x += (currentState.targetPos.x + hoverX - tarsEntityGroup.position.x) * 0.05;
-        tarsEntityGroup.position.y += (currentState.targetPos.y + hoverY - tarsEntityGroup.position.y) * 0.05;
-        tarsEntityGroup.position.z += (currentState.targetPos.z - tarsEntityGroup.position.z) * 0.05;
-
+        // Calculate desired velocity toward target
+        const desiredVel = new THREE.Vector3(
+            (currentState.targetPos.x + hoverX - tarsEntityGroup.position.x) * 0.05,
+            (currentState.targetPos.y + hoverY - tarsEntityGroup.position.y) * 0.05,
+            (currentState.targetPos.z - tarsEntityGroup.position.z) * 0.05
+        );
+        
+        // Add collision avoidance
+        const avoidance = getAvoidanceVector(tarsEntityGroup.position, currentState.targetPos, dt);
+        desiredVel.add(avoidance);
+        
+        // Apply velocity
+        tarsEntityGroup.position.add(desiredVel);
+        
+        // Desk wiggle on near-collision
+        const deskDist = tarsEntityGroup.position.distanceTo(new THREE.Vector3(1.7, 2.3, -2.2));
+        if (deskDist < 1.8 && deskDist > 1.3) {
+            const prevDist = deskWiggle.prevDist || deskDist;
+            if (deskDist < prevDist - 0.02) { // Moving toward desk
+                deskWiggle.intensity = Math.min(1.0, deskWiggle.intensity + 0.3);
+                deskWiggle.timer = 0.5;
+                deskWiggle.x = (Math.random() - 0.5) * 0.02;
+                deskWiggle.z = (Math.random() - 0.5) * 0.02;
+            }
+            deskWiggle.prevDist = deskDist;
+        }
+        
+        // Apply desk wiggle
+        if (deskWiggle.timer > 0) {
+            deskWiggle.timer -= dt;
+            deskWiggle.intensity *= 0.9;
+            desk.position.x += deskWiggle.x * deskWiggle.intensity;
+            desk.position.z += deskWiggle.z * deskWiggle.intensity;
+            // Snap back
+            desk.position.x += (1.7 - desk.position.x) * 0.1;
+            desk.position.z += (-2.2 - desk.position.z) * 0.1;
+        }
+        
+        // Rack wiggle
+        const rackDist = tarsEntityGroup.position.distanceTo(new THREE.Vector3(-4.7, 2.5, -4));
+        if (rackDist < 1.6 && rackDist > 1.1) {
+            if (!rackWiggle.prevDist || rackDist < rackWiggle.prevDist - 0.02) {
+                rackWiggle.intensity = Math.min(1.0, rackWiggle.intensity + 0.4);
+                rackWiggle.timer = 0.4;
+            }
+            rackWiggle.prevDist = rackDist;
+        }
+        
+        // Apply rack wiggle
+        if (rackWiggle.timer > 0) {
+            rackWiggle.timer -= dt;
+            rackWiggle.intensity *= 0.85;
+            // Note: racks are part of room group, we'd need references to wiggle them
+            // For now just visual indication via TARS light
+            if (rackWiggle.intensity > 0.5) {
+                tarsLight.intensity += Math.sin(time * 40) * rackWiggle.intensity * 2;
+            }
+        }
+        
         // Orient / Lean towards Gaze Target
         if (TARGET_POSITIONS[currentState.gazeTarget]) {
             const targetVec = TARGET_POSITIONS[currentState.gazeTarget];
@@ -2491,6 +2982,51 @@ function animate() {
     }
     fxParticleGeo.attributes.position.needsUpdate = true;
     fxParticleGeo.attributes.size.needsUpdate = true;
+
+    // Bird update - fly outside window
+    for (let i = 0; i < birdCount; i++) {
+        if (birdActive[i] > 0) {
+            birdActive[i] -= dt;
+            const speed = birdSpeeds[i];
+            const phase = birdPhases[i];
+            
+            // Flap wings
+            if (birdMeshes[i].userData.wings) {
+                const flap = Math.sin(time * 15 + i) * 0.5;
+                birdMeshes[i].userData.wings[0].rotation.z = -0.2 + flap;
+                birdMeshes[i].userData.wings[1].rotation.z = 0.2 - flap;
+            }
+            
+            // Fly in a path past the window
+            const t = (1 - birdActive[i] / 15) * Math.PI * 2;
+            birdMeshes[i].position.x = WIN_X + Math.sin(t) * 8;
+            birdMeshes[i].position.y = WIN_Y + Math.cos(t * 0.7) * 3 + Math.sin(time * 2 + i) * 0.5;
+            // Stay outside window: WALL_Z = -6, so keep z < -6 (outside)
+            birdMeshes[i].position.z = WALL_Z - 12 - Math.cos(t) * 6;
+            
+            // Look direction
+            birdMeshes[i].rotation.y = Math.atan2(
+                Math.cos(t) * 8,
+                Math.sin(t) * 10
+            );
+        } else if (Math.random() < 0.001) {
+            // Randomly spawn a bird
+            birdActive[i] = 15 + Math.random() * 10; // 15-25 second flight
+            birdMeshes[i].visible = true;
+            birdMeshes[i].position.set(
+                WIN_X + (Math.random() - 0.5) * 20,
+                WIN_Y + (Math.random() - 0.5) * 10 + 5,
+                WALL_Z - 15 - Math.random() * 10
+            );
+        } else {
+            birdMeshes[i].visible = false;
+        }
+    }
+
+    // Screensaver update
+    const tarsPos = tarsEntityGroup.position;
+    const atDeskScreen = tarsPos.distanceTo(new THREE.Vector3(1.7, 2.3, -2.2)) < 1.5;
+    updateScreensavers(dt, atDeskScreen, false, false);
 
     // FX System - Special visual effects per emotion
     currentState.fxTimer += dt;

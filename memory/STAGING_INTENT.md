@@ -7,20 +7,24 @@
 
 ## Active Staged Action
 
-- **Timestamp:** 2026-07-26 23:59:00 UTC
-- **Target Component:** T.A.R.S. Embodiment System (v0.3 Frontend ➡️ Emotion-Driven Digital Entity Engine)
-- **Planned Action:** Implement procedural T.A.R.S. entity (energy core, translucent body, deforming surface, particles, gaze/attention), behavior presets engine, emotion mixer, speech-reactive hooks, and test controls without altering room baseline.
-- **Status:** **Complete** ✅
-- **Completed:** 2026-07-27
+- **Timestamp:** 2026-07-27 12:00:00 UTC
+- **Target Component:** T.A.R.S. Embodiment System v1.1 — Polish & Collision
+- **Planned Action:** 
+  1. Fix location behavior triggers (server/window not firing)
+  2. Add 5 distinct behaviors per station (currently 3)
+  3. Window station: birds, wind gust, window open/close, stargazing, weather reaction
+  4. Desk: more monitor modes (dual-monitor span, screensavers, code/matrix/logs)
+  5. Collision system: obstacle avoidance (A* or steering), desk/rack as solid bodies, table wiggle on impact, pathfinding around obstacles
+- **Status:** In-Progress
 
 ---
 
-## Summary of Completed Work
+## Summary of Completed Work (v1.0)
 
 **File:** `projects/tars-face/tars_face_v1.html`
 
 ### Core Entity
-- Procedural T.A.R.S. entity: energy core, translucent deforming icosahedron body (detail level 3), wireframe shell (detail 1), orbiting particle field (30 particles)
+- Procedural T.A.R.S. entity: energy core, deforming body (icosahedron L3), wireframe shell, orbiting particle field (30 particles)
 - **Expressive Face System** (256x256 canvas): animated eyes with pupils/highlights/blinks/squint/look-tracking, dynamic eyebrows per emotion, expressive mouth (speaking sync, smiles, grimaces, smirks, wavy), cheek blush, forehead wrinkles
 
 ### Behavior Engine
