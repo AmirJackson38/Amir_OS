@@ -1,5 +1,5 @@
 # Amir OS Session Resume Bootstrap (v2 Fast-Boot)
-> Generated: 2026-07-27 20:46:45 UTC
+> Generated: 2026-07-27 21:01:08 UTC
 > Amir OS Version: v0.8.0 (Single-File Fast-Boot Engine)
 > Memory Efficiency: 4833 / 5,500 chars used
 
@@ -318,6 +318,42 @@ Autonomy → makeAutonomousDecision()
             └── needs continue updating regardless
 ```
 
+## Phase 3c (In Progress) — Stabilization Pass
+
+**Objective:** Fix visual consistency, state machine edge cases, data alignment, and broken initialization without expanding scope.
+
+**Timestamp:** 2026-07-27
+
+### Bugs Fixed
+
+1. **Bug 3 — Weather condition changes never propagate to visuals** (`updateFromWeatherState()` only called at init)
+   - Added `weatherCheckAccum` timer in animate loop, calls `weatherVisualEngine.updateFromWeatherState()` every 2s
+   - Ensures weather condition changes (e.g., clear → thunderstorm) reflect in rain particles, fog, lightning
+
+2. **Bug 4+5 — window_left/window_right behaviors not differentiated** (both passed same key `"window"`)
+   - Added `locationBehaviors["window_left"]` and `["window_right"]` aliases pointing to shared window behavior array
+   - Proximity check now passes correct side key: `triggerLocationBehavior(atWindowLeft ? "window_left" : "window_right")`
+
+3. **Bug 1 — worldState.locations.server_rack key mismatch** (key was `"server_rack"` but everything else uses `"rack-a"`)
+   - Changed both `worldState.locations.server_rack` → `"rack-a"` and `prefs.locations.server_rack` → `"rack-a"`
+
+4. **Bug 2 — Left window rain count was const** (couldn't be adjusted by weather engine)
+   - Changed `const lrainCount` → `let lrainCount`, `const lrainSpeeds` → `let lrainSpeeds`
+   - Added left rain handling to `applyEffects()`: reallocates/updates lrain positions + speeds when weather changes
+
+5. **Bug 7 — Monitor idle screensaver stuck on codeReview/logCleanup states**
+   - Added `'codeReview'` and `'logCleanup'` to `screensaverStates` array so they reset to `tarsOS` when returning to desk
+   - Added both states to away-from-desk transition so they enter screensaver cycle instead of staying frozen
+
+6. **Bug 15 — Dead code: `drawRackTransfer()`** (defined but never referenced)
+   - Removed entire function (~20 lines)
+
+### Remaining Known Issues (Not Addressed)
+
+- `worldState.tars.energy` vs `worldState.tars.needs.energy` — duplicate semantic; confusing but functionally separate
+- Wrapper `lookAt()` has dead activity map code — unreachable because original `lookAt()` already sets `worldState.tars.location`
+- `deskWiggle` global initialized but shadowed by inner-scope `let deskWiggle` — harmless
+
 ## Phase 4 (Planned) — Cross-Session Persistence
 
 ---
@@ -578,7 +614,7 @@ This project builds: Documentation, system design, information architecture, aut
 
 # Project Registry (Auto-Generated)
 
-**Last Updated:** 2026-07-27 20:46:45 UTC  
+**Last Updated:** 2026-07-27 21:01:07 UTC  
 **Status:** Active registry  
 **Purpose:** Consolidated inventory of all active, paused, and archived projects
 
@@ -612,7 +648,8 @@ This project builds: Documentation, system design, information architecture, aut
 ## 6. Active Workspace Changes (Git Status)
 
 ```
-M memory/PROJECT_REGISTRY.md
+M memory/ACTIVE_PROJECT_v2.md
+ M memory/PROJECT_REGISTRY.md
  M memory/STAGING_INTENT.md
  M projects/tars-face/tars_face_v1.html
 ```
@@ -622,56 +659,56 @@ M memory/PROJECT_REGISTRY.md
 ## 7. Current Code Diffs (Capped at 50 Lines)
 
 ```diff
-diff --git a/memory/PROJECT_REGISTRY.md b/memory/PROJECT_REGISTRY.md
-index d659c1a..1b8588a 100644
---- a/memory/PROJECT_REGISTRY.md
-+++ b/memory/PROJECT_REGISTRY.md
-@@ -1,6 +1,6 @@
+diff --git a/memory/ACTIVE_PROJECT_v2.md b/memory/ACTIVE_PROJECT_v2.md
+index 2e8c392..078bc26 100644
+--- a/memory/ACTIVE_PROJECT_v2.md
++++ b/memory/ACTIVE_PROJECT_v2.md
+@@ -1,40 +1,36 @@
+ ## Current Priority
+ 
+-**TARS World Engine** (Phase 1 complete, Phase 2 complete) — Single-file Three.js visual frontend with autonomous needs system. Zero LLM dependency. `https://localhost:[REDACTED_PASSWORD]@@ -1,6 +1,6 @@
  # Project Registry (Auto-Generated)
  
--**Last Updated:** 2026-07-27 20:38:42 UTC  
-+**Last Updated:** 2026-07-27 20:46:45 UTC  
+-**Last Updated:** 2026-07-27 20:46:45 UTC  
++**Last Updated:** 2026-07-27 21:01:07 UTC  
  **Status:** Active registry  
  **Purpose:** Consolidated inventory of all active, paused, and archived projects
  
 diff --git a/memory/STAGING_INTENT.md b/memory/STAGING_INTENT.md
-index df5ddb2..f68a634 100644
+index f68a634..3bbe8ea 100644
 --- a/memory/STAGING_INTENT.md
 +++ b/memory/STAGING_INTENT.md
-@@ -7,10 +7,10 @@
+@@ -286,4 +286,40 @@ Autonomy → makeAutonomousDecision()
+             └── needs continue updating regardless
+ ```
  
- ## Active Staged Action
- 
--- **Timestamp:** 2026-07-27 20:30:00 UTC
-+- **Timestamp:** 2026-07-27 20:50:00 UTC
- - **Target Component:** T.A.R.S. World Engine — Phase 3: LLM Intent Parsing & Behavioral JSON
--- **Planned Action:** Phase 3 Implementation — Intent schema + mock generator + LLM prompt template built. Needs integration testing and real LLM hookup.
--- **Status:** In Progress (Schema, Mock Generator, Prompt Template — built; Integration — pending)
-+- **Planned Action:** Phase 3a (Foundation Audit) + Phase 3b (Priority & Control Integration) complete. Ready for real LLM integration.
-+- **Status:** Completed (Schema, Mock Generator, Prompt Template, Audit, Control Mode, Priority Gate, Reason Propagation — all built)
- 
- ---
- 
-@@ -255,4 +255,35 @@ LLM / Human Input
- 5. Integrate with world state logging
- 6. Test with mock generator, then real LLM
- 
-+## Phase 3b (Complete) — Priority & Control Integration
++## Phase 3c (In Progress) — Stabilization Pass
 +
-+### Implemented
-+- [x] `worldState.tars.controlMode` — centralized state with "autonomous" and "llm" values
-+- [x] `makeAutonomousDecision()` defers when `controlMode === "llm"` — needs continue, movement stops
-+- [x] `TARS.setBehavior()` sets controlMode to "llm" on intent, starts 60s auto-release timer
-+- [x] `TARS.releaseControl()` — explicit release back to autonomous
-+- [x] `window.TARS_CONTROL` — exposes `setMode()`, `getMode()`, `release()` for external control
-+- [x] `lookAt(targetKey, reason)` — reason parameter propagated through to `setTARSActivity()`
-+- [x] Activity reasons: `autonomous_move`, `llm_intent` (extensible: `environmental_event`, `scheduled_routine`, `user_interaction`, `system_alert`)
-+- [x] UI control panel buttons for AUTO / LLM / RELEASE
-+- [x] `getTARSActivitySummary()` includes `controlMode` in output
-+- [x] Emotion map fixed: `"curious"` → `"think"` for window_right (valid BEHAVIOR_PRESETS key)
++**Objective:** Fix visual consistency, state machine edge cases, data alignment, and broken initialization without expanding scope.
 +
-+### Architecture
-+```
++**Timestamp:** 2026-07-27
++
++### Bugs Fixed
++
++1. **Bug 3 — Weather condition changes never propagate to visuals** (`updateFromWeatherState()` only called at init)
++   - Added `weatherCheckAccum` timer in animate loop, calls `weatherVisualEngine.updateFromWeatherState()` every 2s
++   - Ensures weather condition changes (e.g., clear → thunderstorm) reflect in rain particles, fog, lightning
++
++2. **Bug 4+5 — window_left/window_right behaviors not differentiated** (both passed same key `"window"`)
++   - Added `locationBehaviors["window_left"]` and `["window_right"]` aliases pointing to shared window behavior array
++   - Proximity check now passes correct side key: `triggerLocationBehavior(atWindowLeft ? "window_left" : "window_right")`
++
++3. **Bug 1 — worldState.locations.server_rack key mismatch** (key was `"server_rack"` but everything else uses `"rack-a"`)
++   - Changed both `worldState.locations.server_rack` → `"rack-a"` and `prefs.locations.server_rack` → `"rack-a"`
++
++4. **Bug 2 — Left window rain count was const** (couldn't be adjusted by weather engine)
++   - Changed `const lrainCount` → `let lrainCount`, `const lrainSpeeds` → `let lrainSpeeds`
++   - Added left rain handling to `applyEffects()`: reallocates/updates lrain positions + speeds when weather changes
++
++5. **Bug 7 — Monitor idle screensaver stuck on codeReview/logCleanup states**
++   - Added `'codeReview'` and `'logCleanup'` to `screensaverStates` array so they reset to `tarsOS` when returning to desk
++   - Added both states to away-from-desk transition so they enter screensaver cycle instead of staying frozen
++
 
 ... [DIFF TRUNCATED TO 50 LINES FOR BREVITY] ...
 ```

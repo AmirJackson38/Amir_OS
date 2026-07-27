@@ -286,4 +286,40 @@ Autonomy → makeAutonomousDecision()
             └── needs continue updating regardless
 ```
 
+## Phase 3c (In Progress) — Stabilization Pass
+
+**Objective:** Fix visual consistency, state machine edge cases, data alignment, and broken initialization without expanding scope.
+
+**Timestamp:** 2026-07-27
+
+### Bugs Fixed
+
+1. **Bug 3 — Weather condition changes never propagate to visuals** (`updateFromWeatherState()` only called at init)
+   - Added `weatherCheckAccum` timer in animate loop, calls `weatherVisualEngine.updateFromWeatherState()` every 2s
+   - Ensures weather condition changes (e.g., clear → thunderstorm) reflect in rain particles, fog, lightning
+
+2. **Bug 4+5 — window_left/window_right behaviors not differentiated** (both passed same key `"window"`)
+   - Added `locationBehaviors["window_left"]` and `["window_right"]` aliases pointing to shared window behavior array
+   - Proximity check now passes correct side key: `triggerLocationBehavior(atWindowLeft ? "window_left" : "window_right")`
+
+3. **Bug 1 — worldState.locations.server_rack key mismatch** (key was `"server_rack"` but everything else uses `"rack-a"`)
+   - Changed both `worldState.locations.server_rack` → `"rack-a"` and `prefs.locations.server_rack` → `"rack-a"`
+
+4. **Bug 2 — Left window rain count was const** (couldn't be adjusted by weather engine)
+   - Changed `const lrainCount` → `let lrainCount`, `const lrainSpeeds` → `let lrainSpeeds`
+   - Added left rain handling to `applyEffects()`: reallocates/updates lrain positions + speeds when weather changes
+
+5. **Bug 7 — Monitor idle screensaver stuck on codeReview/logCleanup states**
+   - Added `'codeReview'` and `'logCleanup'` to `screensaverStates` array so they reset to `tarsOS` when returning to desk
+   - Added both states to away-from-desk transition so they enter screensaver cycle instead of staying frozen
+
+6. **Bug 15 — Dead code: `drawRackTransfer()`** (defined but never referenced)
+   - Removed entire function (~20 lines)
+
+### Remaining Known Issues (Not Addressed)
+
+- `worldState.tars.energy` vs `worldState.tars.needs.energy` — duplicate semantic; confusing but functionally separate
+- Wrapper `lookAt()` has dead activity map code — unreachable because original `lookAt()` already sets `worldState.tars.location`
+- `deskWiggle` global initialized but shadowed by inner-scope `let deskWiggle` — harmless
+
 ## Phase 4 (Planned) — Cross-Session Persistence

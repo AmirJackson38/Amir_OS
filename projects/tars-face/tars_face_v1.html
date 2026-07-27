@@ -802,10 +802,10 @@ const lrainGroup = new THREE.Group();
 lrainGroup.position.set(LEFT_WALL_X - 0.6, 0, 0);
 scene.add(lrainGroup);
 
-const lrainCount = 200;
+let lrainCount = 200;
 const lrainGeometry = new THREE.BufferGeometry();
 const lrainPositions = new Float32Array(lrainCount * 3);
-const lrainSpeeds = new Float32Array(lrainCount);
+let lrainSpeeds = new Float32Array(lrainCount);
 for (let i = 0; i < lrainCount; i++) {
     lrainPositions[i * 3] = lwinLeft + Math.random() * LWIN_W;
     lrainPositions[i * 3 + 1] = lwinBottom + Math.random() * (LWIN_H + 2);
@@ -1473,36 +1473,15 @@ function drawLogCleanup(ctx, w, h, time) {
 }
 
 // Rack data transfer visualization
-function drawRackTransfer(ctx, w, h, time) {
-    ctx.fillStyle = "#010305";
-    ctx.fillRect(0, 0, w, h);
-    
-    // Transfer bars
-    ctx.fillStyle = "#ff8800";
-    for (let i = 0; i < 12; i++) {
-        const barH = 4 + Math.sin(time * 8 + i) * 2 + Math.random() * 8;
-        const x = 10 + i * 20;
-        ctx.fillRect(x, h - barH - 8, 14, barH);
-    }
-    
-    // Status text
-    ctx.fillStyle = "#ffaa00";
-    ctx.font = "11px monospace";
-    ctx.fillText("DATA TRANSFER ACTIVE", 10, 20);
-    ctx.fillStyle = "#5fd0ff";
-    ctx.fillText(`RATE: ${(2.4 + Math.sin(time * 3) * 0.6).toFixed(1)} GB/s`, 10, 40);
-    ctx.fillText(`PKTS: ${Math.floor(15000 + Math.sin(time * 5) * 300)}/s`, 10, 58);
-}
-
 // ============================================================
-// MONITOR IDLE/SCREENSAVER SYSTEM - BUG 3 FIX
+// MONITOR IDLE/SCREENSAVER SYSTEM
 // ============================================================
 
 function updateMonitorIdle(dt) {
     // If at desk, reset idle timer and show active states
     if (currentState.atDesk) {
         monitorIdleTimer = 0;
-        const screensaverStates = ['matrix', 'starfield', 'syslogs'];
+        const screensaverStates = ['matrix', 'starfield', 'syslogs', 'codeReview', 'logCleanup'];
         if (screensaverStates.includes(monitor1State)) {
             setMonitorState(1, 'tarsOS');
         }
@@ -1514,7 +1493,7 @@ function updateMonitorIdle(dt) {
         monitorIdleTimer += dt * 1000;
         if (monitorIdleTimer > monitorIdleTimeout) {
             // Cycle through screensaver states
-            if (monitor1State === 'terminal' || monitor1State === 'tarsOS') {
+            if (monitor1State === 'terminal' || monitor1State === 'tarsOS' || monitor1State === 'codeReview' || monitor1State === 'logCleanup') {
                 setMonitorState(1, 'matrix');
             } else if (monitor1State === 'matrix') {
                 setMonitorState(1, 'starfield');
@@ -2021,12 +2000,12 @@ scene.add(dust);
 const worldState = {
     room: {
         currentRoom: "main_room",
-        locations: {
-            workstation: { x: 1.7, y: 2.3, z: -2.2, radius: 1.5 },
-            window_left: { x: -7.5, y: 4.2, z: 0, radius: 1.5 },
-            window_right: { x: 2.5, y: 4.2, z: -6, radius: 1.5 },
-            server_rack: { x: -4.7, y: 2.5, z: -4, radius: 1.5 }
-        }
+            locations: {
+                workstation: { x: 1.7, y: 2.3, z: -2.2, radius: 1.5 },
+                window_left: { x: -7.5, y: 4.2, z: 0, radius: 1.5 },
+                window_right: { x: 2.5, y: 4.2, z: -6, radius: 1.5 },
+                "rack-a": { x: -4.7, y: 2.5, z: -4, radius: 1.5 }
+            }
     },
     environment: {
         weather: {
@@ -2063,7 +2042,7 @@ const worldState = {
                 window_right: 0.9,
                 window_left: 0.5,
                 workstation: 0.8,
-                server_rack: 0.85
+                "rack-a": 0.85
             },
             objects: {
                 computer: 0.8,
@@ -2208,8 +2187,33 @@ const weatherVisualEngine = {
             }
             rain.geometry.attributes.position.needsUpdate = true;
             rain.material.opacity = config.rain.intensity === "heavy" ? 0.8 : 0.7;
+            // Left window rain
+            lrainGroup.visible = true;
+            const lCount = config.rain.intensity === "heavy" ? 500 : 200;
+            if (lCount !== lrainCount) {
+                lrainCount = lCount;
+                lrainSpeeds = new Float32Array(lrainCount);
+                const lpos = lrain.geometry.attributes.position.array;
+                const newLpos = new Float32Array(lrainCount * 3);
+                for (let i = 0; i < lrainCount; i++) {
+                    newLpos[i * 3] = lwinLeft + Math.random() * LWIN_W;
+                    newLpos[i * 3 + 1] = lwinBottom + Math.random() * (LWIN_H + 2);
+                    newLpos[i * 3 + 2] = -Math.random() * 2.5;
+                    lrainSpeeds[i] = (config.rain.intensity === "heavy" ? 0.06 : 0.04) + Math.random() * 0.03;
+                }
+                lrain.geometry.setAttribute("position", new THREE.BufferAttribute(newLpos, 3));
+            } else {
+                const lpos = lrain.geometry.attributes.position.array;
+                for (let i = 0; i < lrainCount; i++) {
+                    lpos[i * 3 + 1] = lwinBottom + Math.random() * (LWIN_H + 2);
+                    lrainSpeeds[i] = (config.rain.intensity === "heavy" ? 0.06 : 0.04) + Math.random() * 0.03;
+                }
+                lrain.geometry.attributes.position.needsUpdate = true;
+            }
+            lrain.material.opacity = config.rain.intensity === "heavy" ? 0.8 : 0.7;
         } else {
             rainGroup.visible = false;
+            lrainGroup.visible = false;
         }
         
         // Fog (adjust scene fog)
@@ -3332,6 +3336,10 @@ window.TARS.lookAt = function(targetKey) {
         ]
     };
     
+    // Alias window side keys to shared window behaviors
+    locationBehaviors["window_left"] = locationBehaviors["window"];
+    locationBehaviors["window_right"] = locationBehaviors["window"];
+    
     function triggerLocationBehavior(locationKey) {
         const behaviors = locationBehaviors[locationKey];
         if (!behaviors) return;
@@ -3717,6 +3725,7 @@ const clock = new THREE.Clock();
 let dayNightAccum = 0;
 let clockAccum = 0;
 let displayAccum = 0;
+let weatherCheckAccum = 0;
 
 function animate() {
     requestAnimationFrame(animate);
@@ -3740,6 +3749,13 @@ function animate() {
     if (clockAccum > 1) {
         clockAccum = 0;
         setClockToRealTime();
+    }
+
+    // 2a. Weather sync — propagate worldState weather changes to visuals
+    weatherCheckAccum += dt;
+    if (weatherCheckAccum > 2) {
+        weatherCheckAccum = 0;
+        weatherVisualEngine.updateFromWeatherState();
     }
 
     // 2b. Autonomous Needs & Decision Making
@@ -3991,7 +4007,7 @@ function animate() {
     if (atWindow && !currentState.atWindow) {
         currentState.atWindow = true;
         currentState.atWindowSide = atWindowLeft ? "left" : "right";
-        triggerLocationBehavior(atWindowLeft ? "window" : "window");
+        triggerLocationBehavior(atWindowLeft ? "window_left" : "window_right");
         console.log("[TARS] At window - scanning exterior", currentState.atWindowSide);
     } else if (!atWindow && currentState.atWindow) {
         currentState.atWindow = false;
