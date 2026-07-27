@@ -1,7 +1,7 @@
 # Amir OS Session Resume Bootstrap (v2 Fast-Boot)
-> Generated: 2026-07-27 19:11:03 UTC
+> Generated: 2026-07-27 20:29:43 UTC
 > Amir OS Version: v0.8.0 (Single-File Fast-Boot Engine)
-> Memory Efficiency: 4269 / 5,500 chars used
+> Memory Efficiency: 4833 / 5,500 chars used
 
 This file contains the consolidated runtime state of Amir OS v0.8.0.
 Single-File Fast Boot: Reading this file provides 100% of the active context in 1 tool call.
@@ -39,10 +39,10 @@ Single-File Fast Boot: Reading this file provides 100% of the active context in 
 
 ## Active Staged Action
 
-- **Timestamp:** 2026-07-27 23:30:00 UTC
+- **Timestamp:** 2026-07-27 20:30:00 UTC
 - **Target Component:** T.A.R.S. World Engine — Phase 3: LLM Intent Parsing & Behavioral JSON
-- **Planned Action:** Phase 3 Implementation — LLM intent parsing to behavioral JSON, cross-session memory persistence
-- **Status:** Planned (Phase 1 & 2 Complete)
+- **Planned Action:** Phase 3 Implementation — Intent schema + mock generator + LLM prompt template built. Needs integration testing and real LLM hookup.
+- **Status:** In Progress (Schema, Mock Generator, Prompt Template — built; Integration — pending)
 
 ---
 
@@ -206,6 +206,53 @@ After each meaningful change:
 
 ## Phase 3 (Planned) — LLM Intent → Behavioral JSON
 
+### Objective
+Create a structured pipeline that translates natural language intent (from an LLM or human) into TARS behavioral JSON consumed by `TARS.setBehavior()`.
+
+### Architecture
+```
+LLM / Human Input
+  → Intent Schema (structured JSON with emotion, energy, urgency, gaze, movement, gesture)
+  → TARS Intent Parser (validate + map to internal actions)
+  → TARS.setBehavior() (existing — executes gesture/emotion/movement)
+  → World State update (log intent + behavior in activityLog)
+```
+
+### Components
+1. **Intent Schema Definition** (`tools/tars_intent_schema.json`)
+   - Define full JSON schema: `{ emotion, intensity, energy, urgency, gaze, movement, target, gesture }`
+   - Enum values for emotion, gesture, gaze targets
+   - Validation rules (e.g., energy 0-1, intensity 0-1)
+
+2. **LLM Prompt Template** (`tools/tars_llm_prompt.md`)
+   - System prompt instructing LLM to output structured behavioral JSON
+   - Examples mapping natural language → valid JSON
+   - Constraints (must use valid target keys, emotion values, etc.)
+
+3. **Intent Parser** (inline in `tars_face_v1.html` or `tools/tars_intent_parser.py`)
+   - Validate incoming JSON against schema
+   - Map gaze/movement targets to `TARGET_POSITIONS` keys
+   - Chain multiple behaviors (e.g., "look at window + gesture pulse + curious emotion")
+   - Fall back to default behavior if parsing fails
+
+4. **Mock Intent Generator** (for testing without LLM)
+   - `window.TARS_INTENT.mock(input_string)` — keyword-based intent synthesis
+   - Maps keywords: "storm" → curious+window, "work" → think+desk, "check" → listen+rack
+   - Demo mode for Phase 3 testing without external LLM dependency
+
+5. **Integration**
+   - Hook parser output into existing `TARS.setBehavior()`
+   - Log parsed intent in `worldState.activityLog`
+   - Console debug output showing raw → parsed → executed chain
+
+### Implementation Order
+1. Define intent schema and validation
+2. Build mock intent generator (keyword → JSON)
+3. Build intent parser with schema validation
+4. Create LLM prompt template
+5. Integrate with world state logging
+6. Test with mock generator, then real LLM
+
 ## Phase 4 (Planned) — Cross-Session Persistence
 
 ---
@@ -348,6 +395,53 @@ This project builds: Documentation, system design, information architecture, aut
 ---
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Session 2026-07-27-1529
+**Start Time:** 2026-07-27 20:29
+**Status:** In Progress
+**Objective:** session end
+
+## Session 2026-07-27-1528
+
+**Start Time:** 2026-07-27 20:28
+**Status:** In Progress
+**Objective:** session end
+
+### Log
+
+* session end: completed memory promoter fixes and active_project_v2.md cleanup
+
+
+## Session 2026-07-27
+**Start Time:** 2026-07-27
+**Status:** In Progress
+**Objective:** Memory promoter cleanup, ACTIVE_PROJECT_v2.md corruption fix, Phase 2 autonomous needs system complete
+
+
 ## Session 2026-07-24-03
 
 **Start Time:** 2026-07-24 00:47  
@@ -362,6 +456,13 @@ This project builds: Documentation, system design, information architecture, aut
 * Boot automation live — OmniRoute + boot menu now trigger on system restart
 
 ---
+
+
+
+
+
+
+
 
 
 ## Session 2026-07-24-02
@@ -381,6 +482,13 @@ This project builds: Documentation, system design, information architecture, aut
 ---
 
 
+
+
+
+
+
+
+
 ## Session 2026-07-23-01
 
 **Start Time:** 2026-07-23 17:15:00  
@@ -396,7 +504,8 @@ This project builds: Documentation, system design, information architecture, aut
 
 ---
 
-**Older sessions archived to SESSION_LOG_ARCHIVE.md**
+**Older sessions archived to SESSION_LOG_ARCHIVE.m
+... [TRUNCATED]
 
 ---
 
@@ -404,7 +513,7 @@ This project builds: Documentation, system design, information architecture, aut
 
 # Project Registry (Auto-Generated)
 
-**Last Updated:** 2026-07-27 19:11:03 UTC  
+**Last Updated:** 2026-07-27 20:29:43 UTC  
 **Status:** Active registry  
 **Purpose:** Consolidated inventory of all active, paused, and archived projects
 
@@ -438,16 +547,15 @@ This project builds: Documentation, system design, information architecture, aut
 ## 6. Active Workspace Changes (Git Status)
 
 ```
-M memory/BOOTSTRAP_v2.md
- M memory/CURRENT_STATE_v2.md
- M memory/DECISIONS_v2.md
- M memory/LESSONS_v2.md
+M memory/ACTIVE_PROJECT_v2.md
+ M memory/BOOTSTRAP_v2.md
  M memory/PROJECT_REGISTRY.md
  M memory/SESSION_LOG_v2.md
  M memory/STAGING_INTENT.md
- M tools/character_limiter.py
- M tools/project_autodiscovery.py
-?? memory/ACTIVE_PROJECT_v2.md
+ M projects/tars-face/tars_face_v1.html
+?? tools/memory_promoter.py
+?? tools/tars_intent_schema.json
+?? tools/tars_llm_prompt.md
 ```
 
 ---
@@ -455,7 +563,58 @@ M memory/BOOTSTRAP_v2.md
 ## 7. Current Code Diffs (Capped at 50 Lines)
 
 ```diff
-No active diff or diff unavailable.
+diff --git a/memory/ACTIVE_PROJECT_v2.md b/memory/ACTIVE_PROJECT_v2.md
+index ac2c991..2e8c392 100644
+--- a/memory/ACTIVE_PROJECT_v2.md
++++ b/memory/ACTIVE_PROJECT_v2.md
+@@ -1,40 +1,40 @@
+ ## Current Priority
+ 
+-**TARS World Engine** (Phase 1 ✅, Phase 2 ✅) — Single-file Three.js visual frontend with autonomous needs system. Zero LLM dependency. `https://localhost:[REDACTED_PASSWORD]@@ -1,7 +1,7 @@
+ # Amir OS Session Resume Bootstrap (v2 Fast-Boot)
+-> Generated: 2026-07-27 19:11:03 UTC
++> Generated: 2026-07-27 20:28:35 UTC
+ > Amir OS Version: v0.8.0 (Single-File Fast-Boot Engine)
+-> Memory Efficiency: 4269 / 5,500 chars used
++> Memory Efficiency: 4714 / 5,500 chars used
+ 
+ This file contains the consolidated runtime state of Amir OS v0.8.0.
+ Single-File Fast Boot: Reading this file provides 100% of the active context in 1 tool call.
+@@ -348,6 +348,44 @@ This project builds: Documentation, system design, information architecture, aut
+ ---
+ 
+ 
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++## Session 2026-07-27-1528
++
++**Start Time:** 2026-07-27 20:28
++**Status:** In Progress
++**Objective:** session end
++
+
+... [DIFF TRUNCATED TO 50 LINES FOR BREVITY] ...
 ```
 
 ---

@@ -3553,6 +3553,104 @@ window.TARS_AUTONOMY = {
 };
 
 // ============================================================
+// PHASE 3: LLM INTENT PARSER + MOCK GENERATOR
+// ============================================================
+
+window.TARS_INTENT = {
+    parse(intent) {
+        let behavior = {};
+
+        if (typeof intent === 'string') {
+            behavior = this.keywordParse(intent);
+        } else if (typeof intent === 'object' && intent !== null) {
+            behavior = this.validate(intent);
+        }
+
+        console.log(`[TARS INTENT] Raw:`, intent, `Parsed:`, behavior);
+        if (Object.keys(behavior).length > 0) {
+            window.TARS.setBehavior(behavior);
+            worldState.activityLog.push({
+                type: "intent",
+                timestamp: Date.now(),
+                raw: typeof intent === 'string' ? intent : JSON.stringify(intent),
+                parsed: behavior
+            });
+        }
+        return behavior;
+    },
+
+    keywordParse(input) {
+        const text = input.toLowerCase();
+        const result = {};
+
+        const keywordMap = [
+            { keywords: ["storm", "thunder", "lightning", "rain"], emotion: "curious", gaze: "window_right", gesture: "pulse" },
+            { keywords: ["work", "code", "write", "build", "think"], emotion: "think", gaze: "desk" },
+            { keywords: ["check", "server", "rack", "monitor", "status"], emotion: "listen", gaze: "rack-a", movement: "walk", target: "rack-a" },
+            { keywords: ["chill", "relax", "calm", "view", "window"], emotion: "chill", gaze: "window_left" },
+            { keywords: ["hello", "hi", "hey", "look"], emotion: "happy", gaze: "user", gesture: "nod" },
+            { keywords: ["watch", "observe", "bridge", "city"], emotion: "curious", gaze: "window_right", gesture: "expand" },
+            { keywords: ["night", "dark", "sleep"], emotion: "chill", energy: 0.2, gaze: "window_left" },
+            { keywords: ["alarm", "warning", "danger", "critical"], emotion: "alert", urgency: 0.8, gesture: "pulse" },
+            { keywords: ["nod", "agree", "yes"], gesture: "nod", emotion: "happy", intensity: 0.4 },
+            { keywords: ["spin", "dance", "celebrate"], gesture: "spin", emotion: "happy", intensity: 0.9 },
+            { keywords: ["expand", "show", "big"], gesture: "expand", emotion: "curious" },
+            { keywords: ["shake", "no", "disagree"], gesture: "shake", emotion: "concerned" },
+        ];
+
+        for (const rule of keywordMap) {
+            if (rule.keywords.some(kw => text.includes(kw))) {
+                if (rule.emotion) result.emotion = rule.emotion;
+                if (rule.gaze) result.gaze = rule.gaze;
+                if (rule.gesture) result.gesture = rule.gesture;
+                if (rule.movement) result.movement = rule.movement;
+                if (rule.target) result.target = rule.target;
+                if (rule.energy !== undefined) result.energy = rule.energy;
+                if (rule.urgency !== undefined) result.urgency = rule.urgency;
+                break;
+            }
+        }
+
+        return result;
+    },
+
+    validate(obj) {
+        const emotionValues = ["neutral", "think", "curious", "listen", "chill", "happy", "concerned", "alert"];
+        const gestureValues = ["nod", "shake", "pulse", "expand", "spin"];
+        const targetValues = ["window_left", "window_right", "desk", "rack-a", "user"];
+        const movementValues = ["walk", "drift", "rush"];
+
+        if (obj.emotion && !emotionValues.includes(obj.emotion)) delete obj.emotion;
+        if (obj.gesture && !gestureValues.includes(obj.gesture)) delete obj.gesture;
+        if (obj.gaze && !targetValues.includes(obj.gaze)) delete obj.gaze;
+        if (obj.target && !targetValues.includes(obj.target)) delete obj.target;
+        if (obj.movement && !movementValues.includes(obj.movement)) delete obj.movement;
+        if (obj.energy !== undefined) obj.energy = Math.max(0, Math.min(1, obj.energy));
+        if (obj.intensity !== undefined) obj.intensity = Math.max(0, Math.min(1, obj.intensity));
+        if (obj.urgency !== undefined) obj.urgency = Math.max(0, Math.min(1, obj.urgency));
+
+        return obj;
+    },
+
+    mock() {
+        const intents = [
+            "storm is coming outside",
+            "time to check the servers",
+            "lets write some code",
+            "just relax and watch the rain",
+            "hello there",
+            "look at the bridge",
+            "nod if you agree",
+            "spin around",
+            "critical system alert",
+        ];
+        const pick = intents[Math.floor(Math.random() * intents.length)];
+        console.log(`[TARS INTENT] Mock: "${pick}"`);
+        return this.parse(pick);
+    }
+};
+
+// ============================================================
 // CAMERA PARALLAX
 // ============================================================
 

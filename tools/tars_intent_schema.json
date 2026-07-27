@@ -1,0 +1,63 @@
+{
+  "description": "TARS Behavioral Intent Schema — consumed by TARS.setBehavior()",
+  "version": "1.0.0",
+  "type": "object",
+  "properties": {
+    "emotion": {
+      "type": "string",
+      "enum": ["neutral", "think", "curious", "listen", "chill", "happy", "concerned", "alert"],
+      "description": "Visual emotion displayed on TARS face"
+    },
+    "intensity": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Emotion intensity (0=subtle, 1=maximum)"
+    },
+    "energy": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Energy level — affects movement speed and particle behavior"
+    },
+    "urgency": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Urgency — affects response speed and movement animation"
+    },
+    "gaze": {
+      "type": "string",
+      "enum": ["window_left", "window_right", "desk", "rack-a", "user", null],
+      "description": "Target to look at / move toward"
+    },
+    "movement": {
+      "type": "string",
+      "enum": ["walk", "drift", "rush", null],
+      "description": "Movement style when changing gaze target"
+    },
+    "target": {
+      "type": "string",
+      "enum": ["window_left", "window_right", "desk", "rack-a", "user"],
+      "description": "Destination for movement (used with movement type)"
+    },
+    "gesture": {
+      "type": "string",
+      "enum": ["nod", "shake", "pulse", "expand", "spin", null],
+      "description": "Micro-gesture to perform in place"
+    },
+    "speak": {
+      "type": "string",
+      "maxLength": 200,
+      "description": "Optional speech bubble text (future feature)"
+    }
+  },
+  "required": [],
+  "examples": [
+    { "emotion": "curious", "intensity": 0.8, "gaze": "window_right", "gesture": "pulse" },
+    { "emotion": "think", "energy": 0.6, "gaze": "desk" },
+    { "emotion": "listen", "gaze": "rack-a", "movement": "walk", "target": "rack-a" },
+    { "emotion": "chill", "intensity": 0.3, "gaze": "window_left" },
+    { "gesture": "nod", "emotion": "happy", "intensity": 0.5 }
+  ]
+}

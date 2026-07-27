@@ -7,10 +7,10 @@
 
 ## Active Staged Action
 
-- **Timestamp:** 2026-07-27 23:30:00 UTC
+- **Timestamp:** 2026-07-27 20:30:00 UTC
 - **Target Component:** T.A.R.S. World Engine — Phase 3: LLM Intent Parsing & Behavioral JSON
-- **Planned Action:** Phase 3 Implementation — LLM intent parsing to behavioral JSON, cross-session memory persistence
-- **Status:** Planned (Phase 1 & 2 Complete)
+- **Planned Action:** Phase 3 Implementation — Intent schema + mock generator + LLM prompt template built. Needs integration testing and real LLM hookup.
+- **Status:** In Progress (Schema, Mock Generator, Prompt Template — built; Integration — pending)
 
 ---
 
@@ -173,5 +173,52 @@ After each meaningful change:
 - [x] Console logging of scores + needs every decision
 
 ## Phase 3 (Planned) — LLM Intent → Behavioral JSON
+
+### Objective
+Create a structured pipeline that translates natural language intent (from an LLM or human) into TARS behavioral JSON consumed by `TARS.setBehavior()`.
+
+### Architecture
+```
+LLM / Human Input
+  → Intent Schema (structured JSON with emotion, energy, urgency, gaze, movement, gesture)
+  → TARS Intent Parser (validate + map to internal actions)
+  → TARS.setBehavior() (existing — executes gesture/emotion/movement)
+  → World State update (log intent + behavior in activityLog)
+```
+
+### Components
+1. **Intent Schema Definition** (`tools/tars_intent_schema.json`)
+   - Define full JSON schema: `{ emotion, intensity, energy, urgency, gaze, movement, target, gesture }`
+   - Enum values for emotion, gesture, gaze targets
+   - Validation rules (e.g., energy 0-1, intensity 0-1)
+
+2. **LLM Prompt Template** (`tools/tars_llm_prompt.md`)
+   - System prompt instructing LLM to output structured behavioral JSON
+   - Examples mapping natural language → valid JSON
+   - Constraints (must use valid target keys, emotion values, etc.)
+
+3. **Intent Parser** (inline in `tars_face_v1.html` or `tools/tars_intent_parser.py`)
+   - Validate incoming JSON against schema
+   - Map gaze/movement targets to `TARGET_POSITIONS` keys
+   - Chain multiple behaviors (e.g., "look at window + gesture pulse + curious emotion")
+   - Fall back to default behavior if parsing fails
+
+4. **Mock Intent Generator** (for testing without LLM)
+   - `window.TARS_INTENT.mock(input_string)` — keyword-based intent synthesis
+   - Maps keywords: "storm" → curious+window, "work" → think+desk, "check" → listen+rack
+   - Demo mode for Phase 3 testing without external LLM dependency
+
+5. **Integration**
+   - Hook parser output into existing `TARS.setBehavior()`
+   - Log parsed intent in `worldState.activityLog`
+   - Console debug output showing raw → parsed → executed chain
+
+### Implementation Order
+1. Define intent schema and validation
+2. Build mock intent generator (keyword → JSON)
+3. Build intent parser with schema validation
+4. Create LLM prompt template
+5. Integrate with world state logging
+6. Test with mock generator, then real LLM
 
 ## Phase 4 (Planned) — Cross-Session Persistence
