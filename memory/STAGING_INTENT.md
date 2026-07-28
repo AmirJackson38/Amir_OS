@@ -352,7 +352,7 @@ Restore flow:
 
 | Category | Fields | Storage |
 |----------|--------|---------|
-| **TARS State** | location, activity, activityStartedAt, activityReason, previousActivity, mood, energy, controlMode (always restored to "autonomous"), needs, preferences (full object) | Snapshot |
+| **TARS State** | location, activity, activityStartedAt, activityEndsAt, activityReason, previousActivity, mood, energy, controlMode (always restored to "autonomous"), needs, preferences (full object), locationRecency | Snapshot |
 | **Environment** | weather (condition, intensity, precipitation, wind, lightning, visibility), timeOfDay, temperature | Snapshot |
 | **World Memory** | Curated array of meaningful events cross-session (~20 max) | Array |
 | **Session** | previousSessionEnd, totalElapsed (ms since last save) | Computed at restore |
@@ -382,8 +382,8 @@ Restore flow:
 
 ### Autonomy integration
 
-- On startup, restored activity is set as current, but autonomy engine is free to override on next decision cycle (1-3s)
-- `controlMode` always restored to "autonomous" — no stuck LLM mode across sessions
+- On startup, restored activity is set as current, with remaining duration preserved via persisted `activityEndsAt` (adjusted for real-time elapsed since save, or expired if the activity completed offline)
+- Autonomy gates on `now < activityEndsAt` — does not override mid-activity
 - Needs decay/restoration continues normally after restore
 - Phase 3b priority gate (llm vs autonomous) preserved
 
@@ -398,6 +398,9 @@ Restore flow:
 | Missing fields → fallback to defaults | PASS |
 | Needs values preserved | PASS |
 | worldMemory preserved across sessions | PASS |
+| activityEndsAt persisted and restored with correct remaining duration | PASS |
+| locationRecency timestamps shifted by offline elapsed time | PASS |
+| Activity expired during offline → autonomy free on reload | PASS |
 
 ### Known limitations
 
@@ -552,5 +555,25 @@ Exposed as `window.getTARSContext`.
 - `emitWorldEvent()` doesn't have autonomous environmental triggers yet (Phase 7)
 - No chat UI (Phase 7)
 - Interruption system uses a simple array queue — no dedup or cooldown yet
+
+## Phase 6 Final Fix (Complete) — Mid-Activity State Persistence
+
+**Objective:** Ensure `activityEndsAt` and `locationRecency` survive browser reloads so that restored sessions preserve remaining activity duration and location-cooldown state.
+
+**Timestamp:** 2026-07-27
+
+**What changed:**
+
+| Change | File | Description |
+|--------|------|-------------|
+| `activityEndsAt` in capture() | `WorldPersistence.capture()` | Field added to snapshot |
+| `activityEndsAt` in applyToState() | `WorldPersistence.applyToState()` | Restored using `Math.max(saved, Date.now())` so real-time elapsed is accounted for; expired activities immediately free autonomy |
+| `locationRecency` in capture() | `WorldPersistence.capture()` | Shallow copy of map added to snapshot |
+| `locationRecency` in applyToState() | `WorldPersistence.applyToState()` | Timestamps shifted forward by `Date.now() - savedAt` so recency penalties are preserved across sessions |
+
+**Behavior after restore:**
+- Activity resumes with correct remaining real-time duration (or expires immediately if the end time has passed)
+- Autonomy gates on `now < activityEndsAt` — no premature override
+- Location cooldowns preserved — TARS remembers which locations were recently visited
 
 ## Phase 7 (Planned) — Environmental Events, Ambient Life & Chat UI

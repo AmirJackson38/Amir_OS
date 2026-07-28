@@ -1,6 +1,6 @@
 ## Current Priority
 
-**TARS World Engine** — Phase 6 Stabilization (Activity Pacing + Log Usability) complete. Activity lifecycle, scoring bias fix, smart auto-scroll implemented. Ready for Phase 7. `http://localhost:8080/tars_face_v1.html`
+**TARS World Engine** — Phase 6 Stabilization (Activity Pacing + Log Usability) complete. Final Persistence Fix complete: activityEndsAt and locationRecency now survive reloads. Mid-activity state fully preserved across sessions. Ready for Phase 7. `http://localhost:8080/tars_face_v1.html`
 
 ---
 
@@ -11,6 +11,7 @@
 - **Phases 1-5 ✅** — World state, dual windows, weather, preferences, activity log, autonomous scheduler, persistence, priority/interruption system
 - **Phase 6 ✅** — LLM integration boundary, world events, activity registry expansion
 - **Phase 6 Stabilization ✅** — Activity durations (min/max per activity), lifecycle gating, recency penalty, scoring bias fix (location key mapping, need-weighted weather), smart auto-scroll, debug API
+- **Phase 6 Final Fix ✅** — activityEndsAt and locationRecency persisted; reloads preserve remaining activity duration; autonomy does not override restored mid-activity state
 
 ### 3. Home Lab
 TrueNAS (`192.168.0.100`), TARS Pi, ER605 router, dual-subnet (`10.0.0.0/24` WAN + `192.168.0.0/24` LAN). VNC to iMac (`10.0.0.190`).
@@ -19,8 +20,7 @@ TrueNAS (`192.168.0.100`), TARS Pi, ER605 router, dual-subnet (`10.0.0.0/24` WAN
 
 ## Next Actions
 
-1. Browser runtime test of autonomy pacing
-2. Phase 7: Environmental events, ambient life & chat UI
+1. Phase 7: Environmental events, ambient life & chat UI — needs-feedback loop integration (activities affect needs)
 
 ---
 

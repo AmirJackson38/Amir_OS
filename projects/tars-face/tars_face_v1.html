@@ -2105,7 +2105,9 @@ const WorldPersistence = {
                 location: worldState.tars.location,
                 activity: worldState.tars.activity,
                 activityStartedAt: worldState.tars.activityStartedAt,
+                activityEndsAt: worldState.tars.activityEndsAt,
                 activityReason: worldState.tars.activityReason,
+                locationRecency: { ...worldState.tars.locationRecency },
                 previousActivity: worldState.tars.previousActivity,
                 mood: worldState.tars.mood,
                 energy: worldState.tars.energy,
@@ -2166,6 +2168,20 @@ const WorldPersistence = {
         worldState.tars.controlMode = "autonomous";
         if (t.needs) worldState.tars.needs = { ...t.needs };
         if (t.preferences) worldState.tars.preferences = JSON.parse(JSON.stringify(t.preferences));
+        // Persist activityEndsAt — if the original end time hasn't passed yet in real time, keep it
+        if (t.activityEndsAt) {
+            worldState.tars.activityEndsAt = Math.max(t.activityEndsAt, Date.now());
+        } else {
+            worldState.tars.activityEndsAt = Date.now() + 5000;
+        }
+        // Persist locationRecency — shift timestamps forward by elapsed offline time
+        if (t.locationRecency && data.savedAt) {
+            const elapsed = Date.now() - data.savedAt;
+            worldState.tars.locationRecency = {};
+            for (const [loc, ts] of Object.entries(t.locationRecency)) {
+                worldState.tars.locationRecency[loc] = ts + elapsed;
+            }
+        }
         const e = data.environment;
         if (e.weather) worldState.environment.weather = { ...e.weather };
         if (e.timeOfDay !== undefined) worldState.environment.timeOfDay = e.timeOfDay;

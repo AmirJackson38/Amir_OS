@@ -631,6 +631,24 @@ The scoring system had three structural biases causing rapid alternation between
 
 Set `window.TARS_DEBUG = true` for verbose decision logs.
 
+## Phase 6 Final Fix (Complete) — Mid-Activity State Persistence
+
+**Objective:** Ensure `activityEndsAt` and `locationRecency` survive browser reloads so restored sessions preserve remaining activity duration and location-cooldown state.
+
+**Timestamp:** 2026-07-27
+
+**What changed:**
+
+| Change | Location | Description |
+|--------|----------|-------------|
+| `activityEndsAt` in capture/apply | WorldPersistence | Saved to snapshot; restored with `Math.max(saved, Date.now())` for correct real-time remaining duration |
+| `locationRecency` in capture/apply | WorldPersistence | Saved to snapshot; timestamps shifted forward by `Date.now() - savedAt` |
+
+**Key behaviors:**
+- Activity resumes with correct remaining real-time duration (or expires immediately if the end time passed during offline)
+- Autonomy gates on `now < activityEndsAt` — no premature override
+- Location cooldowns preserved across sessions
+
 ## Phase 7 (Planned) — Environmental Events, Ambient Life & Chat UI
 
 ---
