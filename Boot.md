@@ -1,3 +1,12 @@
+---
+name: boot
+description: Startup sequence for AI agents operating within Amir OS
+version: 1.0.0
+requires_skills: [tars-architecture, tars-memory]
+requires_tools: [health_check]
+priority: core
+---
+
 # Amir OS Boot Sequence
 
 ## Purpose
@@ -137,6 +146,44 @@ memory/PROJECT_REGISTRY.md
 ```
 
 Understand all active, paused, and archived project locations.
+
+---
+
+## Step 9 — Understand Skill System
+
+Skills are located in:
+
+```
+skills/<skill-name>/SKILL.md
+```
+
+Each skill has a `when_to_use` field in its frontmatter. Load a skill only when the task matches its domain. Do not load all skills.
+
+Currently available skills:
+- `tars-architecture` — Project structure, boot precedence
+- `tars-memory` — Memory organization, session continuity
+- `tars-frontend` — Three.js, avatar, animation
+- `tars-world-engine` — Needs system, autonomy, scoring
+
+---
+
+## Step 10 — Understand Workflow System
+
+Workflows are located in:
+
+```
+workflows/<name>.md
+```
+
+Available workflows (also triggerable via slash commands):
+- `plan` — `/plan` architectural design
+- `build` — Feature implementation
+- `debug` — Bug diagnosis
+- `verify` — Post-change validation
+- `research` — Codebase exploration
+- `grill-me` — `/grill-me` requirements clarification
+- `learn` — `/learn` save insights
+- `deploy` — Deployment procedures
 
 ---
 

@@ -1,0 +1,48 @@
+{
+  "version": "1.0.0",
+  "generatedAt": "2026-07-27T22:41:00Z",
+  "generator": "auto-generated — do not hand edit",
+  "amirOS": {
+    "version": "0.9.0",
+    "name": "Amir OS — T.A.R.S. Autonomous Cognitive Kernel Engine"
+  },
+  "configs": [
+    { "id": "agent-rules", "path": "AGENT_RULES.md", "version": "1.0.0", "type": "config", "priority": "core" },
+    { "id": "boot-precedence", "path": "BOOT_PRECEDENCE.md", "version": "1.0.0", "type": "config", "priority": "core" },
+    { "id": "boot", "path": "Boot.md", "version": "1.0.0", "type": "config", "priority": "core" },
+    { "id": "agents-global", "path": ".agents/AGENTS_GLOBAL.md", "version": "1.0.0", "type": "config", "priority": "personality" }
+  ],
+  "skills": [
+    { "id": "tars-architecture", "path": "skills/tars-architecture/SKILL.md", "version": "1.0.0", "requires": [] },
+    { "id": "tars-memory", "path": "skills/tars-memory/SKILL.md", "version": "1.0.0", "requires": [] },
+    { "id": "tars-frontend", "path": "skills/tars-frontend/SKILL.md", "version": "1.0.0", "requires": ["tars-world-engine"] },
+    { "id": "tars-world-engine", "path": "skills/tars-world-engine/SKILL.md", "version": "1.0.0", "requires": [] }
+  ],
+  "workflows": [
+    { "id": "plan", "path": "workflows/plan.md", "version": "1.0.0", "requires_skills": ["tars-architecture", "tars-memory"] },
+    { "id": "build", "path": "workflows/build.md", "version": "1.0.0", "requires_skills": ["tars-architecture", "tars-memory"] },
+    { "id": "debug", "path": "workflows/debug.md", "version": "1.0.0", "requires_skills": ["tars-architecture"] },
+    { "id": "verify", "path": "workflows/verify.md", "version": "1.0.0", "requires_skills": ["tars-memory", "tars-architecture"] },
+    { "id": "research", "path": "workflows/research.md", "version": "1.0.0", "requires_skills": [] },
+    { "id": "grill-me", "path": "workflows/grill-me.md", "version": "1.0.0", "requires_skills": ["tars-architecture"] },
+    { "id": "learn", "path": "workflows/learn.md", "version": "1.0.0", "requires_skills": ["tars-memory"] },
+    { "id": "deploy", "path": "workflows/deploy.md", "version": "1.0.0", "requires_skills": ["tars-architecture"] }
+  ],
+  "tools": [
+    { "id": "health_check", "path": "tools/health_check.py", "description": "System health and manifest validation" },
+    { "id": "character_limiter", "path": "tools/character_limiter.py", "description": "Memory file character limit enforcement" },
+    { "id": "continuity_bootstrap_v2", "path": "tools/continuity_bootstrap_v2.py", "description": "Boot state compilation" },
+    { "id": "memory_compactor", "path": "tools/memory_compactor.py", "description": "Log compaction" },
+    { "id": "project_autodiscovery", "path": "tools/project_autodiscovery.py", "description": "Project auto-discovery" }
+  ],
+  "memory": [
+    { "id": "current-state", "path": "memory/CURRENT_STATE_v2.md", "charLimit": 1500 },
+    { "id": "active-project", "path": "projects/ACTIVE_PROJECT_v2.md", "charLimit": 1500 },
+    { "id": "decisions", "path": "memory/DECISIONS_v2.md", "charLimit": 1000 },
+    { "id": "lessons", "path": "memory/LESSONS_v2.md", "charLimit": 1000 },
+    { "id": "session-log", "path": "memory/SESSION_LOG_v2.md", "charLimit": 2500 },
+    { "id": "staging-intent", "path": "memory/STAGING_INTENT.md", "charLimit": 3000 },
+    { "id": "project-registry", "path": "memory/PROJECT_REGISTRY.md", "charLimit": 3000 },
+    { "id": "bootstrap", "path": "memory/BOOTSTRAP_v2.md", "charLimit": 5000 }
+  ]
+}

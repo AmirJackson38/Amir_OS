@@ -7,10 +7,10 @@
 
 ## Active Staged Action
 
-- **Timestamp:** 2026-07-27 21:45:00 UTC
-- **Target Component:** T.A.R.S. World Engine — Phase 6 Stabilization: Activity Pacing & Log Usability
-- **Planned Action:** Activity lifecycle (min/max duration per activity, end-time gating in autonomy), recency-based location cooldown, scoring bias fix (location key mapping, need-weighted weather affinity), auto-scroll fix for activity log, worldState fields (activityEndsAt, locationRecency)
-- **Status:** Completed. TARS now stays engaged in activities for meaningful durations. No more 1s ping-pong between weather/server. LLM/interruption bypasses preserved.
+- **Timestamp:** 2026-07-27 22:42:00 UTC
+- **Target Component:** TARS Architecture Evolution — Agent/Skill/Workflow Separation
+- **Planned Action:** Adopt AG Kit architectural patterns: skill modules with progressive loading, workflow definitions, YAML frontmatter, manifest.json component registry, enhanced health_check.py validation. Preserve all existing boot precedence, memory architecture, and TARS runtime.
+- **Status:** Completed. Skills/workflows/manifest created. BOOT_PRECEDENCE.md and Boot.md updated with skill/workflow awareness. health_check.py extended with manifest validation. Frontmatter added to agent config files. AGENTS_GLOBAL.md created.
 
 ---
 

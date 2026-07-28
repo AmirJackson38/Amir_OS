@@ -1,3 +1,12 @@
+---
+name: agent-rules
+description: Universal operating principles for any AI agent within Amir OS
+version: 1.0.0
+requires_skills: []
+requires_tools: []
+priority: core
+---
+
 # Agent Rules
 
 ## Purpose

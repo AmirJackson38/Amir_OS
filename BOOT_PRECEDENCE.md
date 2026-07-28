@@ -1,3 +1,12 @@
+---
+name: boot-precedence
+description: Explicit priority order for loading agent instructions, personas, and configuration
+version: 1.0.0
+requires_skills: [tars-architecture]
+requires_tools: []
+priority: core
+---
+
 # Agent Bootstrap Precedence Order
 
 ## Purpose
@@ -103,7 +112,47 @@ When starting a new session, agents must follow this order:
 
 ---
 
-## Priority 6: Historical Context (on-demand)
+## Priority 6: Skills (loaded on-demand when task domain matches)
+
+**Location:** `Amir_OS/skills/<skill-name>/SKILL.md`
+
+**Purpose:** Specialized knowledge modules loaded only when relevant.
+
+**Files:**
+- `skills/tars-architecture/SKILL.md` — Project structure, boot precedence, agent rules
+- `skills/tars-memory/SKILL.md` — Memory organization, session continuity, char limits
+- `skills/tars-frontend/SKILL.md` — Three.js, avatar, animation pipeline
+- `skills/tars-world-engine/SKILL.md` — Needs system, scoring, autonomy, persistence
+
+**Behavior:** Skills use progressive loading via `when_to_use` frontmatter field. An agent should:
+1. Check the task domain against each skill's `when_to_use` description
+2. Load only matching skills (not all skills)
+3. Load skill dependencies listed in `requires_skills` if those skills are needed
+4. Never load all skills into context — this defeats the purpose
+
+---
+
+## Priority 7: Workflows (loaded on-demand when triggered)
+
+**Location:** `Amir_OS/workflows/<name>.md`
+
+**Purpose:** Structured procedures for common tasks, triggered by slash commands or explicit request.
+
+**Files:**
+- `workflows/plan.md` — `/plan`: Architectural design before complex changes
+- `workflows/build.md` — Feature implementation
+- `workflows/debug.md` — Systematic bug diagnosis
+- `workflows/verify.md` — Validation after changes
+- `workflows/research.md` — Codebase exploration
+- `workflows/grill-me.md` — `/grill-me`: Targeted engineering questions
+- `workflows/learn.md` — `/learn`: Save insights to memory
+- `workflows/deploy.md` — Deployment procedures
+
+**Behavior:** Workflows are loaded only when the corresponding workflow is triggered (e.g., `/plan` loads `workflows/plan.md`). They declare required skills in their `requires_skills` frontmatter; those skills should be loaded as part of the workflow.
+
+---
+
+## Priority 8: Historical Context (on-demand)
 
 **Location:** `Amir_OS/memory/`
 
@@ -155,7 +204,14 @@ def bootstrap_agent():
     config['session_log'] = load_file("Amir_OS/memory/SESSION_LOG_v2.md")
     config['project_registry'] = load_file("Amir_OS/memory/PROJECT_REGISTRY.md")
     
-    # Priority 6: Historical context (only if needed)
+    # Priority 6: Skills (loaded on-demand based on task domain)
+    # - Load skills matching the task (check when_to_use frontmatter)
+    # - Only load relevant skills, never all skills
+    
+    # Priority 7: Workflows (loaded on-demand when triggered)
+    # - Load workflow definition when /plan, /grill-me, /learn, etc. is triggered
+    
+    # Priority 8: Historical context (only if needed)
     # - Load DECISIONS_v2.md if making complex decisions
     # - Load LESSONS_v2.md if learning context needed
     # - Load BOOTSTRAP_v2.md if resuming from interruption
@@ -207,6 +263,9 @@ After loading, verify:
 - [ ] Version understood (currently v0.8.0+)
 - [ ] Current context loaded (CURRENT_STATE_v2, ACTIVE_PROJECT_v2)
 - [ ] Project registry understood
+- [ ] Skills directory aware (loaded on-demand via when_to_use)
+- [ ] Workflows directory aware (triggered via slash commands)
+- [ ] manifest.json knows about all components
 - [ ] Ready to ask: "How should I proceed?"
 
 ---
@@ -225,6 +284,10 @@ Precedence Pyramid (top = highest priority):
         [Identity Framework]
                     ↑
         [Active Context Files]
+                    ↑
+        [Skills — loaded on-demand]
+                    ↑
+        [Workflows — loaded on-demand]
                     ↑
         [Historical Context]
         (on-demand only)
