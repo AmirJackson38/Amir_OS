@@ -2623,6 +2623,13 @@ function setTARSActivity(activity, location, reason, metadata = {}) {
         logActivityEvent("activity_completed", prevActivity, prevLocation, reason, {
             duration: worldState.tars.previousActivity.duration
         });
+        // Apply completion effects for previous activity
+        const prevEffects = ACTIVITY_EFFECTS[prevActivity];
+        if (prevEffects && prevEffects.onCompletion) {
+            for (const [need, amount] of Object.entries(prevEffects.onCompletion)) {
+                worldState.tars.needs[need] = Math.max(0, Math.min(1, worldState.tars.needs[need] + amount));
+            }
+        }
     }
     debugLog("Activity set:", { activity, location, reason, previousActivity: worldState.tars.previousActivity?.activity, endsAt: new Date(worldState.tars.activityEndsAt).toISOString() });
     logStateChange("activity_set", { activity, location, reason });
@@ -3954,6 +3961,44 @@ const NEED_DECAY_RATES = {
     hunger: 0.000015        // ~1.8%/min - slow, no active food source yet
 };
 
+const ACTIVITY_EFFECTS = {
+    computer_work: {
+        continuous: { energy: -0.00010, curiosity: -0.00005, maintenance: 0.00003 },
+        onCompletion: { maintenance: 0.03 },
+        modifiers: { night: { energy: -0.00005 } }
+    },
+    server_check: {
+        continuous: { energy: -0.00003, maintenance: 0.00017, curiosity: 0.00003 },
+        onCompletion: { maintenance: 0.05 }
+    },
+    weather_observation: {
+        continuous: { energy: -0.00005, curiosity: 0.00015, comfort: 0.00010 },
+        onCompletion: { curiosity: 0.04, comfort: 0.02 },
+        modifiers: {
+            storm: { comfort: -0.00020, curiosity: 0.00008 },
+            rain: { comfort: -0.00010 }
+        }
+    },
+    user_interaction: {
+        continuous: { social: 0.00012, energy: -0.00004, curiosity: 0.00002 },
+        onCompletion: { social: 0.06 }
+    },
+    gaming: {
+        continuous: { curiosity: 0.00004, comfort: 0.00003, energy: -0.00006, hunger: -0.00001 },
+        onCompletion: { curiosity: 0.03, comfort: 0.03 },
+        modifiers: { night: { energy: -0.00003 } }
+    },
+    tv_watching: {
+        continuous: { comfort: 0.00006, curiosity: -0.00003, energy: -0.00005, hunger: -0.00003 },
+        onCompletion: { comfort: 0.05 },
+        modifiers: { night: { comfort: 0.00002 } }
+    },
+    idle: {
+        continuous: { energy: 0.00017, curiosity: -0.00025, comfort: 0.00008 },
+        onCompletion: {}
+    }
+};
+
 const NEED_RESTORATION = {
     desk: { energy: 0.001, curiosity: 0.0005 },
     "rack-a": { energy: 0.0015, maintenance: 0.002 },
@@ -3978,6 +4023,9 @@ function updateNeeds(dt) {
         }
     }
     
+    // Activity effects — continuous need changes while engaged
+    applyActivityEffects(dt);
+    
     // Time-of-day modifiers
     const hour = new Date().getHours();
     const isNight = hour < 6 || hour > 22;
@@ -3991,6 +4039,41 @@ function updateNeeds(dt) {
     if (weather === "thunderstorm" || weather === "heavy_rain") {
         worldState.tars.needs.curiosity = Math.min(1, worldState.tars.needs.curiosity + 0.0001 * dt * 60);
         worldState.tars.needs.comfort = Math.max(0, worldState.tars.needs.comfort - 0.0001 * dt * 60);
+    }
+}
+
+function applyActivityEffects(dt) {
+    const activity = worldState.tars.activity;
+    const effects = ACTIVITY_EFFECTS[activity];
+    if (!effects) return;
+
+    const needs = worldState.tars.needs;
+    const env = worldState.environment;
+    const hour = new Date().getHours();
+    const isNight = hour < 6 || hour > 22;
+    const weather = env.weather.condition;
+
+    // Base continuous effects
+    for (const [need, rate] of Object.entries(effects.continuous)) {
+        needs[need] = Math.max(0, Math.min(1, needs[need] + rate * dt * 60));
+    }
+
+    // Environmental modifiers
+    if (effects.modifiers) {
+        let mods = null;
+        if (effects.modifiers.storm && (weather === "thunderstorm" || weather === "heavy_rain")) {
+            mods = effects.modifiers.storm;
+        } else if (effects.modifiers.rain && (weather === "rain" || weather === "drizzle")) {
+            mods = effects.modifiers.rain;
+        }
+        if (effects.modifiers.night && isNight) {
+            mods = { ...mods, ...effects.modifiers.night };
+        }
+        if (mods) {
+            for (const [need, rate] of Object.entries(mods)) {
+                needs[need] = Math.max(0, Math.min(1, needs[need] + rate * dt * 60));
+            }
+        }
     }
 }
 
