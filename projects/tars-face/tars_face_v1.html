@@ -4282,32 +4282,43 @@ function selectBestActivity() {
 
     for (const [id, reg] of Object.entries(ACTIVITY_REGISTRY)) {
         let score = 0;
+        let needScore = 0;
+        let fatiguePenalty = 0;
+        let recencyPenalty = 0;
+        let weatherBonus = 0;
+        let idleBaseline = 0;
 
         // Need satisfaction potential — how well does this activity address current deficits?
         for (const [need, amount] of Object.entries(reg.needsSatisfied)) {
             const deficit = 1 - needs[need];
             if (deficit > 0.05) {
-                score += deficit * amount * SCORING_WEIGHTS.NEED_WEIGHT;
+                const contrib = deficit * amount * SCORING_WEIGHTS.NEED_WEIGHT;
+                needScore += contrib;
+                score += contrib;
             }
         }
 
         // Preference weighting
-        score += (prefs.activities[id] || 0.5) * SCORING_WEIGHTS.PREFERENCE_WEIGHT;
+        const prefScore = (prefs.activities[id] || 0.5) * SCORING_WEIGHTS.PREFERENCE_WEIGHT;
+        score += prefScore;
 
         // Fatigue penalty — repeated same activity gets diminishing returns
         const fatigue = worldState.tars.activityFatigue[id] || 0;
-        score -= fatigue * SCORING_WEIGHTS.FATIGUE_WEIGHT;
+        fatiguePenalty = fatigue * SCORING_WEIGHTS.FATIGUE_WEIGHT;
+        score -= fatiguePenalty;
 
         // Curiosity exploration term — encourages new experiences when curiosity is high
         const curiosityDeficit = 1 - needs.curiosity;
         const isMultiLocation = reg.location && reg.location.length > 1;
         const explorationBonus = isMultiLocation ? EXPLORATION.MULTI_LOCATION_BONUS : 1;
-        score += curiosityDeficit * SCORING_WEIGHTS.CURIOSITY_EXPLORE_WEIGHT * explorationBonus;
+        const curiosityScore = curiosityDeficit * SCORING_WEIGHTS.CURIOSITY_EXPLORE_WEIGHT * explorationBonus;
+        score += curiosityScore;
 
         // Environment bonus — weather events make observation more compelling
         const weather = worldState.environment.weather.condition;
         if (id === "weather_observation" && (weather === "thunderstorm" || weather === "heavy_rain")) {
-            score += EXPLORATION.ENVIRONMENT_BONUS;
+            weatherBonus = EXPLORATION.ENVIRONMENT_BONUS;
+            score += weatherBonus;
         }
 
         // Recency penalty — avoid repeating the same activity too soon
@@ -4315,22 +4326,45 @@ function selectBestActivity() {
         if (lastDone) {
             const secondsSince = (now - lastDone) / 1000;
             if (secondsSince < SCORING_WEIGHTS.RECENCY_WINDOW) {
-                score -= (SCORING_WEIGHTS.RECENCY_WINDOW - secondsSince) * SCORING_WEIGHTS.RECENCY_PENALTY_RATE;
+                recencyPenalty = (SCORING_WEIGHTS.RECENCY_WINDOW - secondsSince) * SCORING_WEIGHTS.RECENCY_PENALTY_RATE;
+                score -= recencyPenalty;
             }
         }
 
         // Idle gets a small baseline to prevent aimless switching when nothing urgent
-        if (id === "idle") score += SCORING_WEIGHTS.IDLE_BASELINE;
+        if (id === "idle") {
+            idleBaseline = SCORING_WEIGHTS.IDLE_BASELINE;
+            score += idleBaseline;
+        }
 
-        candidates.push({ id, score });
+        candidates.push({
+            id,
+            score,
+            components: {
+                need: +needScore.toFixed(4),
+                preference: +prefScore.toFixed(4),
+                fatigue: -(+fatiguePenalty.toFixed(4)),
+                curiosity: +curiosityScore.toFixed(4),
+                recency: -(+recencyPenalty.toFixed(4)),
+                weather: +weatherBonus.toFixed(4),
+                idle: +idleBaseline.toFixed(4)
+            }
+        });
         if (score > bestScore) {
             bestScore = score;
             bestActivity = id;
         }
     }
 
-    console.log(`[TARS Autonomy] Activity scores:`, candidates.map(c => `${c.id}:${c.score.toFixed(1)}`).join(" | "));
-    return { activity: bestActivity, scores: candidates };
+    // Sort descending for runner-up info
+    candidates.sort((a, b) => b.score - a.score);
+    const topAlternatives = candidates.slice(0, 3).map(c => ({ id: c.id, score: +c.score.toFixed(2) }));
+    const winnerComponents = candidates.find(c => c.id === bestActivity)?.components || null;
+
+    if (AUTONOMY_TELEMETRY_DEBUG) {
+        console.log(`[TARS Autonomy] Activity scores:`, candidates.map(c => `${c.id}:${c.score.toFixed(1)}`).join(" | "));
+    }
+    return { activity: bestActivity, scores: candidates, winnerComponents, topAlternatives };
 }
 
 // Phase 7.2: Select best location for a given activity using ACTIVITY_REGISTRY metadata
@@ -4530,7 +4564,7 @@ function makeAutonomousDecision() {
     worldState.tars.lastDecisionTime = now;
 
     const needs = worldState.tars.needs;
-    const { activity: chosenActivity, scores: activityScores } = selectBestActivity();
+    const { activity: chosenActivity, scores: activityScores, winnerComponents, topAlternatives } = selectBestActivity();
     const chosenLocation = selectBestLocation(chosenActivity);
     const current = worldState.tars.location;
     const intent = ACTIVITY_INTENT_MAP[chosenActivity] || "explore";
@@ -4552,7 +4586,9 @@ function makeAutonomousDecision() {
             worldState.tars.continuationCount = 0;
             const reason = generateDecisionReason(chosenActivity, "complete", needs);
             recordAutonomyDecision(intent, chosenActivity, chosenLocation, "complete", reason, bestScore, {
-                fatigueAtDecision: fatigue
+                fatigueAtDecision: fatigue,
+                scoreComponents: winnerComponents,
+                alternatives: topAlternatives
             });
             logStateChange("activity_completed", { activity: chosenActivity, fatigue });
             return;
@@ -4573,7 +4609,9 @@ function makeAutonomousDecision() {
             const reason = generateDecisionReason(chosenActivity, "continue", needs);
             recordAutonomyDecision(intent, chosenActivity, chosenLocation, "continue", reason, bestScore, {
                 continuationCount: worldState.tars.continuationCount,
-                fatigueAtDecision: fatigue
+                fatigueAtDecision: fatigue,
+                scoreComponents: winnerComponents,
+                alternatives: topAlternatives
             });
             return;
         }
@@ -4585,7 +4623,10 @@ function makeAutonomousDecision() {
     if (!sameLocation) {
         if (currentLocCompat && worldState.tars.activity === chosenActivity) {
             const reason = generateDecisionReason(chosenActivity, "stay", needs);
-            recordAutonomyDecision(intent, chosenActivity, current, "stay", reason + " (location compatible)", bestScore);
+            recordAutonomyDecision(intent, chosenActivity, current, "stay", reason + " (location compatible)", bestScore, {
+                scoreComponents: winnerComponents,
+                alternatives: topAlternatives
+            });
             return;
         }
 
@@ -4594,7 +4635,10 @@ function makeAutonomousDecision() {
         if (targetLocScore <= currentLocScore + 5 && currentLocScore >= 30) {
             const action = chosenActivity === "idle" ? "idle" : "stay";
             const reason = generateDecisionReason(worldState.tars.activity, action, needs) + " (current location sufficient)";
-            recordAutonomyDecision(intent, worldState.tars.activity, current, action, reason, currentLocScore);
+            recordAutonomyDecision(intent, worldState.tars.activity, current, action, reason, currentLocScore, {
+                scoreComponents: winnerComponents,
+                alternatives: topAlternatives
+            });
             return;
         }
     }
@@ -4620,7 +4664,9 @@ function makeAutonomousDecision() {
             const wanderReason = generateDecisionReason("idle", "wander", needs);
             recordAutonomyDecision("explore", "idle", wanderTarget, "wander", wanderReason, 0, {
                 wanderTarget,
-                triggerReason: `curiosity=${(needs.curiosity * 100).toFixed(0)}% gap=${scoreGap.toFixed(1)}`
+                triggerReason: `curiosity=${(needs.curiosity * 100).toFixed(0)}% gap=${scoreGap.toFixed(1)}`,
+                scoreComponents: winnerComponents,
+                alternatives: topAlternatives
             });
             logStateChange("wander", { from: worldState.tars.location, to: wanderTarget });
             window.TARS.lookAt(wanderTarget, "wander", "idle");
@@ -4633,7 +4679,10 @@ function makeAutonomousDecision() {
 
     const action = chosenActivity === "idle" ? "idle" : (sameLocation ? "switch_activity" : "move");
     const reason = generateDecisionReason(chosenActivity, action, needs);
-    recordAutonomyDecision(intent, chosenActivity, chosenLocation, action, reason, bestScore);
+    recordAutonomyDecision(intent, chosenActivity, chosenLocation, action, reason, bestScore, {
+        scoreComponents: winnerComponents,
+        alternatives: topAlternatives
+    });
 
     logStateChange("autonomous_move", { from: current, to: chosenLocation, activity: chosenActivity });
 
@@ -5620,6 +5669,41 @@ const TARS_UI = {
         const a = s.autonomy || {};
         const reg = ACTIVITY_REGISTRY[s.activity];
         const nextEval = s.activityEndsAt ? Math.max(0, Math.ceil((s.activityEndsAt - Date.now()) / 1000)) : "—";
+
+        // Score breakdown from last decision
+        let breakdownHtml = "";
+        if (a.scoreComponents) {
+            const c = a.scoreComponents;
+            const rows = [
+                { label: "Need", val: c.need, sign: c.need >= 0 },
+                { label: "Preference", val: c.preference, sign: c.preference >= 0 },
+                { label: "Fatigue", val: c.fatigue, sign: c.fatigue >= 0 },
+                { label: "Curiosity", val: c.curiosity, sign: c.curiosity >= 0 },
+                { label: "Recency", val: c.recency, sign: c.recency >= 0 },
+                { label: "Weather", val: c.weather, sign: c.weather >= 0 },
+                { label: "Idle base", val: c.idle, sign: c.idle >= 0 }
+            ];
+            const total = rows.reduce((sum, r) => sum + r.val, 0);
+            breakdownHtml = '<div style="margin-top:8px;padding-top:6px;border-top:1px solid rgba(80,180,255,0.08)">';
+            for (const r of rows) {
+                const cls = r.val > 0 ? "color:#4ade80" : r.val < 0 ? "color:#f87171" : "color:rgba(210,235,255,0.3)";
+                breakdownHtml += `<div style="display:flex;justify-content:space-between;font-size:9px;padding:1px 0"><span style="color:rgba(210,235,255,0.5)">${r.label}</span><span style="${cls}">${r.sign ? "+" : ""}${r.val.toFixed(2)}</span></div>`;
+            }
+            breakdownHtml += `<div style="display:flex;justify-content:space-between;font-size:9px;padding:2px 0;border-top:1px solid rgba(80,180,255,0.1);margin-top:2px;font-weight:bold"><span style="color:rgba(210,235,255,0.6)">Total</span><span style="color:#5fd0ff">${total.toFixed(2)}</span></div>`;
+            breakdownHtml += '</div>';
+        }
+
+        // Alternatives from last decision
+        let altHtml = "";
+        if (a.alternatives && a.alternatives.length > 1) {
+            altHtml = '<div style="margin-top:6px"><div style="font-size:9px;color:rgba(210,235,255,0.4);margin-bottom:2px">Runner-up</div>';
+            for (let i = 1; i < a.alternatives.length; i++) {
+                const alt = a.alternatives[i];
+                altHtml += `<div style="display:flex;justify-content:space-between;font-size:9px;padding:1px 0"><span style="color:rgba(210,235,255,0.45)">${alt.id}</span><span style="color:rgba(210,235,255,0.3)">${alt.score.toFixed(2)}</span></div>`;
+            }
+            altHtml += '</div>';
+        }
+
         el.innerHTML = `
             <div class="tars-section">
                 <div class="tars-section-title">Autonomous Simulation Layer</div>
@@ -5633,6 +5717,8 @@ const TARS_UI = {
                 <div class="tars-data-row"><span class="tars-data-label">Next eval</span><span class="tars-data-value">${nextEval}s</span></div>
                 <div class="tars-data-row"><span class="tars-data-label">Fatigue</span><span class="tars-data-value">${((s.activityFatigue && s.activityFatigue[s.activity]) || 0).toFixed(3)}</span></div>
                 <div class="tars-data-row"><span class="tars-data-label">Continuations</span><span class="tars-data-value">${s.continuationCount || 0}</span></div>
+                ${breakdownHtml}
+                ${altHtml}
             </div>
             <div class="tars-section">
                 <div class="tars-section-title">Future Amir OS Cognitive Layer</div>
