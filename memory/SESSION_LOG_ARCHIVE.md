@@ -31,3 +31,22 @@ This file contains archived session logs rotated from SESSION_LOG_v2.md.
 
 
 
+## Session 2026-07-27-1530
+**Start Time:** 2026-07-27 22:10
+**Status:** In Progress
+**Objective:** TARS Architecture Evolution — adopt AG Kit patterns (skills/workflows/manifest)
+
+### Log
+* Audited TARS/Amir_OS architecture vs AG Kit (github.com/vudovn/ag-kit)
+* Added YAML frontmatter to AGENT_RULES.md, BOOT_PRECEDENCE.md, Boot.md
+* Created `.agents/AGENTS_GLOBAL.md` with "Coldest Engineer" persona
+* Created `skills/` directory with 4 skill definitions (tars-architecture, tars-memory, tars-frontend, tars-world-engine) — each with `when_to_use` progressive loading
+* Created `workflows/` directory with 8 workflow definitions (plan, build, debug, verify, research, grill-me, learn, deploy)
+* Created `manifest.json` — auto-generated component registry listing all skills, workflows, configs, tools, memory files
+* Enhanced `health_check.py` — added manifest validation, dependency checking, expanded tool list
+* Updated BOOT_PRECEDENCE.md — added skills (Priority 6) and workflows (Priority 7) to load order
+* Updated Boot.md — added Steps 9-10 for skill/workflow awareness
+* Updated CURRENT_STATE_v2.md and STAGING_INTENT.md to reflect new architecture
+
+
+
