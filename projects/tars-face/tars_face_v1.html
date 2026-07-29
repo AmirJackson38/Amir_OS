@@ -239,6 +239,17 @@
     .tars-memory-card .mem-row .val { color: #8ab4f8; }
 
     .tars-feedback { font-size: 9px; color: #4ade80; padding: 2px 0; min-height: 14px; transition: opacity 0.3s; }
+
+    /* Expandable journal entries */
+    .tars-journal-entry { cursor: pointer; transition: background 0.15s; border-radius: 3px; padding: 3px 4px; }
+    .tars-journal-entry:hover { background: rgba(80,180,255,0.06); }
+    .tars-journal-detail { display: none; margin: 4px 0 4px 8px; padding: 4px 6px; border-left: 1px solid rgba(80,180,255,0.12); font-size: 9px; }
+    .tars-journal-detail.open { display: block; }
+    .tars-journal-detail .comp-row { display: flex; justify-content: space-between; padding: 1px 8px; }
+    .tars-journal-detail .comp-row .cl { color: rgba(210,235,255,0.45); }
+    .tars-journal-detail .comp-row .cv { text-align: right; }
+    .tars-journal-detail .comp-total { border-top: 1px solid rgba(80,180,255,0.1); margin-top: 2px; padding-top: 2px; font-weight: bold; }
+    .tars-journal-detail .alt-row { display: flex; justify-content: space-between; padding: 1px 8px; color: rgba(210,235,255,0.35); font-size: 8px; }
 </style>
 </head>
 
@@ -2483,6 +2494,32 @@ function getTARSContext() {
     const session = getSessionReturnContext();
     const hour = new Date().getHours();
     const isNight = hour < 6 || hour > 22;
+    const history = worldState.tars.autonomyHistory || [];
+
+    // Behavioral summary from decision history
+    const activityCounts = {};
+    for (const d of history) {
+        const a = d.selectedActivity || "?";
+        activityCounts[a] = (activityCounts[a] || 0) + 1;
+    }
+    const totalDecisions = history.length;
+    const sortedActivities = Object.entries(activityCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([id, count]) => ({ id, count, proportion: totalDecisions > 0 ? +(count / totalDecisions).toFixed(3) : 0 }));
+
+    // Recent decisions with score context (deep copied)
+    const recentDecisions = history.slice(-10).reverse().map(d => ({
+        timestamp: d.timestamp,
+        action: d.decisionAction,
+        activity: d.selectedActivity,
+        location: d.selectedLocation,
+        reason: d.decisionReason,
+        score: d.decisionScore !== undefined ? +d.decisionScore.toFixed(2) : null,
+        scoreComponents: d.scoreComponents ? { ...d.scoreComponents } : null,
+        alternatives: d.alternatives ? d.alternatives.map(a => ({ id: a.id, score: a.score })) : null
+    }));
+
     return {
         currentState: {
             location: worldState.tars.location,
@@ -2506,6 +2543,25 @@ function getTARSContext() {
             reason: e.reason,
             time: e.timestamp
         })),
+        recentDecisions,
+        behavioralSummary: {
+            totalDecisions,
+            mostFrequent: sortedActivities,
+            tendency: {
+                exploration: totalDecisions > 0
+                    ? +(sortedActivities.filter(a => ["weather_observation","idle"].includes(a.id)).reduce((s, a) => s + a.proportion, 0)).toFixed(3)
+                    : 0,
+                maintenance: totalDecisions > 0
+                    ? +(sortedActivities.filter(a => a.id === "server_check").reduce((s, a) => s + a.proportion, 0)).toFixed(3)
+                    : 0,
+                social: totalDecisions > 0
+                    ? +(sortedActivities.filter(a => a.id === "user_interaction").reduce((s, a) => s + a.proportion, 0)).toFixed(3)
+                    : 0,
+                rest: totalDecisions > 0
+                    ? +(sortedActivities.filter(a => ["tv_watching","idle"].includes(a.id)).reduce((s, a) => s + a.proportion, 0)).toFixed(3)
+                    : 0
+            }
+        },
         environment: {
             weather: worldState.environment.weather.condition,
             timeOfDay: worldState.environment.timeOfDay,
@@ -2516,17 +2572,16 @@ function getTARSContext() {
             awayDurationLabel: session.awayDurationLabel,
             absenceCategory: session.absenceCategory,
             offlineNeedsChange: session.offlineEvent ? {
-                previous: session.offlineEvent.previousNeeds,
-                resulting: session.offlineEvent.resultingNeeds
+                previous: { ...(session.offlineEvent.previousNeeds || {}) },
+                resulting: { ...(session.offlineEvent.resultingNeeds || {}) }
             } : null
         },
-        preferences: worldState.tars.preferences,
-        controlMode: worldState.tars.controlMode,
+        preferences: JSON.parse(JSON.stringify(worldState.tars.preferences)),
         availableActions: {
-            emotions: EMOTION_VALUES,
-            gestures: GESTURE_VALUES,
-            gazeTargets: TARGET_VALUES,
-            movements: MOVEMENT_VALUES,
+            emotions: [...EMOTION_VALUES],
+            gestures: [...GESTURE_VALUES],
+            gazeTargets: [...TARGET_VALUES],
+            movements: [...MOVEMENT_VALUES],
             activities: Object.keys(ACTIVITY_REGISTRY)
         },
         locations: Object.fromEntries(
@@ -5730,9 +5785,11 @@ const TARS_UI = {
         const needs = worldState.tars.needs;
         const fatigue = worldState.tars.activityFatigue || {};
         const scores = window.TARS_AUTONOMY ? window.TARS_AUTONOMY.getActivityScores() : [];
-        const history = worldState.tars.autonomyHistory;
-        const lastFew = history ? history.slice(-5).reverse() : [];
+        const history = worldState.tars.autonomyHistory || [];
+        const expBuf = worldState.tars.experienceBuffer || [];
+        const lastFew = history.slice(-5).reverse();
 
+        // Needs
         let needsHtml = "";
         const needLabels = { energy: "Energy", curiosity: "Curiosity", social: "Social", maintenance: "Maint.", comfort: "Comfort", hunger: "Hunger" };
         const needColors = { energy: "energy", curiosity: "curiosity", social: "social", maintenance: "maintenance", comfort: "comfort", hunger: "hunger" };
@@ -5741,20 +5798,71 @@ const TARS_UI = {
             needsHtml += `<div class="tars-need-bar"><label>${needLabels[k] || k}</label><div class="tars-need-track"><div class="tars-need-fill ${needColors[k] || 'energy'}" style="width:${pct}%"></div></div><span class="tars-need-pct">${pct}%</span></div>`;
         }
 
+        // Activity Scores
         let scoresHtml = "";
         for (const s of (scores || [])) {
             scoresHtml += `<div class="tars-data-row"><span class="tars-data-label">${s.id}</span><span class="tars-data-value">${s.score.toFixed(2)}</span></div>`;
         }
 
+        // Fatigue
         let fatigueHtml = "";
         for (const [k, v] of Object.entries(fatigue)) {
             fatigueHtml += `<div class="tars-data-row"><span class="tars-data-label">${k}</span><span class="tars-data-value">${v.toFixed(3)}</span></div>`;
         }
+        // Fatigue history — last 5 completed experiences
+        const fatigueHistory = expBuf.slice(-5).reverse();
+        if (fatigueHistory.length > 0) {
+            fatigueHtml += '<div style="margin-top:6px;padding-top:4px;border-top:1px solid rgba(80,180,255,0.08)"><div style="font-size:9px;color:rgba(210,235,255,0.4);margin-bottom:2px">Recent Fatigue Changes</div>';
+            for (const f of fatigueHistory) {
+                const fd = f.duration ? (f.duration / 1000).toFixed(0) + "s" : "—";
+                const ff = (f.fatigueAtEnd * 100).toFixed(0);
+                fatigueHtml += `<div class="tars-data-row" style="font-size:9px"><span class="tars-data-label">${f.activity}</span><span class="tars-data-value">${ff}% fatigue after ${fd}</span></div>`;
+            }
+            fatigueHtml += '</div>';
+        }
 
+        // Recent Decisions
         let decisionsHtml = "";
         for (const d of lastFew) {
             const t = d.timestamp ? new Date(d.timestamp).toLocaleTimeString() : "—";
             decisionsHtml += `<div class="tars-journal-entry"><span class="tars-journal-time">${t}</span> <span class="tars-journal-act">${d.decisionAction}</span> ${d.selectedActivity} @ ${d.selectedLocation} <span class="tars-journal-reason">"${d.decisionReason || ""}"</span></div>`;
+        }
+
+        // Activity Statistics (computed dynamically)
+        let statsHtml = "";
+        if (history.length > 0) {
+            const activityCounts = {};
+            const locationCounts = {};
+            let completeCount = 0;
+            let continueCount = 0;
+            for (const d of history) {
+                const a = d.selectedActivity || "?";
+                activityCounts[a] = (activityCounts[a] || 0) + 1;
+                const l = d.selectedLocation || "?";
+                locationCounts[l] = (locationCounts[l] || 0) + 1;
+                if (d.decisionAction === "complete") completeCount++;
+                if (d.decisionAction === "continue") continueCount++;
+            }
+            const sortedActivities = Object.entries(activityCounts).sort((a, b) => b[1] - a[1]);
+            const sortedLocations = Object.entries(locationCounts).sort((a, b) => b[1] - a[1]);
+
+            let avgDuration = 0;
+            if (expBuf.length > 0) {
+                avgDuration = expBuf.reduce((s, e) => s + (e.duration || 0), 0) / expBuf.length;
+            }
+
+            statsHtml = `<div class="tars-data-row"><span class="tars-data-label">Total Decisions</span><span class="tars-data-value">${history.length}</span></div>`;
+            statsHtml += `<div class="tars-data-row"><span class="tars-data-label">Completions</span><span class="tars-data-value">${completeCount}</span></div>`;
+            statsHtml += `<div class="tars-data-row"><span class="tars-data-label">Continuations</span><span class="tars-data-value">${continueCount}</span></div>`;
+            if (avgDuration > 0) statsHtml += `<div class="tars-data-row"><span class="tars-data-label">Avg Duration</span><span class="tars-data-value">${(avgDuration / 1000).toFixed(0)}s</span></div>`;
+            statsHtml += '<div style="margin-top:6px;font-size:9px;color:rgba(210,235,255,0.4)">Most Frequent Activities</div>';
+            for (let i = 0; i < Math.min(3, sortedActivities.length); i++) {
+                statsHtml += `<div class="tars-data-row"><span class="tars-data-label">${i + 1}. ${sortedActivities[i][0]}</span><span class="tars-data-value">${sortedActivities[i][1]}x</span></div>`;
+            }
+            statsHtml += '<div style="margin-top:6px;font-size:9px;color:rgba(210,235,255,0.4)">Preferred Locations</div>';
+            for (let i = 0; i < Math.min(3, sortedLocations.length); i++) {
+                statsHtml += `<div class="tars-data-row"><span class="tars-data-label">${i + 1}. ${sortedLocations[i][0]}</span><span class="tars-data-value">${sortedLocations[i][1]}x</span></div>`;
+            }
         }
 
         el.innerHTML = `
@@ -5773,35 +5881,96 @@ const TARS_UI = {
             <div class="tars-section">
                 <div class="tars-section-title">Recent Decisions</div>
                 ${decisionsHtml || '<div class="tars-empty">No decisions recorded</div>'}
+            </div>
+            <div class="tars-section">
+                <div class="tars-section-title">Activity Stats</div>
+                ${statsHtml || '<div class="tars-data-row"><span class="tars-data-label">Insufficient data</span><span class="tars-data-value">—</span></div>'}
+            </div>
+            <div class="tars-section">
+                <div class="tars-section-title">Behavior Patterns (observed)</div>
+                ${(() => {
+                    if (history.length < 3) return '<div class="tars-data-row"><span class="tars-data-label">Insufficient data</span><span class="tars-data-value">—</span></div>';
+                    const counts = {};
+                    for (const d of history) {
+                        const a = d.selectedActivity || "?";
+                        counts[a] = (counts[a] || 0) + 1;
+                    }
+                    const total = history.length;
+                    const exploreActs = ["weather_observation", "idle"];
+                    const maintainActs = ["server_check"];
+                    const socialActs = ["user_interaction"];
+                    const restActs = ["tv_watching", "idle"];
+                    const workActs = ["computer_work"];
+                    const calcTend = (acts) => {
+                        const n = acts.reduce((s, a) => s + (counts[a] || 0), 0);
+                        const pct = n / total;
+                        const label = pct > 0.25 ? "High" : pct > 0.1 ? "Medium" : "Low";
+                        const color = pct > 0.25 ? "#4ade80" : pct > 0.1 ? "#fb923c" : "rgba(210,235,255,0.35)";
+                        return `<span style="color:${color}">${label} (${(pct * 100).toFixed(0)}%)</span>`;
+                    };
+                    let patHtml = `<div class="tars-data-row"><span class="tars-data-label">Exploration</span><span class="tars-data-value">${calcTend(exploreActs)}</span></div>`;
+                    patHtml += `<div class="tars-data-row"><span class="tars-data-label">Maintenance</span><span class="tars-data-value">${calcTend(maintainActs)}</span></div>`;
+                    patHtml += `<div class="tars-data-row"><span class="tars-data-label">Social</span><span class="tars-data-value">${calcTend(socialActs)}</span></div>`;
+                    patHtml += `<div class="tars-data-row"><span class="tars-data-label">Rest</span><span class="tars-data-value">${calcTend(restActs)}</span></div>`;
+                    patHtml += `<div class="tars-data-row"><span class="tars-data-label">Work</span><span class="tars-data-value">${calcTend(workActs)}</span></div>`;
+                    return patHtml;
+                })()}
             </div>`;
     },
 
     renderJournal(el) {
-        let entries = worldState.activityLog;
-        if (!entries || entries.length === 0) {
-            if (worldState.tars.autonomyHistory && worldState.tars.autonomyHistory.length > 0) {
-                entries = worldState.tars.autonomyHistory.map(d => ({
-                    timestamp: d.timestamp,
-                    activity: d.selectedActivity,
-                    location: d.selectedLocation,
-                    reason: d.decisionReason,
-                    type: d.decisionAction
-                }));
-            }
-        }
-        if (!entries || entries.length === 0) {
+        const history = worldState.tars.autonomyHistory || [];
+        let html = "";
+        if (history.length === 0) {
             el.innerHTML = '<div class="tars-empty">📜 No activity recorded yet.<br>TARS will log entries as it explores.</div>';
             return;
         }
-        const recent = entries.slice(-50).reverse();
-        let html = "";
-        for (const e of recent) {
-            const t = e.timestamp ? new Date(e.timestamp).toLocaleTimeString() : "—";
-            const act = e.activity || e.type || "?";
-            const loc = e.location || "—";
-            const reason = e.reason || "";
-            const dur = e.duration ? ` (${(e.duration / 1000).toFixed(0)}s)` : "";
-            html += `<div class="tars-journal-entry"><span class="tars-journal-time">${t}</span> <span class="tars-journal-act">${act}</span> <span class="tars-journal-loc">@ ${loc}</span> ${dur}<br><span class="tars-journal-reason">${reason}</span></div>`;
+        const recent = history.slice(-50).reverse();
+        for (const d of recent) {
+            const t = d.timestamp ? new Date(d.timestamp).toLocaleTimeString() : "—";
+            const act = d.selectedActivity || d.intent || "?";
+            const loc = d.selectedLocation || "—";
+            const reason = d.decisionReason || "";
+            const action = d.decisionAction || "";
+            html += `<div class="tars-journal-entry" data-entry-idx="${history.indexOf(d)}">
+                <span class="tars-journal-time">${t}</span>
+                <span class="tars-journal-act">${action}</span>
+                <span class="tars-journal-act">${act}</span>
+                <span class="tars-journal-loc">@ ${loc}</span>
+                <br><span class="tars-journal-reason">${reason}</span>`;
+
+            // Detail block (hidden by default)
+            if (d.scoreComponents || (d.alternatives && d.alternatives.length > 1)) {
+                html += '<div class="tars-journal-detail">';
+                if (d.scoreComponents) {
+                    const c = d.scoreComponents;
+                    const comps = [
+                        { l: "Need", v: c.need },
+                        { l: "Preference", v: c.preference },
+                        { l: "Fatigue", v: c.fatigue },
+                        { l: "Curiosity", v: c.curiosity },
+                        { l: "Recency", v: c.recency },
+                        { l: "Weather", v: c.weather },
+                        { l: "Idle base", v: c.idle }
+                    ];
+                    const total = comps.reduce((s, r) => s + r.v, 0);
+                    for (const r of comps) {
+                        const cls = r.v > 0 ? "color:#4ade80" : r.v < 0 ? "color:#f87171" : "color:rgba(210,235,255,0.3)";
+                        html += `<div class="comp-row"><span class="cl">${r.l}</span><span class="cv" style="${cls}">${r.v > 0 ? "+" : ""}${r.v.toFixed(2)}</span></div>`;
+                    }
+                    html += `<div class="comp-row comp-total"><span class="cl">Total</span><span class="cv" style="color:#5fd0ff">${total.toFixed(2)}</span></div>`;
+                }
+                if (d.alternatives && d.alternatives.length > 1) {
+                    html += '<div style="margin-top:4px;padding-top:2px;border-top:1px solid rgba(80,180,255,0.08)"><div style="font-size:8px;color:rgba(210,235,255,0.35);padding:0 8px 2px">Runner-up</div>';
+                    for (let i = 1; i < d.alternatives.length; i++) {
+                        const alt = d.alternatives[i];
+                        html += `<div class="alt-row"><span>${alt.id}</span><span>${alt.score.toFixed(2)}</span></div>`;
+                    }
+                    html += '</div>';
+                }
+                html += '</div>';
+            }
+            html += '</div>';
         }
         el.innerHTML = html;
     },
@@ -5813,7 +5982,6 @@ const TARS_UI = {
         const needs = s.needs || {};
         const fatigue = s.activityFatigue || {};
         const expBuf = s.experienceBuffer || [];
-        const lastExp = expBuf.slice(-3).reverse();
         const history = s.autonomyHistory || [];
         const recentTelemetry = history.slice(-25).reverse();
 
@@ -5833,14 +6001,23 @@ const TARS_UI = {
         if (expBuf.length === 0) {
             memHtml = '<div class="tars-memory-card"><div class="tars-empty" style="padding:10px 0">No experiences stored yet.</div></div>';
         } else {
-            memHtml = `<div class="tars-memory-card"><div class="mem-row"><span>Buffer Size</span><span class="val">${expBuf.length} / 100</span></div>`;
-            for (const ex of lastExp) {
+            memHtml = `<div class="tars-memory-card"><div class="mem-row"><span>Buffer Size</span><span class="val">${expBuf.length} / 100</span></div></div>`;
+            // Show all entries, most recent first, limited to 20 for compactness
+            const shown = expBuf.slice(-20).reverse();
+            for (const ex of shown) {
                 const a = ex.activity || "?";
                 const l = ex.location || "";
-                const d = ex.duration ? `(${(ex.duration/1000).toFixed(0)}s)` : "";
-                memHtml += `<div class="mem-row"><span>→ ${a} ${l ? "@ "+l : ""}</span><span class="val">${d}</span></div>`;
+                const dur = ex.duration ? (ex.duration / 1000).toFixed(0) + "s" : "—";
+                const fatiguePct = ex.fatigueAtEnd !== undefined ? (ex.fatigueAtEnd * 100).toFixed(0) + "%" : "—";
+                const needsSummary = ex.needsSnapshot
+                    ? Object.entries(ex.needsSnapshot).map(([k, v]) => `${k}:${(v * 100).toFixed(0)}%`).join(" ")
+                    : "";
+                memHtml += `<div class="tars-memory-card" style="margin-top:4px">
+                    <div class="mem-row"><span>${a} @ ${l}</span><span class="val">${dur}</span></div>
+                    <div class="mem-row" style="font-size:8px;color:rgba(210,235,255,0.3)"><span>Fatigue at end: ${fatiguePct}</span></div>
+                    ${needsSummary ? `<div class="mem-row" style="font-size:8px;color:rgba(210,235,255,0.25)"><span>Needs: ${needsSummary}</span></div>` : ""}
+                </div>`;
             }
-            memHtml += `</div>`;
         }
 
         // Need inject buttons
@@ -6183,6 +6360,15 @@ function initObservatoryUI() {
                 break;
         }
         setTimeout(() => { if (fb) fb.textContent = ""; }, 3000);
+    });
+
+    // Journal entry expand/collapse toggle
+    overlayBody.addEventListener("click", (e) => {
+        const entry = e.target.closest(".tars-journal-entry");
+        if (entry) {
+            const detail = entry.querySelector(".tars-journal-detail");
+            if (detail) detail.classList.toggle("open");
+        }
     });
 
     TARS_UI.updateStatusHeader();
