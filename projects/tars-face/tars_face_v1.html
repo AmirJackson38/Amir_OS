@@ -55,38 +55,6 @@
     }
 
     /* T.A.R.S. Interactive Control Console */
-    #tars-controls {
-        position: fixed;
-        top: 20px;
-        right: 24px;
-        z-index: 20;
-        background: rgba(10, 16, 24, 0.85);
-        border: 1px solid rgba(80, 180, 255, 0.3);
-        border-radius: 8px;
-        padding: 14px;
-        width: 310px;
-        color: #d2ebff;
-        font-size: 11px;
-        backdrop-filter: blur(8px);
-        box-shadow: 0 0 20px rgba(0, 0, 0, 0.6);
-        max-height: 90vh;
-        overflow-y: auto;
-    }
-
-    #tars-controls h3 {
-        margin: 0 0 10px 0;
-        font-size: 12px;
-        letter-spacing: 3px;
-        color: #5fd0ff;
-        border-bottom: 1px solid rgba(80, 180, 255, 0.2);
-        padding-bottom: 6px;
-    }
-
-    .ctrl-group { margin-bottom: 10px; }
-    .ctrl-group label { display: block; margin-bottom: 4px; color: rgba(210, 235, 255, 0.7); }
-
-    .ctrl-buttons { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; }
-
     .btn {
         background: rgba(20, 35, 50, 0.8);
         border: 1px solid rgba(80, 180, 255, 0.3);
@@ -106,18 +74,6 @@
         box-shadow: 0 0 8px rgba(95, 208, 255, 0.4);
     }
 
-    .btn.active {
-        background: #1b5e8c;
-        border-color: #5fd0ff;
-        color: #ffffff;
-        font-weight: bold;
-    }
-
-    input[type=range] {
-        width: 100%;
-        accent-color: #5fd0ff;
-    }
-
     .status-badge {
         display: inline-block;
         padding: 2px 6px;
@@ -127,6 +83,162 @@
         color: #5fd0ff;
         border: 1px solid rgba(0, 170, 255, 0.4);
     }
+
+    /* ===== TARS OBSERVATORY UI SYSTEM — Phase 7.4 ===== */
+    #tars-status-header {
+        position: fixed; top: 0; left: 0; right: 0; z-index: 30;
+        height: 28px; background: rgba(5,8,12,0.85); backdrop-filter: blur(8px);
+        border-bottom: 1px solid rgba(80,180,255,0.2);
+        display: flex; align-items: center; padding: 0 14px;
+        font-size: 10px; letter-spacing: 1px; color: rgba(210,235,255,0.6);
+        pointer-events: none;
+    }
+    #tars-status-header > * { pointer-events: auto; }
+    .status-dot { display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:6px; }
+    .status-dot.online { background:#4ade80; box-shadow:0 0 6px rgba(74,222,128,0.6); }
+    .status-divider { margin:0 8px; opacity:0.3; }
+    #tars-status-activity { color:#5fd0ff; }
+    #tars-status-badge { margin-left:auto; font-size:9px; opacity:0.5; }
+
+    #tars-toolbar {
+        position: fixed; right: 20px; top: 50%; transform: translateY(-50%); z-index: 40;
+        display: flex; flex-direction: column; gap: 6px;
+    }
+    .tars-tab-btn {
+        width: 48px; height: 48px; border-radius: 10px;
+        background: rgba(10,16,24,0.8); backdrop-filter: blur(8px);
+        border: 1px solid rgba(80,180,255,0.25);
+        color: rgba(210,235,255,0.6); font-size: 18px; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        transition: all 0.2s;
+        -webkit-tap-highlight-color: transparent;
+    }
+    .tars-tab-btn:hover, .tars-tab-btn.active { background: rgba(30,60,90,0.9); border-color: #5fd0ff; color: #fff; box-shadow: 0 0 12px rgba(95,208,255,0.3); }
+
+    #tars-overlay {
+        position: fixed; right: 80px; top: 44px; bottom: 16px; z-index: 35;
+        width: min(420px, 45vw); display: none;
+        background: rgba(8,14,22,0.92); backdrop-filter: blur(16px);
+        border: 1px solid rgba(80,180,255,0.2); border-radius: 12px;
+        box-shadow: 0 4px 32px rgba(0,0,0,0.6);
+        pointer-events: auto; overflow: hidden;
+    }
+    #tars-overlay.visible { display: flex; flex-direction: column; }
+    #tars-overlay-header {
+        display: flex; align-items: center; padding: 12px 16px;
+        border-bottom: 1px solid rgba(80,180,255,0.15);
+        font-size: 11px; letter-spacing: 2px; color: #5fd0ff; flex-shrink: 0;
+    }
+    #tars-overlay-close {
+        margin-left: auto; background: none; border: none;
+        color: rgba(210,235,255,0.4); font-size: 16px; cursor: pointer; padding: 4px 8px;
+    }
+    #tars-overlay-body {
+        flex: 1; overflow-y: auto; padding: 12px 16px;
+        font-size: 11px; color: rgba(210,235,255,0.8);
+    }
+    #tars-overlay-body::-webkit-scrollbar { width: 4px; }
+    #tars-overlay-body::-webkit-scrollbar-thumb { background: rgba(80,180,255,0.3); border-radius: 2px; }
+
+    .tars-data-row { display: flex; justify-content: space-between; padding: 3px 0; border-bottom: 1px solid rgba(80,180,255,0.06); }
+    .tars-data-label { color: rgba(210,235,255,0.5); }
+    .tars-data-value { color: #8ab4f8; font-weight: bold; }
+    .tars-section { margin-bottom: 14px; }
+    .tars-section-title { font-size: 9px; letter-spacing: 2px; color: rgba(95,208,255,0.5); margin-bottom: 6px; text-transform: uppercase; }
+    .tars-need-bar { display: flex; align-items: center; gap: 6px; margin: 2px 0; }
+    .tars-need-bar label { width: 70px; font-size: 10px; color: rgba(210,235,255,0.6); flex-shrink: 0; }
+    .tars-need-track { flex: 1; height: 6px; background: rgba(80,180,255,0.1); border-radius: 3px; overflow: hidden; }
+    .tars-need-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
+    .tars-need-fill.energy { background: #facc15; }
+    .tars-need-fill.curiosity { background: #5fd0ff; }
+    .tars-need-fill.social { background: #a78bfa; }
+    .tars-need-fill.maintenance { background: #4ade80; }
+    .tars-need-fill.comfort { background: #fb923c; }
+    .tars-need-fill.hunger { background: #f87171; }
+    .tars-need-pct { width: 32px; text-align: right; font-size: 10px; color: rgba(210,235,255,0.5); }
+
+    /* Journal timeline */
+    .tars-journal-entry { padding: 4px 0; border-bottom: 1px solid rgba(80,180,255,0.06); font-size: 10px; }
+    .tars-journal-time { color: rgba(210,235,255,0.35); margin-right: 6px; }
+    .tars-journal-act { color: #5fd0ff; }
+    .tars-journal-loc { color: rgba(210,235,255,0.4); }
+    .tars-journal-reason { color: rgba(210,235,255,0.3); font-style: italic; }
+
+    /* Chat panel */
+    #tars-chat {
+        position: fixed; bottom: 16px; right: 16px; z-index: 45;
+        width: min(340px, 85vw); max-height: 60vh;
+        background: rgba(8,14,22,0.94); backdrop-filter: blur(16px);
+        border: 1px solid rgba(80,180,255,0.2); border-radius: 12px;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+        display: none; flex-direction: column; overflow: hidden;
+    }
+    #tars-chat.visible { display: flex; }
+    #tars-chat-header {
+        display: flex; align-items: center; padding: 10px 14px;
+        border-bottom: 1px solid rgba(80,180,255,0.12);
+        font-size: 10px; letter-spacing: 1px; color: #5fd0ff; flex-shrink: 0;
+    }
+    #tars-chat-close { margin-left: auto; background: none; border: none; color: rgba(210,235,255,0.4); cursor: pointer; font-size: 14px; padding: 2px 6px; }
+    #tars-chat-messages { flex: 1; overflow-y: auto; padding: 10px 14px; min-height: 80px; max-height: 35vh; font-size: 11px; }
+    #tars-chat-messages::-webkit-scrollbar { width: 3px; }
+    #tars-chat-messages::-webkit-scrollbar-thumb { background: rgba(80,180,255,0.2); border-radius: 2px; }
+    .tars-msg { padding: 6px 10px; margin-bottom: 6px; border-radius: 8px; max-width: 85%; word-wrap: break-word; }
+    .tars-msg.system { background: rgba(80,180,255,0.08); color: rgba(210,235,255,0.5); align-self: flex-start; }
+    .tars-msg.user { background: rgba(95,208,255,0.12); color: #8ab4f8; margin-left: auto; }
+    .tars-msg.tars { background: rgba(20,50,80,0.3); color: #5fd0ff; }
+    #tars-chat-input { display: flex; gap: 6px; padding: 8px 10px; border-top: 1px solid rgba(80,180,255,0.1); flex-shrink: 0; }
+    #tars-chat-input-field { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(80,180,255,0.15); border-radius: 6px; padding: 8px 10px; color: #d2ebff; font-size: 12px; outline: none; min-height: 36px; }
+    #tars-chat-input-field::placeholder { color: rgba(210,235,255,0.25); }
+    #tars-chat-send { background: rgba(95,208,255,0.15); border: 1px solid rgba(95,208,255,0.3); border-radius: 6px; color: #5fd0ff; font-size: 11px; cursor: pointer; padding: 8px 14px; min-height: 36px; white-space: nowrap; }
+
+    /* Empty state */
+    .tars-empty { text-align: center; padding: 30px 0; color: rgba(210,235,255,0.25); font-size: 11px; letter-spacing: 1px; }
+
+    /* ===== CREATOR CONSOLE — Phase 7.4 Correction ===== */
+    .tars-creator-section { margin-bottom: 14px; }
+    .tars-creator-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; }
+    .tars-creator-stat { padding: 4px 0; font-size: 10px; border-bottom: 1px solid rgba(80,180,255,0.06); }
+    .tars-creator-stat .label { color: rgba(210,235,255,0.45); }
+    .tars-creator-stat .value { color: #5fd0ff; font-weight: bold; float: right; }
+    .tars-creator-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tars-creator-actions .btn { min-height: 38px; font-size: 10px; padding: 6px 10px; flex: 1 0 auto; min-width: 70px; }
+    .tars-creator-actions .btn-sm { min-height: 30px; font-size: 9px; padding: 4px 8px; flex: 0 0 auto; }
+
+    /* Collapsible sections */
+    .tars-collapse-section { border: 1px solid rgba(80,180,255,0.1); border-radius: 6px; margin-bottom: 10px; overflow: hidden; }
+    .tars-collapse-header { display: flex; align-items: center; gap: 6px; padding: 8px 10px; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: rgba(95,208,255,0.55); cursor: pointer; user-select: none; background: rgba(80,180,255,0.04); }
+    .tars-collapse-header:hover { background: rgba(80,180,255,0.08); }
+    .tars-collapse-header .arrow { color: rgba(95,208,255,0.35); font-size: 8px; transition: transform 0.2s; }
+    .tars-collapse-header .badge { font-size: 8px; color: rgba(210,235,255,0.2); font-weight: normal; letter-spacing: 0; }
+    .tars-collapse-body { padding: 8px 10px; border-top: 1px solid rgba(80,180,255,0.06); }
+    .tars-collapse-body.collapsed { display: none; }
+
+    /* Inject buttons (+10/-10) */
+    .tars-inject-group { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .tars-inject-row { display: flex; align-items: center; gap: 6px; min-height: 34px; }
+    .tars-inject-row label { width: 56px; font-size: 10px; color: rgba(210,235,255,0.6); flex-shrink: 0; text-transform: capitalize; }
+    .tars-inject-btn { min-height: 28px; min-width: 40px; font-size: 10px; padding: 2px 8px; border: 1px solid rgba(80,180,255,0.15); border-radius: 4px; background: rgba(80,180,255,0.08); color: #8ab4f8; cursor: pointer; text-align: center; }
+    .tars-inject-btn:active { background: rgba(80,180,255,0.2); }
+    .tars-inject-btn.plus { color: #4ade80; border-color: rgba(74,222,128,0.2); }
+    .tars-inject-btn.minus { color: #f87171; border-color: rgba(248,113,113,0.2); }
+    .tars-inject-val { font-size: 10px; color: rgba(210,235,255,0.35); width: 20px; text-align: center; }
+
+    /* Telemetry + Memory (unchanged) */
+    .tars-console { background: rgba(0,0,0,0.3); border-radius: 6px; border: 1px solid rgba(80,180,255,0.08); padding: 6px; max-height: 180px; overflow-y: auto; font-size: 9px; font-family: monospace; }
+    .tars-console::-webkit-scrollbar { width: 3px; }
+    .tars-console::-webkit-scrollbar-thumb { background: rgba(80,180,255,0.15); border-radius: 2px; }
+    .tars-console-entry { padding: 2px 4px; border-bottom: 1px solid rgba(80,180,255,0.04); color: rgba(210,235,255,0.5); line-height: 1.5; }
+    .tars-console-entry .ts { color: rgba(210,235,255,0.25); }
+    .tars-console-entry .act { color: #5fd0ff; }
+    .tars-console-entry .action { color: #a78bfa; }
+    .tars-console-entry .loc { color: rgba(210,235,255,0.35); }
+
+    .tars-memory-card { background: rgba(0,0,0,0.2); border-radius: 6px; padding: 8px; margin: 4px 0; font-size: 10px; }
+    .tars-memory-card .mem-row { display: flex; justify-content: space-between; padding: 2px 0; color: rgba(210,235,255,0.5); }
+    .tars-memory-card .mem-row .val { color: #8ab4f8; }
+
+    .tars-feedback { font-size: 9px; color: #4ade80; padding: 2px 0; min-height: 14px; transition: opacity 0.3s; }
 </style>
 </head>
 
@@ -142,110 +254,44 @@
 <div id="status">EMOTION: <span id="current-emotion" class="status-badge">IDLE</span> | MODE: <span id="current-mode" class="status-badge">LIVE</span></div>
 <div id="hint">MOVE POINTER TO EXPLORE</div>
 
-<!-- Developer / Live Controller Panel -->
-<div id="tars-controls">
-    <h3>T.A.R.S. BEHAVIOR CONSOLE</h3>
-    
-    <div class="ctrl-group">
-        <label>SYSTEM MODE</label>
-        <div class="ctrl-buttons">
-            <button class="btn active" id="btn-mode-live" onclick="window.TARS.setMode('live')">LIVE MODE</button>
-            <button class="btn" id="btn-mode-demo" onclick="window.TARS.setMode('demo')">DEMO FLIGHT</button>
-        </div>
-    </div>
 
-    <div class="ctrl-group">
-        <label>BEHAVIOR PRESETS</label>
-        <div class="ctrl-buttons">
-            <button class="btn" onclick="window.TARS.trigger('idle')">IDLE</button>
-            <button class="btn" onclick="window.TARS.trigger('listen')">LISTEN</button>
-            <button class="btn" onclick="window.TARS.trigger('think')">THINK</button>
-            <button class="btn" onclick="window.TARS.trigger('speak')">SPEAK</button>
-            <button class="btn" onclick="window.TARS.trigger('sarcastic')">SARCASTIC</button>
-            <button class="btn" onclick="window.TARS.trigger('amused')">AMUSED</button>
-            <button class="btn" onclick="window.TARS.trigger('confused')">CONFUSED</button>
-            <button class="btn" onclick="window.TARS.trigger('serious')">SERIOUS</button>
-            <button class="btn" onclick="window.TARS.trigger('warning')">WARNING</button>
-            <button class="btn" onclick="window.TARS.trigger('critical')">CRITICAL</button>
-            <button class="btn" onclick="window.TARS.trigger('celebrate')">CELEBRATE</button>
-            <button class="btn" onclick="window.TARS.trigger('chill')">CHILL</button>
-            <button class="btn" onclick="window.TARS.trigger('disapproving')">DISAPPROVING</button>
-            <button class="btn" onclick="window.TARS.trigger('excited')">EXCITED</button>
-        </div>
-    </div>
 
-    <div class="ctrl-group">
-        <label>GAZE / ATTENTION TARGET</label>
-        <div class="ctrl-buttons">
-            <button class="btn" onclick="window.TARS.lookAt('user')">USER</button>
-            <button class="btn" onclick="window.TARS.lookAt('desk')">DESK</button>
-            <button class="btn" onclick="window.TARS.lookAt('rack-a')">RACK A</button>
-            <button class="btn" onclick="window.TARS.lookAt('window_left')">WINDOW LEFT</button>
-            <button class="btn" onclick="window.TARS.lookAt('window_right')">WINDOW RIGHT</button>
-        </div>
-    </div>
-
-    <div class="ctrl-group">
-        <label>SPEECH REACTIVITY</label>
-        <div class="ctrl-buttons">
-            <button class="btn" onclick="window.TARS.onSpeechStart()">SPEECH START</button>
-            <button class="btn" onclick="window.TARS.onSpeechEnd()">SPEECH END</button>
-        </div>
-    </div>
-
-    <div class="ctrl-group">
-        <label>SPEECH AMPLITUDE: <span id="speech-amp-val">0</span></label>
-        <input type="range" min="0" max="1" step="0.05" value="0" oninput="document.getElementById('speech-amp-val').innerText = this.value; window.TARS.setSpeechAmplitude(parseFloat(this.value));">
-    </div>
-
-<div class="ctrl-group">
-        <label>SPEECH PITCH: <span id="speech-pitch-val">1.0</span></label>
-        <input type="range" min="0.5" max="2" step="0.05" value="1" oninput="document.getElementById('speech-pitch-val').innerText = this.value; window.TARS.setSpeechPitch(parseFloat(this.value));">
-    </div>
-
-    <div class="ctrl-group">
-        <label>ACTIVITY LOG</label>
-        <div id="activity-log" style="max-height: 150px; overflow-y: auto; font-size: 11px; font-family: monospace; color: #8ab4f8;"></div>
-    </div>
+<!-- ===== TARS OBSERVATORY UI — Phase 7.4 ===== -->
+<div id="tars-status-header">
+    <span class="status-dot online" id="tars-status-dot"></span>
+    <span id="tars-status-label">AUTONOMY</span>
+    <span class="status-divider">|</span>
+    <span id="tars-status-activity">initializing</span>
+    <span class="status-divider">|</span>
+    <span id="tars-status-location">—</span>
+    <span id="tars-status-badge">🧠 OFFLINE</span>
 </div>
 
-    <div class="ctrl-group">
-        <label>GESTURE TESTS</label>
-        <div class="ctrl-buttons">
-            <button class="btn" onclick="window.TARS.triggerGesture('nod')">NOD</button>
-            <button class="btn" onclick="window.TARS.triggerGesture('shake')">SHAKE</button>
-            <button class="btn" onclick="window.TARS.triggerGesture('pulse')">PULSE</button>
-            <button class="btn" onclick="window.TARS.triggerGesture('expand')">EXPAND</button>
-            <button class="btn" onclick="window.TARS.triggerGesture('spin')">SPIN</button>
-        </div>
-    </div>
+<div id="tars-toolbar">
+    <button class="tars-tab-btn" data-tab="brain" title="Cognitive State">🧠</button>
+    <button class="tars-tab-btn" data-tab="observatory" title="Developer Observatory">📊</button>
+    <button class="tars-tab-btn" data-tab="journal" title="Activity Journal">📜</button>
+    <button class="tars-tab-btn" data-tab="conversation" title="Conversation">💬</button>
+    <button class="tars-tab-btn" data-tab="settings" title="Settings">⚙</button>
+</div>
 
-    <div class="ctrl-group">
-        <label>CONTROL MODE: <span id="ctrl-mode-display">AUTO</span></label>
-        <div class="ctrl-buttons">
-            <button class="btn" onclick="window.TARS_CONTROL.setMode('autonomous'); document.getElementById('ctrl-mode-display').innerText='AUTO'">AUTO</button>
-            <button class="btn" onclick="window.TARS_CONTROL.setMode('llm'); document.getElementById('ctrl-mode-display').innerText='LLM'">LLM</button>
-            <button class="btn" onclick="window.TARS_CONTROL.release(); document.getElementById('ctrl-mode-display').innerText='AUTO'">RELEASE</button>
-        </div>
+<div id="tars-overlay">
+    <div id="tars-overlay-header">
+        <span id="tars-overlay-title">OBSERVATORY</span>
+        <button id="tars-overlay-close">✕</button>
     </div>
+    <div id="tars-overlay-body"></div>
+</div>
 
-    <div class="ctrl-group">
-        <label>LLM BEHAVIOR INTENT TEST</label>
-        <div class="ctrl-buttons">
-            <button class="btn" onclick="window.TARS.setBehavior({emotion:'excited', intensity:0.8, energy:0.9, urgency:0.7, gesture:'pulse', gaze:'user'})">EXCITED</button>
-            <button class="btn" onclick="window.TARS.setBehavior({emotion:'thinking', intensity:0.4, energy:0.3, urgency:0.1, gesture:'nod', gaze:'desk'})">THINKING</button>
-            <button class="btn" onclick="window.TARS.setBehavior({emotion:'warning', intensity:0.9, energy:0.8, urgency:0.9, gesture:'expand', gaze:'rack-a'})">WARNING</button>
-        </div>
+<div id="tars-chat">
+    <div id="tars-chat-header">
+        <span>💬 TARS // COMMS</span>
+        <button id="tars-chat-close">✕</button>
     </div>
-
-    <div class="ctrl-group">
-        <label>INTENSITY: <span id="intensity-val">0.5</span></label>
-        <input type="range" min="0" max="1" step="0.05" value="0.5" oninput="document.getElementById('intensity-val').innerText = this.value; window.TARS.setIntensity(parseFloat(this.value));">
-    </div>
-
-    <div class="ctrl-group">
-        <label>URGENCY: <span id="urgency-val">0.1</span></label>
-        <input type="range" min="0" max="1" step="0.05" value="0.1" oninput="document.getElementById('urgency-val').innerText = this.value; window.TARS.setUrgency(parseFloat(this.value));">
+    <div id="tars-chat-messages"></div>
+    <div id="tars-chat-input">
+        <input type="text" id="tars-chat-input-field" placeholder="Message TARS..." autocomplete="off">
+        <button id="tars-chat-send">SEND</button>
     </div>
 </div>
 
@@ -2674,8 +2720,6 @@ function setTARSActivity(activity, location, reason, metadata = {}) {
     debugLog("Activity set:", { activity, location, reason, previousActivity: worldState.tars.previousActivity?.activity, endsAt: new Date(worldState.tars.activityEndsAt).toISOString() });
     logStateChange("activity_set", { activity, location, reason });
     WorldPersistence.save();
-    // Refresh activity display immediately so the UI is never stale
-    updateActivityDisplay();
 }
 
 // Helper: Get current activity summary for LLM queries
@@ -2699,24 +2743,6 @@ function getTARSActivitySummary() {
 // Helper: Get preference for a category/target
 function getPreference(category, target) {
     return worldState.tars.preferences[category]?.[target] ?? 0.5;
-}
-
-// Helper: Update activity log display in UI
-function updateActivityDisplay() {
-    const logEl = document.getElementById("activity-log");
-    if (!logEl) return;
-    const wasNearBottom = logEl.scrollHeight - logEl.scrollTop - logEl.clientHeight < 24;
-    const recent = worldState.activityLog.slice(-12).reverse();
-    logEl.innerHTML = recent.map(e => {
-        const time = e.timestamp ? new Date(e.timestamp).toLocaleTimeString() : "";
-        const label = e.activity || e.type || "?";
-        const loc = e.location ? ` @ ${e.location}` : "";
-        const src = e.reason ? ` [${e.reason}]` : "";
-        return `<div class="log-entry" style="border-bottom:1px solid rgba(138,180,248,0.15);padding:1px 0">[${time}] ${label}${loc}${src}</div>`;
-    }).join("");
-    if (wasNearBottom) {
-        logEl.scrollTop = logEl.scrollHeight;
-    }
 }
 
 // ============================================================
@@ -3480,8 +3506,6 @@ window.TARS = {
     setMode(mode) {
         currentState.mode = mode;
         document.getElementById("current-mode").innerText = mode.toUpperCase();
-        document.getElementById("btn-mode-live").classList.toggle("active", mode === "live");
-        document.getElementById("btn-mode-demo").classList.toggle("active", mode === "demo");
     },
     trigger(presetName) {
         if (!BEHAVIOR_PRESETS[presetName]) return;
@@ -3626,15 +3650,6 @@ window.TARS = {
 // ============================================================
 
 // Hook into existing lookAt to log location changes
-// The original lookAt handles gaze, behavior, activity state, and event logging.
-// This hook triggers the UI display update after every lookAt call.
-const originalLookAt = window.TARS.lookAt;
-window.TARS.lookAt = function(targetKey, reason, overrideActivity) {
-    const result = originalLookAt.call(this, targetKey, reason, overrideActivity);
-    updateActivityDisplay();
-    return result;
-};
-
     // ============================================================
     // LOCATION-BEHAVIOR SYSTEM - Random animations per station
     // ============================================================
@@ -4050,11 +4065,11 @@ const ACTIVITY_EFFECTS = {
 };
 
 const NEED_RESTORATION = {
-    desk: { energy: 0.00002, curiosity: 0.00001 },
-    "rack-a": { energy: 0.00002, maintenance: 0.00003 },
-    "window_right": { curiosity: 0.00003, comfort: 0.00002 },
-    "window_left": { curiosity: 0.00003, comfort: 0.00002 },
-    user: { social: 0.00003, energy: 0.00001 }
+    desk: { energy: 5, curiosity: 2 },
+    "rack-a": { energy: 3, maintenance: 6 },
+    "window_right": { curiosity: 4, comfort: 3 },
+    "window_left": { curiosity: 4, comfort: 3 },
+    user: { social: 6, energy: 1 }
 };
 
 const LOCATIONS = ["desk", "rack-a", "window_right", "window_left", "user"];
@@ -4193,7 +4208,7 @@ function scoreLocation(location) {
     const restoration = NEED_RESTORATION[location] || {};
     for (const [need, amount] of Object.entries(restoration)) {
         const deficit = 1 - needs[need];
-        score += deficit * amount * 100;
+        score += deficit * amount;
     }
     
     // Hunger pressure — high hunger draws toward desk (future food proxy)
@@ -4251,7 +4266,7 @@ function scoreLocation(location) {
     }
     
     // Add some randomness for organic behavior
-    score += (Math.random() - 0.5) * 15;
+    score += (Math.random() - 0.5) * 6;
     
     return score;
 }
@@ -4529,22 +4544,8 @@ function makeAutonomousDecision() {
 
     if (sameLocation && sameActivity) {
         const fatigue = worldState.tars.activityFatigue[chosenActivity] || 0;
-        if (fatigue < ACTIVITY_FATIGUE.CONTINUE_THRESHOLD) {
-            const reg = ACTIVITY_REGISTRY[chosenActivity];
-            if (reg && reg.minDuration !== undefined) {
-                const durSec = reg.minDuration + Math.random() * (reg.maxDuration - reg.minDuration);
-                worldState.tars.activityEndsAt = now + durSec * 1000;
-            } else {
-                worldState.tars.activityEndsAt = now + 15000;
-            }
-            worldState.tars.continuationCount += 1;
-            const reason = generateDecisionReason(chosenActivity, "continue", needs);
-            recordAutonomyDecision(intent, chosenActivity, chosenLocation, "continue", reason, bestScore, {
-                continuationCount: worldState.tars.continuationCount,
-                fatigueAtDecision: fatigue
-            });
-            return;
-        } else {
+
+        if (fatigue >= ACTIVITY_FATIGUE.COMPLETE_THRESHOLD) {
             finalizeExperience();
             worldState.tars.activity = "idle";
             worldState.tars.activityEndsAt = 0;
@@ -4556,6 +4557,29 @@ function makeAutonomousDecision() {
             logStateChange("activity_completed", { activity: chosenActivity, fatigue });
             return;
         }
+
+        const currentScore = activityScores.find(s => s.id === worldState.tars.activity)?.score || 0;
+        const sortedScores = [...activityScores].sort((a, b) => b.score - a.score);
+        const bestAlt = sortedScores.find(s => s.id !== worldState.tars.activity) || sortedScores[0];
+        const continuationBias = Math.max(0, 5 - worldState.tars.continuationCount * 1.5);
+
+        if (currentScore + continuationBias >= bestAlt.score) {
+            const reg = ACTIVITY_REGISTRY[chosenActivity];
+            const durSec = reg && reg.minDuration !== undefined
+                ? reg.minDuration + Math.random() * (reg.maxDuration - reg.minDuration)
+                : 15;
+            worldState.tars.activityEndsAt = now + durSec * 1000;
+            worldState.tars.continuationCount += 1;
+            const reason = generateDecisionReason(chosenActivity, "continue", needs);
+            recordAutonomyDecision(intent, chosenActivity, chosenLocation, "continue", reason, bestScore, {
+                continuationCount: worldState.tars.continuationCount,
+                fatigueAtDecision: fatigue
+            });
+            return;
+        }
+
+        finalizeExperience();
+        worldState.tars.continuationCount = 0;
     }
 
     if (!sameLocation) {
@@ -4725,7 +4749,6 @@ window.TARS_INTENT = {
             if (worldState.activityLog.length > worldState.maxActivityLogSize) {
                 worldState.activityLog.shift();
             }
-            updateActivityDisplay();
         }
         return { behavior, validation };
     },
@@ -4895,7 +4918,6 @@ window.addEventListener("pointermove", event => {
 const clock = new THREE.Clock();
 let dayNightAccum = 0;
 let clockAccum = 0;
-let displayAccum = 0;
 let weatherCheckAccum = 0;
 
 function animate() {
@@ -4935,13 +4957,6 @@ function animate() {
 
     // 2c. Process queued world events (interruption system)
     processWorldEvents();
-
-    // Refresh activity log display (called periodically, not just on change)
-    displayAccum += dt;
-    if (displayAccum > 1) {
-        displayAccum = 0;
-        updateActivityDisplay();
-    }
 
     // Monitor idle/screensaver system (BUG 3 fix)
     updateMonitorIdle(dt);
@@ -5534,6 +5549,565 @@ window.WorldPersistence = WorldPersistence;
 console.log(`[TARS] Session started: ${worldState.session.id}`);
 console.log(`[TARS] Previous session ended: ${worldState.session.previousSessionEnd || "first session"}`);
 console.log(`[TARS] Elapsed since last session: ${(worldState.session.totalElapsed / 1000).toFixed(0)}s`);
+
+// ============================================================
+// TARS OBSERVATORY UI SYSTEM — Phase 7.4
+// ============================================================
+// Architecture:
+//   TARS_UI        — state, tab switching, throttled rendering
+//   TARS_CHAT      — conversation API placeholder (future LLM boundary)
+//   renderBrain()  — autonomous simulation state (NOT cognition)
+//   renderObservatory() — developer telemetry dashboard
+//   renderJournal() — activity log timeline with fallback
+//   renderSettings() — debug controls
+//   updateStatusHeader() — persistent entity status bar
+// ============================================================
+
+const TARS_UI = {
+    activeTab: null,
+    overlayVisible: false,
+    chatVisible: false,
+    lastUpdate: 0,
+    refreshInterval: 800,
+
+    openTab(tab) {
+        if (tab === "conversation") {
+            this.toggleChat();
+            if (this.overlayVisible) this.closeOverlay();
+            return;
+        }
+        if (this.activeTab === tab && this.overlayVisible) {
+            this.closeOverlay();
+            return;
+        }
+        this.activeTab = tab;
+        this.overlayVisible = true;
+        const overlay = document.getElementById("tars-overlay");
+        overlay.classList.add("visible");
+        document.querySelectorAll(".tars-tab-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+        const titles = { brain: "🧠 COGNITIVE STATE", observatory: "📊 OBSERVATORY", journal: "📜 JOURNAL", settings: "⚙ CREATOR CONSOLE" };
+        document.getElementById("tars-overlay-title").textContent = titles[tab] || tab.toUpperCase();
+        this.renderTab(tab);
+    },
+
+    closeOverlay() {
+        this.overlayVisible = false;
+        this.activeTab = null;
+        document.getElementById("tars-overlay").classList.remove("visible");
+        document.querySelectorAll(".tars-tab-btn").forEach(b => b.classList.remove("active"));
+    },
+
+    toggleChat() {
+        this.chatVisible = !this.chatVisible;
+        document.getElementById("tars-chat").classList.toggle("visible", this.chatVisible);
+        document.querySelectorAll(".tars-tab-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === "conversation" && this.chatVisible));
+        if (this.chatVisible && this.overlayVisible) this.closeOverlay();
+    },
+
+    renderTab(tab) {
+        const body = document.getElementById("tars-overlay-body");
+        if (!body) return;
+        switch (tab) {
+            case "brain": this.renderBrain(body); break;
+            case "observatory": this.renderObservatory(body); break;
+            case "journal": this.renderJournal(body); break;
+            case "settings": this.renderSettings(body); break;
+        }
+    },
+
+    renderBrain(el) {
+        const s = worldState.tars;
+        const a = s.autonomy || {};
+        const reg = ACTIVITY_REGISTRY[s.activity];
+        const nextEval = s.activityEndsAt ? Math.max(0, Math.ceil((s.activityEndsAt - Date.now()) / 1000)) : "—";
+        el.innerHTML = `
+            <div class="tars-section">
+                <div class="tars-section-title">Autonomous Simulation Layer</div>
+                <div class="tars-data-row"><span class="tars-data-label">Current</span><span class="tars-data-value">${s.activity || "idle"}</span></div>
+                <div class="tars-data-row"><span class="tars-data-label">Location</span><span class="tars-data-value">${s.location || "—"}</span></div>
+                <div class="tars-data-row"><span class="tars-data-label">Intent</span><span class="tars-data-value">${a.intent || "—"}</span></div>
+                <div class="tars-data-row"><span class="tars-data-label">Reason</span><span class="tars-data-value">${a.decisionReason || s.activityReason || "—"}</span></div>
+                <div class="tars-data-row"><span class="tars-data-label">Mode</span><span class="tars-data-value">${s.controlMode || "autonomous"}</span></div>
+                <div class="tars-data-row"><span class="tars-data-label">Action</span><span class="tars-data-value">${a.decisionAction || "—"}</span></div>
+                <div class="tars-data-row"><span class="tars-data-label">Score</span><span class="tars-data-value">${a.decisionScore !== undefined ? a.decisionScore.toFixed(2) : "—"}</span></div>
+                <div class="tars-data-row"><span class="tars-data-label">Next eval</span><span class="tars-data-value">${nextEval}s</span></div>
+                <div class="tars-data-row"><span class="tars-data-label">Fatigue</span><span class="tars-data-value">${((s.activityFatigue && s.activityFatigue[s.activity]) || 0).toFixed(3)}</span></div>
+                <div class="tars-data-row"><span class="tars-data-label">Continuations</span><span class="tars-data-value">${s.continuationCount || 0}</span></div>
+            </div>
+            <div class="tars-section">
+                <div class="tars-section-title">Future Amir OS Cognitive Layer</div>
+                <div class="tars-empty">🧠 Cognitive layer offline.<br>Awaiting LLM connection.</div>
+            </div>`;
+    },
+
+    renderObservatory(el) {
+        const needs = worldState.tars.needs;
+        const fatigue = worldState.tars.activityFatigue || {};
+        const scores = window.TARS_AUTONOMY ? window.TARS_AUTONOMY.getActivityScores() : [];
+        const history = worldState.tars.autonomyHistory;
+        const lastFew = history ? history.slice(-5).reverse() : [];
+
+        let needsHtml = "";
+        const needLabels = { energy: "Energy", curiosity: "Curiosity", social: "Social", maintenance: "Maint.", comfort: "Comfort", hunger: "Hunger" };
+        const needColors = { energy: "energy", curiosity: "curiosity", social: "social", maintenance: "maintenance", comfort: "comfort", hunger: "hunger" };
+        for (const [k, v] of Object.entries(needs)) {
+            const pct = (v * 100).toFixed(0);
+            needsHtml += `<div class="tars-need-bar"><label>${needLabels[k] || k}</label><div class="tars-need-track"><div class="tars-need-fill ${needColors[k] || 'energy'}" style="width:${pct}%"></div></div><span class="tars-need-pct">${pct}%</span></div>`;
+        }
+
+        let scoresHtml = "";
+        for (const s of (scores || [])) {
+            scoresHtml += `<div class="tars-data-row"><span class="tars-data-label">${s.id}</span><span class="tars-data-value">${s.score.toFixed(2)}</span></div>`;
+        }
+
+        let fatigueHtml = "";
+        for (const [k, v] of Object.entries(fatigue)) {
+            fatigueHtml += `<div class="tars-data-row"><span class="tars-data-label">${k}</span><span class="tars-data-value">${v.toFixed(3)}</span></div>`;
+        }
+
+        let decisionsHtml = "";
+        for (const d of lastFew) {
+            const t = d.timestamp ? new Date(d.timestamp).toLocaleTimeString() : "—";
+            decisionsHtml += `<div class="tars-journal-entry"><span class="tars-journal-time">${t}</span> <span class="tars-journal-act">${d.decisionAction}</span> ${d.selectedActivity} @ ${d.selectedLocation} <span class="tars-journal-reason">"${d.decisionReason || ""}"</span></div>`;
+        }
+
+        el.innerHTML = `
+            <div class="tars-section">
+                <div class="tars-section-title">Needs</div>
+                ${needsHtml}
+            </div>
+            <div class="tars-section">
+                <div class="tars-section-title">Activity Scores</div>
+                ${scoresHtml || '<div class="tars-empty">No scores available</div>'}
+            </div>
+            <div class="tars-section">
+                <div class="tars-section-title">Fatigue</div>
+                ${fatigueHtml || '<div class="tars-empty">No fatigue data</div>'}
+            </div>
+            <div class="tars-section">
+                <div class="tars-section-title">Recent Decisions</div>
+                ${decisionsHtml || '<div class="tars-empty">No decisions recorded</div>'}
+            </div>`;
+    },
+
+    renderJournal(el) {
+        let entries = worldState.activityLog;
+        if (!entries || entries.length === 0) {
+            if (worldState.tars.autonomyHistory && worldState.tars.autonomyHistory.length > 0) {
+                entries = worldState.tars.autonomyHistory.map(d => ({
+                    timestamp: d.timestamp,
+                    activity: d.selectedActivity,
+                    location: d.selectedLocation,
+                    reason: d.decisionReason,
+                    type: d.decisionAction
+                }));
+            }
+        }
+        if (!entries || entries.length === 0) {
+            el.innerHTML = '<div class="tars-empty">📜 No activity recorded yet.<br>TARS will log entries as it explores.</div>';
+            return;
+        }
+        const recent = entries.slice(-50).reverse();
+        let html = "";
+        for (const e of recent) {
+            const t = e.timestamp ? new Date(e.timestamp).toLocaleTimeString() : "—";
+            const act = e.activity || e.type || "?";
+            const loc = e.location || "—";
+            const reason = e.reason || "";
+            const dur = e.duration ? ` (${(e.duration / 1000).toFixed(0)}s)` : "";
+            html += `<div class="tars-journal-entry"><span class="tars-journal-time">${t}</span> <span class="tars-journal-act">${act}</span> <span class="tars-journal-loc">@ ${loc}</span> ${dur}<br><span class="tars-journal-reason">${reason}</span></div>`;
+        }
+        el.innerHTML = html;
+    },
+
+    collapsedSections: new Set(["behavior-testing","gesture-testing","activity-testing","location-testing","need-simulation"]),
+
+    renderSettings(el) {
+        const s = worldState.tars;
+        const needs = s.needs || {};
+        const fatigue = s.activityFatigue || {};
+        const expBuf = s.experienceBuffer || [];
+        const lastExp = expBuf.slice(-3).reverse();
+        const history = s.autonomyHistory || [];
+        const recentTelemetry = history.slice(-25).reverse();
+
+        // Telemetry HTML
+        let telemetryHtml = "";
+        for (const d of recentTelemetry) {
+            const t = d.timestamp ? new Date(d.timestamp).toLocaleTimeString() : "";
+            const act = d.selectedActivity || d.intent || "?";
+            const loc = d.selectedLocation || "";
+            const action = d.decisionAction || "";
+            telemetryHtml += `<div class="tars-console-entry"><span class="ts">${t}</span> <span class="action">${action}</span> <span class="act">${act}</span> ${loc ? `<span class="loc">@${loc}</span>` : ""}</div>`;
+        }
+        if (!telemetryHtml) telemetryHtml = '<div class="tars-console-entry" style="color:rgba(210,235,255,0.2)">No decisions recorded yet.</div>';
+
+        // Memory HTML
+        let memHtml = "";
+        if (expBuf.length === 0) {
+            memHtml = '<div class="tars-memory-card"><div class="tars-empty" style="padding:10px 0">No experiences stored yet.</div></div>';
+        } else {
+            memHtml = `<div class="tars-memory-card"><div class="mem-row"><span>Buffer Size</span><span class="val">${expBuf.length} / 100</span></div>`;
+            for (const ex of lastExp) {
+                const a = ex.activity || "?";
+                const l = ex.location || "";
+                const d = ex.duration ? `(${(ex.duration/1000).toFixed(0)}s)` : "";
+                memHtml += `<div class="mem-row"><span>→ ${a} ${l ? "@ "+l : ""}</span><span class="val">${d}</span></div>`;
+            }
+            memHtml += `</div>`;
+        }
+
+        // Need inject buttons
+        const needNames = ["energy","curiosity","social","maintenance","comfort","hunger"];
+        let needHtml = "";
+        for (const n of needNames) {
+            const pct = ((needs[n] || 0.5) * 100).toFixed(0);
+            needHtml += `<div class="tars-inject-row">
+                <label>${n}</label>
+                <button class="tars-inject-btn minus" data-action="inject-need" data-need="${n}" data-delta="-0.1">−10</button>
+                <span class="tars-inject-val" data-need-val="${n}">${pct}%</span>
+                <button class="tars-inject-btn plus" data-action="inject-need" data-need="${n}" data-delta="0.1">+10</button>
+            </div>`;
+        }
+
+        // Behavior presets
+        const emotions = ["idle","listen","think","speak","sarcastic","amused","confused","serious","warning","critical","celebrate","chill","disapproving","excited"];
+        let behaviorHtml = '<div class="tars-creator-actions">';
+        for (const e of emotions) {
+            behaviorHtml += `<button class="btn btn-sm" data-action="trigger-behavior" data-preset="${e}">${e.toUpperCase()}</button>`;
+        }
+        behaviorHtml += '</div>';
+        behaviorHtml += `<div class="tars-creator-actions" style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(80,180,255,0.08)">
+            <span style="font-size:9px;color:rgba(210,235,255,0.3);width:100%;margin-bottom:4px">LLM Behavior Intent Test</span>
+            <button class="btn btn-sm" data-action="test-behavior" data-behavior="excited">EXCITED</button>
+            <button class="btn btn-sm" data-action="test-behavior" data-behavior="thinking">THINKING</button>
+            <button class="btn btn-sm" data-action="test-behavior" data-behavior="warning">WARNING</button>
+        </div>`;
+
+        // Gesture presets
+        const gestures = ["nod","shake","pulse","expand","spin"];
+        let gestureHtml = '<div class="tars-creator-actions">';
+        for (const g of gestures) {
+            gestureHtml += `<button class="btn btn-sm" data-action="trigger-gesture" data-gesture="${g}">${g.toUpperCase()}</button>`;
+        }
+        gestureHtml += '</div>';
+
+        // Activity presets
+        const activityIds = Object.keys(ACTIVITY_REGISTRY);
+        const compatLocs = { weather_observation:"window_left", computer_work:"desk", server_check:"rack-a", user_interaction:"user", gaming:"desk", tv_watching:"user", idle:"desk" };
+        let activityHtml = '<div class="tars-creator-actions">';
+        for (const a of activityIds) {
+            const label = (ACTIVITY_REGISTRY[a]?.label || a).toUpperCase();
+            const loc = compatLocs[a] || "desk";
+            activityHtml += `<button class="btn btn-sm" data-action="test-activity" data-activity="${a}" data-location="${loc}">${label}</button>`;
+        }
+        activityHtml += '</div>';
+
+        // Location/gaze targets
+        const targets = ["user","desk","rack-a","window_left","window_right"];
+        let locHtml = '<div class="tars-creator-actions">';
+        for (const t of targets) {
+            const label = t.replace("_"," ").toUpperCase();
+            locHtml += `<button class="btn btn-sm" data-action="look-at" data-target="${t}">${label}</button>`;
+        }
+        locHtml += '</div>';
+
+        // Build full HTML with collapsible sections
+        const cs = (key, title, body, badge) => {
+            const collapsed = this.collapsedSections.has(key);
+            return `<div class="tars-collapse-section">
+                <div class="tars-collapse-header" data-collapse="${key}">
+                    <span class="arrow">${collapsed ? "▶" : "▼"}</span> ${title} ${badge ? `<span class="badge">(${badge})</span>` : ""}
+                </div>
+                <div class="tars-collapse-body${collapsed ? " collapsed" : ""}" id="collapse-${key}">${body}</div>
+            </div>`;
+        };
+
+        el.innerHTML = cs("system-controls", "System Controls",
+            `<div class="tars-creator-grid">
+                <div class="tars-creator-stat"><span class="label">Activity</span><span class="value" id="cs-activity">${s.activity || "idle"}</span></div>
+                <div class="tars-creator-stat"><span class="label">Location</span><span class="value" id="cs-location">${s.location || "—"}</span></div>
+                <div class="tars-creator-stat"><span class="label">Intent</span><span class="value" id="cs-intent">${(s.autonomy && s.autonomy.intent) || "—"}</span></div>
+                <div class="tars-creator-stat"><span class="label">Mode</span><span class="value" id="creator-mode-display">${(s.controlMode || "autonomous").toUpperCase()}</span></div>
+                <div class="tars-creator-stat"><span class="label">Fatigue (current)</span><span class="value" id="cs-fatigue">${((fatigue[s.activity] || 0)*100).toFixed(0)}%</span></div>
+                <div class="tars-creator-stat"><span class="label">Decisions</span><span class="value" id="cs-decisions">${history.length}</span></div>
+            </div>
+            <div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(80,180,255,0.08)">
+                <div class="tars-creator-actions">
+                    <button class="btn" data-action="pause">⏸ PAUSE</button>
+                    <button class="btn" data-action="resume">▶ RESUME</button>
+                    <button class="btn" data-action="force-decision">⚡ FORCE</button>
+                    <button class="btn" data-action="trigger-wander">🧭 WANDER</button>
+                    <button class="btn" data-action="reset-state">🔄 RESET</button>
+                </div>
+                <div class="tars-creator-actions" style="margin-top:6px">
+                    <span style="font-size:9px;color:rgba(210,235,255,0.3);width:100%">System Mode</span>
+                    <button class="btn btn-sm" data-action="set-mode" data-mode="live">LIVE</button>
+                    <button class="btn btn-sm" data-action="set-mode" data-mode="demo">DEMO</button>
+                </div>
+                <div class="tars-creator-actions" style="margin-top:6px">
+                    <span style="font-size:9px;color:rgba(210,235,255,0.3);width:100%">Control Mode</span>
+                    <button class="btn btn-sm" data-action="set-control" data-mode="autonomous">AUTO</button>
+                    <button class="btn btn-sm" data-action="set-control" data-mode="llm">LLM</button>
+                    <button class="btn btn-sm" data-action="release-control">RELEASE</button>
+                </div>
+                <div class="tars-feedback" id="creator-feedback"></div>
+            </div>`
+        ) + cs("behavior-testing", "Behavior Testing", behaviorHtml, emotions.length) +
+          cs("gesture-testing", "Gesture Testing", gestureHtml, gestures.length) +
+          cs("activity-testing", "Activity Testing", activityHtml, activityIds.length) +
+          cs("location-testing", "Location Testing", locHtml, targets.length) +
+          cs("need-simulation", "Need Simulation", `<div class="tars-inject-group">${needHtml}</div>`, needNames.length) +
+          cs("diagnostics", "Diagnostics",
+            `<div style="margin-bottom:8px">
+                <div style="font-size:9px;color:rgba(210,235,255,0.4);margin-bottom:4px">Telemetry Console</div>
+                <div class="tars-console" id="creator-telemetry">${telemetryHtml}</div>
+            </div>
+            <div>
+                <div style="font-size:9px;color:rgba(210,235,255,0.4);margin-bottom:4px">Memory Inspector</div>
+                ${memHtml}
+                <div style="margin-top:6px;font-size:9px;color:rgba(210,235,255,0.3)">
+                    Persistence v${window.TARS_SAVE_VERSION || 2} | Save: ${WorldPersistence.lastSaved ? new Date(WorldPersistence.lastSaved).toLocaleTimeString() : "—"}
+                </div>
+            </div>`
+        );
+    },
+
+    updateStatusHeader() {
+        const s = worldState.tars;
+        const elAct = document.getElementById("tars-status-activity");
+        const elLoc = document.getElementById("tars-status-location");
+        if (elAct) elAct.textContent = s.activity || "idle";
+        if (elLoc) elLoc.textContent = s.location || "—";
+    },
+
+    throttledUpdate(now) {
+        if (now - this.lastUpdate < this.refreshInterval) return;
+        this.lastUpdate = now;
+        this.updateStatusHeader();
+        if (!this.activeTab || !this.overlayVisible) return;
+        if (this.activeTab === "settings") {
+            this.refreshSettingsLive();
+        } else {
+            this.renderTab(this.activeTab);
+        }
+    },
+
+    refreshSettingsLive() {
+        const s = worldState.tars;
+        const modeEl = document.getElementById("creator-mode-display");
+        if (modeEl) modeEl.textContent = (s.controlMode || "autonomous").toUpperCase();
+
+        // Update live status grid
+        const setText = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
+        setText("cs-activity", s.activity || "idle");
+        setText("cs-location", s.location || "—");
+        setText("cs-intent", (s.autonomy && s.autonomy.intent) || "—");
+        const fatigue = s.activityFatigue || {};
+        setText("cs-fatigue", ((fatigue[s.activity] || 0)*100).toFixed(0) + "%");
+        setText("cs-decisions", (s.autonomyHistory || []).length);
+
+        // Update need values in inject section
+        const needs = s.needs || {};
+        const needNames = ["energy","curiosity","social","maintenance","comfort","hunger"];
+        for (const n of needNames) {
+            const valEl = document.querySelector(`[data-need-val="${n}"]`);
+            if (valEl) valEl.textContent = ((needs[n] || 0.5) * 100).toFixed(0) + "%";
+        }
+
+        // Telemetry
+        const telemetryEl = document.getElementById("creator-telemetry");
+        if (telemetryEl) {
+            const history = s.autonomyHistory || [];
+            const recent = history.slice(-25).reverse();
+            let html = "";
+            for (const d of recent) {
+                const t = d.timestamp ? new Date(d.timestamp).toLocaleTimeString() : "";
+                const act = d.selectedActivity || d.intent || "?";
+                const loc = d.selectedLocation || "";
+                const action = d.decisionAction || "";
+                html += `<div class="tars-console-entry"><span class="ts">${t}</span> <span class="action">${action}</span> <span class="act">${act}</span> ${loc ? `<span class="loc">@${loc}</span>` : ""}</div>`;
+            }
+            telemetryEl.innerHTML = html || '<div class="tars-console-entry" style="color:rgba(210,235,255,0.2)">No decisions recorded yet.</div>';
+            telemetryEl.scrollTop = telemetryEl.scrollHeight;
+        }
+    }
+};
+
+// Chat API — placeholder, no LLM connection
+window.TARS_CHAT = {
+    history: [],
+    send(msg) {
+        if (!msg || !msg.trim()) return;
+        this.history.push({ role: "user", text: msg, time: Date.now() });
+        const container = document.getElementById("tars-chat-messages");
+        if (container) {
+            const el = document.createElement("div");
+            el.className = "tars-msg user";
+            el.textContent = msg;
+            container.appendChild(el);
+            container.scrollTop = container.scrollHeight;
+        }
+        console.log(`[TARS CHAT] User: ${msg}`);
+        const reply = "🧠 TARS cognitive system offline. Message logged for future LLM connection.";
+        setTimeout(() => {
+            this.history.push({ role: "tars", text: reply, time: Date.now() });
+            if (container) {
+                const el = document.createElement("div");
+                el.className = "tars-msg tars";
+                el.textContent = reply;
+                container.appendChild(el);
+                container.scrollTop = container.scrollHeight;
+            }
+            console.log(`[TARS CHAT] TARS: ${reply}`);
+        }, 600);
+    }
+};
+
+// Wire up UI elements
+function initObservatoryUI() {
+    const toolbarBtns = document.querySelectorAll(".tars-tab-btn");
+    toolbarBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+            TARS_UI.openTab(btn.dataset.tab);
+        });
+    });
+
+    document.getElementById("tars-overlay-close").addEventListener("click", () => TARS_UI.closeOverlay());
+    document.getElementById("tars-chat-close").addEventListener("click", () => TARS_UI.toggleChat());
+
+    document.getElementById("tars-chat-send").addEventListener("click", () => {
+        const input = document.getElementById("tars-chat-input-field");
+        window.TARS_CHAT.send(input.value);
+        input.value = "";
+    });
+    document.getElementById("tars-chat-input-field").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            document.getElementById("tars-chat-send").click();
+        }
+    });
+
+    // Creator Console event delegation
+    const overlayBody = document.getElementById("tars-overlay-body");
+    overlayBody.addEventListener("click", (e) => {
+        const fb = document.getElementById("creator-feedback");
+        const setFb = (msg, color) => { if (fb) { fb.textContent = msg; fb.style.color = color || "#4ade80"; } };
+
+        // Collapse toggle
+        const header = e.target.closest(".tars-collapse-header");
+        if (header) {
+            const key = header.dataset.collapse;
+            const body = document.getElementById("collapse-" + key);
+            if (body) {
+                body.classList.toggle("collapsed");
+                const arrow = header.querySelector(".arrow");
+                if (arrow) arrow.textContent = body.classList.contains("collapsed") ? "▶" : "▼";
+                if (body.classList.contains("collapsed")) {
+                    TARS_UI.collapsedSections.add(key);
+                } else {
+                    TARS_UI.collapsedSections.delete(key);
+                }
+            }
+            return;
+        }
+
+        const action = e.target.dataset.action;
+        if (!action) return;
+
+        switch (action) {
+            // System Controls
+            case "pause":
+                window.TARS_CONTROL.setMode("llm");
+                setFb("⏸ Autonomy paused (LLM mode)", "#f87171");
+                break;
+            case "resume":
+                window.TARS_CONTROL.setMode("autonomous");
+                setFb("▶ Autonomy resumed", "#4ade80");
+                break;
+            case "force-decision":
+                window.TARS_AUTONOMY.forceDecision();
+                setFb("⚡ Decision cycle forced", "#5fd0ff");
+                break;
+            case "trigger-wander":
+                worldState.tars.lastWanderTime = 0;
+                window.TARS_AUTONOMY.setNeed("curiosity", 0.1);
+                window.TARS_AUTONOMY.forceDecision();
+                setFb("🧭 Wander primed + decision forced", "#a78bfa");
+                break;
+            case "reset-state":
+                ["energy","curiosity","social","maintenance","comfort","hunger"].forEach(n => window.TARS_AUTONOMY.setNeed(n, 0.5));
+                worldState.tars.activityFatigue = {};
+                worldState.tars.continuationCount = 0;
+                window.TARS_AUTONOMY.clearAutonomyHistory();
+                setFb("🔄 State reset (needs→50%, fatigue cleared, history cleared)", "#fb923c");
+                break;
+            case "set-mode":
+                if (window.TARS.setMode) window.TARS.setMode(e.target.dataset.mode);
+                else console.warn("TARS.setMode not available");
+                break;
+            case "set-control":
+                window.TARS_CONTROL.setMode(e.target.dataset.mode);
+                break;
+            case "release-control":
+                if (window.TARS.releaseControl) window.TARS.releaseControl();
+                else window.TARS_CONTROL.release();
+                setFb("↩ Control released to autonomous", "#4ade80");
+                break;
+
+            // Testing sections
+            case "inject-need": {
+                const need = e.target.dataset.need;
+                const delta = parseFloat(e.target.dataset.delta);
+                const cur = worldState.tars.needs[need] !== undefined ? worldState.tars.needs[need] : 0.5;
+                const newVal = Math.max(0, Math.min(1, cur + delta));
+                window.TARS_AUTONOMY.setNeed(need, newVal);
+                const valEl = document.querySelector(`[data-need-val="${need}"]`);
+                if (valEl) valEl.textContent = (newVal * 100).toFixed(0) + "%";
+                setFb(`Need "${need}" → ${(newVal * 100).toFixed(0)}%`, "");
+                break;
+            }
+            case "trigger-behavior":
+                window.TARS.trigger(e.target.dataset.preset);
+                setFb(`Behavior: ${e.target.dataset.preset}`, "");
+                break;
+            case "test-behavior": {
+                const behaviorMap = {
+                    excited: {emotion:"excited", intensity:0.8, energy:0.9, urgency:0.7, gesture:"pulse", gaze:"user"},
+                    thinking: {emotion:"thinking", intensity:0.4, energy:0.3, urgency:0.1, gesture:"nod", gaze:"desk"},
+                    warning: {emotion:"warning", intensity:0.9, energy:0.8, urgency:0.9, gesture:"expand", gaze:"rack-a"}
+                };
+                const b = behaviorMap[e.target.dataset.behavior];
+                if (b && window.TARS.setBehavior) window.TARS.setBehavior(b);
+                setFb(`LLM Intent: ${e.target.dataset.behavior}`, "");
+                break;
+            }
+            case "trigger-gesture":
+                window.TARS.triggerGesture(e.target.dataset.gesture);
+                setFb(`Gesture: ${e.target.dataset.gesture}`, "");
+                break;
+            case "test-activity":
+                if (window.setTARSActivity) {
+                    window.setTARSActivity(e.target.dataset.activity, e.target.dataset.location, "test_injection");
+                }
+                setFb(`Activity: ${e.target.dataset.activity} @ ${e.target.dataset.location}`, "");
+                break;
+            case "look-at":
+                window.TARS.lookAt(e.target.dataset.target, "test_injection");
+                setFb(`Gaze: ${e.target.dataset.target}`, "");
+                break;
+        }
+        setTimeout(() => { if (fb) fb.textContent = ""; }, 3000);
+    });
+
+    TARS_UI.updateStatusHeader();
+    console.log("[TARS OBSERVATORY] Phase 7.4 UI initialized. Press 🧠📊📜💬⚙ to open panels.");
+}
+
+initObservatoryUI();
+
+// Hook throttled UI refresh into animate loop via patched setInterval
+// Instead of modifying animate(), we run a separate timer
+setInterval(() => TARS_UI.throttledUpdate(Date.now()), 400);
 
 </script>
 
