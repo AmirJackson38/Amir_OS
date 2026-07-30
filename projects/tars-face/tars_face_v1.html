@@ -6326,7 +6326,7 @@ const TARS_UI = {
 
         function setVal(id, val) {
             const e = document.getElementById(id);
-            if (e) e.querySelector(".value").textContent = val;
+            if (e) e.querySelector(".tars-data-value").textContent = val;
         }
 
         function updateMetrics(data) {
@@ -6379,8 +6379,8 @@ const TARS_UI = {
             const listEl = document.getElementById("tars-docker-list");
             if (!sumEl) return;
             if (!summary) {
-                sumEl.querySelector(".value").textContent = "No Docker";
-                sumEl.querySelector(".value").style.color = "rgba(210,235,255,0.2)";
+                sumEl.querySelector(".tars-data-value").textContent = "No Docker";
+                sumEl.querySelector(".tars-data-value").style.color = "rgba(210,235,255,0.2)";
                 if (listEl) listEl.innerHTML = "";
                 return;
             }
@@ -6389,8 +6389,8 @@ const TARS_UI = {
             const running = summary.running || 0;
             const total = summary.total || 0;
             const color = crashed > 0 ? "#f87171" : total === 0 ? "rgba(210,235,255,0.2)" : "#5fd0ff";
-            sumEl.querySelector(".value").textContent = running + " running, " + stopped + " stopped" + (crashed > 0 ? ", " + crashed + " crashed" : "");
-            sumEl.querySelector(".value").style.color = color;
+            sumEl.querySelector(".tars-data-value").textContent = running + " running, " + stopped + " stopped" + (crashed > 0 ? ", " + crashed + " crashed" : "");
+            sumEl.querySelector(".tars-data-value").style.color = color;
         }
 
         function renderDockerContainerList(containers) {
@@ -6432,14 +6432,14 @@ const TARS_UI = {
             const sumEl = document.getElementById("tars-network-summary");
             if (!sumEl) return;
             if (!summary || summary.total === 0) {
-                sumEl.querySelector(".value").textContent = "No network data";
-                sumEl.querySelector(".value").style.color = "rgba(210,235,255,0.2)";
+                sumEl.querySelector(".tars-data-value").textContent = "No network data";
+                sumEl.querySelector(".tars-data-value").style.color = "rgba(210,235,255,0.2)";
                 return;
             }
             const color = summary.offline > 0 ? "#f87171" : "#4ade80";
             const text = summary.online + "/" + summary.total + " online" + (summary.avgLatencyMs !== null ? "  avg " + summary.avgLatencyMs + "ms" : "");
-            sumEl.querySelector(".value").textContent = text;
-            sumEl.querySelector(".value").style.color = color;
+            sumEl.querySelector(".tars-data-value").textContent = text;
+            sumEl.querySelector(".tars-data-value").style.color = color;
         }
 
         function renderNetworkHostList(hosts) {
@@ -6537,7 +6537,7 @@ const TARS_UI = {
             if (ev.type === "health.memory" && ev.data.percent !== undefined) setVal("tars-infra-mem", ev.data.percent + "%");
             if (ev.type === "health.disk" && ev.data.percent !== undefined) {
                 const diskEl = document.getElementById("tars-infra-disk");
-                if (diskEl) diskEl.querySelector(".value").textContent = ev.data.percent + "% (" + ev.data.device + ")";
+                if (diskEl) diskEl.querySelector(".tars-data-value").textContent = ev.data.percent + "% (" + ev.data.device + ")";
             }
             if (ev.type === "health.uptime" && ev.data.uptimeSeconds !== undefined) {
                 const h = Math.floor(ev.data.uptimeSeconds / 3600);
