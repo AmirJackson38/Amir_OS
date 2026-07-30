@@ -1,3 +1,6 @@
+> **ℹ️ SUB-PHASE REPORT**
+> This document describes the completed Phase 7.5 P1 work. It is accurate for that sub-phase but not a general architecture reference. Current state is documented in `docs/CURRENT_STATE.md`.
+
 # Phase 7.5 P1 Complete — Autonomy Decision Transparency Telemetry
 
 ## What Changed

@@ -50,19 +50,27 @@ interface TarsEvent {
 
 ---
 
-## 2. Event Types (Phase 8.1 Vocabulary)
+## 2. Event Types
 
-### System Events
+### Legend
 
-| Type | Source | data | Description |
+| Tag | Meaning |
+|-----|---------|
+| _(current)_ | Published by current running code |
+| _(future)_ | Designed / reserved for future implementation — not currently published |
+
+---
+
+### CURRENT IMPLEMENTATION — System Events
+
+| Type | Source (actual) | data | Description |
 |---|---|---|---|
 | `system.started` | `tars.runtime` | `{ version, pid, uptime }` | Server started |
 | `system.stopping` | `tars.runtime` | `{ reason, uptime }` | Server shutting down |
-| `system.heartbeat` | `tars.runtime` | `{ uptime, eventCount }` | Periodic alive signal (30s) |
+| `system.heartbeat` | **`tars.monitor.status`** | `{ uptime, services }` | Periodic alive signal (30s) |
 | `system.error` | `*` | `{ message, stack?, context? }` | Unhandled error |
-| `system.config_changed` | `tars.runtime` | `{ key, oldValue?, newValue? }` | Config reloaded |
 
-### Health Events
+### CURRENT IMPLEMENTATION — Health Events
 
 | Type | Source | data | Description |
 |---|---|---|---|
@@ -70,17 +78,50 @@ interface TarsEvent {
 | `health.memory` | `tars.monitor.health` | `{ totalMb, usedMb, freeMb, percent }` | RAM usage |
 | `health.disk` | `tars.monitor.health` | `{ totalGb, usedGb, freeGb, percent, device }` | Disk usage |
 | `health.uptime` | `tars.monitor.health` | `{ uptimeSeconds, bootTime }` | System uptime |
-| `health.throttled` | `tars.monitor.health` | `{ throttled, frequency, voltage }` | Pi under-voltage warning |
 
-### Status Events
+### CURRENT IMPLEMENTATION — Status Events
+
+| Type | **Source (actual)** | data | Description |
+|---|---|---|---|
+| `status.service_up` | **`tars.monitor.status`** | `{ service, version?, endpoint? }` | Service became available |
+| `status.service_down` | **`tars.monitor.status`** | `{ service, reason?, lastSeen? }` | Service became unavailable |
+| `status.service_degraded` | **`tars.monitor.status`** | `{ service, metric, value, threshold }` | Service below threshold |
+
+### CURRENT IMPLEMENTATION — Infrastructure Events
 
 | Type | Source | data | Description |
 |---|---|---|---|
-| `status.service_up` | `tars.runtime` | `{ service, version?, endpoint? }` | Service became available |
-| `status.service_down` | `tars.runtime` | `{ service, reason?, lastSeen? }` | Service became unavailable |
-| `status.service_degraded` | `tars.runtime` | `{ service, metric, value, threshold }` | Service below threshold |
+| `infra.docker.summary` | `tars.monitor.docker` | `{ total, running, stopped, crashed, ... }` | Docker container aggregate |
+| `infra.docker.container` | `tars.monitor.docker` | `{ name, image, status, state, ... }` | Per-container state |
+| `infra.network.summary` | `tars.monitor.network` | `{ total, online, offline, avgLatencyMs }` | Network ping aggregate |
+| `infra.network.host` | `tars.monitor.network` | `{ host, reachable, latencyMs, ... }` | Per-host ping result |
 
-### TARS Autonomy Events (bridged from browser)
+### CURRENT IMPLEMENTATION — Alert Events
+
+| Type | Source | data | Description |
+|---|---|---|---|
+| `alert.system.cpu` | `tars.alert` | `{ alert: { ... } }` | CPU threshold exceeded |
+| `alert.system.memory` | `tars.alert` | `{ alert: { ... } }` | Memory threshold exceeded |
+| `alert.system.disk` | `tars.alert` | `{ alert: { ... } }` | Disk threshold exceeded |
+| `alert.system.temp` | `tars.alert` | `{ alert: { ... } }` | Temperature threshold exceeded |
+| `alert.service.offline` | `tars.alert` | `{ alert: { ... } }` | Service unreachable |
+| `alert.*.resolved` | `tars.alert` | `{ alert: { ... } }` | Alert resolved |
+
+---
+
+### DESIGNED / FUTURE IMPLEMENTATION (not currently published)
+
+The event types below are part of the designed architecture but not yet published by any running service. They are reserved for future implementation and documented here to maintain the event vocabulary.
+
+#### Health — Reserved / Future
+
+| Type | Source | data | Description |
+|---|---|---|---|
+| `health.throttled` | `tars.monitor.health` | `{ throttled, frequency, voltage }` | Pi under-voltage warning |
+
+#### TARS Autonomy Events — Reserved / Future
+
+These events would be bridged from the browser (TARS face) to the server event bus:
 
 | Type | Source | data | Description |
 |---|---|---|---|
@@ -89,13 +130,19 @@ interface TarsEvent {
 | `tars.activity_changed` | `tars.face` | `{ from, to, location, reason }` | Activity transition |
 | `tars.state_snapshot` | `tars.face` | `{ needs, fatigue, activity, location }` | Periodic full state (60s) |
 
-### User Events
+#### User Events — Reserved / Future
 
 | Type | Source | data | Description |
 |---|---|---|---|
 | `user.message` | `tars.face` | `{ text, timestamp }` | User typed a message |
 | `user.command` | `tars.face` | `{ command, args }` | User triggered a Creator Console action |
 | `user.view_changed` | `tars.face` | `{ screen, tab }` | User navigated to different screen |
+
+#### Config Events — Reserved / Future
+
+| Type | Source | data | Description |
+|---|---|---|---|
+| `system.config_changed` | `tars.runtime` | `{ key, oldValue?, newValue? }` | Config reloaded |
 
 ---
 
@@ -158,8 +205,10 @@ interface Subscription {
 
 The browser receives events as JSON messages over WebSocket. Same `TarsEvent` format.
 
+> **⚠ NOTE — DESIGNED / FUTURE IMPLEMENTATION**: The subscription API below (`onEvent`, `sendEvent`, per-type filters) is part of the designed contract but **not yet implemented** in the current TARS_EVENTS client. The current browser client (`window.TARS_EVENTS` in `tars_face_v1.html`) exposes only `isConnected()`, `send()`, `connect()`, and `disconnect()`, and receives **all** events without filtering. Per-client event filtering is supported by `ws-bridge.js` (`_tarsFilter`) but not yet used by the browser.
+
 ```typescript
-// Browser-side API (provided by ws-bridge.js):
+// Browser-side API (designed — not yet implemented):
 interface TarsEventClient {
     // Subscribe to events from the server
     onEvent(type: string | string[], handler: (event: TarsEvent) => void): void;
@@ -178,7 +227,7 @@ interface TarsEventClient {
 The browser can also subscribe to specific event types to receive only relevant messages:
 
 ```javascript
-// In tars_face_v1.html (future):
+// Designed — not yet implemented in TARS_EVENTS client:
 const client = TARS_EVENTS.connect("ws://tars-pi:8080/ws");
 
 client.onEvent("health.*", (event) => {

@@ -1,3 +1,6 @@
+> **⚠️ HISTORICAL DOCUMENT**
+> This document describes the original Phase 7.5-9 roadmap. Phase 8 scope has diverged significantly from this roadmap (Phase 8.2 nav removed, Phase 8.3 monitors partially implemented, deployment not yet Pi-based). Current implementation is documented in `docs/CURRENT_STATE.md` and `docs/ARCHITECTURE.md`.
+
 # TARS Phase 7.5+ Roadmap
 
 ## Current Architecture (Post-Phase 7.4)

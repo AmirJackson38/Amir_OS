@@ -1,3 +1,6 @@
+> **⚠️ HISTORICAL DOCUMENT**
+> This document describes the Phase 8.3 architecture plan. Multiple sections describe monitors not yet implemented (TrueNAS, Plex, Home Assistant). The Phase 8.2 screen registry referenced here was removed in Phase 8.3.4. Current implementation is documented in `docs/CURRENT_STATE.md` and `docs/ARCHITECTURE.md`.
+
 # TARS Phase 8.3 — Awareness Integration Layer
 
 ## Baseline Audit

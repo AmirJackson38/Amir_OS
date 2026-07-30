@@ -32,3 +32,40 @@
 - Phase 8.2 was committed with the blank-page bug
 - Early testing after commit would have caught the issue
 - **Lesson**: Open the page in a browser before committing frontend changes
+
+## 7. Phase 8.2 Navigation Removal
+- **Issue**: Phase 8.2 added a bottom navigation bar alongside the existing Phase 7 right-side toolbar
+- **Problem**: Two navigation systems created duplicate UI ownership, z-index conflicts hiding the toolbar, duplicated content across panels, and user confusion about which nav to use
+- **Resolution**: Removed the Phase 8.2 bottom nav entirely. Kept the Phase 7 toolbar as the single primary navigation. Added new tabs (Home, INFRA, System) to the toolbar instead of building a separate nav system
+- **Lesson**: Before adding a new navigation paradigm, decide if it replaces or complements existing navigation. Adding a parallel system is almost always worse than extending the established one.
+
+## 8. DOM Parser Failure — Missing Closing Tag
+- **Bug**: A `<style>` tag was inserted in `<head>` without a matching `</style>`
+- **Effect**: The browser HTML parser treated everything after `<style>` — including `<body>` and all content — as CSS. The page rendered completely blank with no DOM elements. No console errors.
+- **Debugging**: Extremely hard to diagnose because DevTools showed no body element, no errors, and no warnings. The tag appeared correct at a glance.
+- **Fix**: Insert `</style>` before `</head>`
+- **Rule**: After any edit to `<head>`, verify all paired tags: `<style></style>`, `<head></head>`, `<body></body>`. The HTML parser does not warn about unclosed style tags.
+
+## 9. Render Ownership — Listener Cleanup
+- **Bug**: `TARS_UI.renderInfra()` and `TARS_UI.renderHome()` created new DOM event listeners and intervals on every call. Each tab switch accumulated duplicate listeners.
+- **Effect**: Event handlers fired multiple times, intervals stacked, memory grew with each tab open.
+- **Fix**: Store timer/handler references on `this` (e.g., `this._infraTimer`, `this._homeHandler`). Clean up in `destroy()` or at the top of the next render call.
+- **Pattern**:
+  ```javascript
+  // render creates listener
+  if (this._infraHandler) document.removeEventListener("tars-event", this._infraHandler);
+  this._infraHandler = (e) => { ... };
+  document.addEventListener("tars-event", this._infraHandler);
+  ```
+- **Lesson**: Any function that subscribes to events or creates intervals must own its cleanup. Store references on the owning object.
+
+## 10. Avoid Full Re-render Loops
+- **Bug**: `throttledUpdate()` called `TARS_UI.renderInfra()` every 400ms, which made 4+ REST API calls (`/api/events`, `/api/alerts`) per cycle. This hammered the server and destroyed DOM state.
+- **Fix**: Skip full re-render for tabs that have their own event-driven updates (`home`, `infra`, `system`). Let their dedicated handlers (e.g., `refreshHomeLive()`) update only changed data.
+- **Lesson**: A global throttle loop should not re-render stateful views. Prefer event-driven updates for individual panels. The throttle is for the lightweight status header and the 3D scene, not for API-dependent panels.
+
+## 11. CSS/JS Naming Drift
+- **Bug**: `TARS_UI.setVal()` used `element.querySelector(".value")` but the DOM was rendered with class `tars-data-value`. The class had been renamed in CSS but the JS `querySelector` was never updated.
+- **Effect**: Metric cards showed empty values with no errors. The gap was invisible in normal debugging because no exception was thrown — just no matching element.
+- **Fix**: Update selector to `.tars-data-value` in all four locations.
+- **Rule**: DOM class names are contracts between CSS and JS. If a class is renamed in HTML/CSS templates, all JS selectors referencing it must be updated. Prefer single-source selectors or data attributes for JS hooks.

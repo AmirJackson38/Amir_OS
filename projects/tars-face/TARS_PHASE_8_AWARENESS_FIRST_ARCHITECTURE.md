@@ -1,3 +1,6 @@
+> **⚠️ HISTORICAL DOCUMENT**
+> This document describes previous architecture planning. It contains references to removed systems (Phase 8.2 bottom nav) and assumptions that do not match current implementation (Pi is not yet the primary runtime). Current implementation is documented in `docs/CURRENT_STATE.md` and `docs/ARCHITECTURE.md`.
+
 # TARS Phase 8.0 — Awareness First Architecture (Corrected)
 
 ## Core Principle

@@ -1,3 +1,6 @@
+> **ℹ️ COMPONENT-SPECIFIC REPORT**
+> This document is the architecture audit for the alert manager component only. It is accurate for that component but not a general architecture reference.
+
 # Phase 8.3.1 Architecture Audit
 
 Date: 2026-07-29

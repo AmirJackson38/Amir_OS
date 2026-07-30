@@ -83,3 +83,53 @@ health-monitor.js (tick every 10s)
 - `pi-server/services/infra/network-monitor.js` — host ping monitoring
 - `config/tars-config.json` — runtime configuration
 - `docs/` — architecture, phase history, event schema, current state, lessons learned
+- `AGENTS.md` — AI agent entry point (read first)
+
+## Implementation Pattern
+
+```
+Monitor → Event Bus → WS Bridge → WebSocket → TARS_EVENTS → DOM CustomEvent → TARS_UI handler
+```
+
+Every monitor follows the same pattern:
+
+```javascript
+class SomeMonitor {
+    constructor(eventBus, config) { }
+    start() { /* schedule checks, register with status reporter */ }
+    stop() { /* clear intervals, clean up */ }
+    async _check() { /* poll API or read sensor, publish events */ }
+}
+```
+
+## Documentation Status Map
+
+### CURRENT (accurately reflects implementation)
+
+| File | Description |
+|------|-------------|
+| `AGENTS.md` | AI agent entry point — read first |
+| `docs/CURRENT_STATE.md` | What works, known issues, next steps |
+| `docs/ARCHITECTURE.md` | This file — current architecture reference |
+| `docs/EVENT_SCHEMA.md` | Event type catalog |
+| `docs/PHASE_HISTORY.md` | Completed phase log |
+| `docs/TARS_LESSONS_LEARNED.md` | Bug postmortems and engineering lessons |
+| `docs/DECISIONS.md` | Architecture decision records |
+| `config/tars-config.json` | Runtime configuration |
+
+### FORWARD-LOOKING (designed but not implemented)
+
+| File | Description |
+|------|-------------|
+| `TARS_COGNITIVE_ARCHITECTURE.md` | LLM provider interface spec (Phase 8.5+) |
+
+### HISTORICAL / PARTIALLY SUPERSEDED
+
+| File | Description | Why superseded |
+|------|-------------|----------------|
+| `TARS_PHASE_8_AWARENESS_FIRST_ARCHITECTURE.md` | Phase 8 master plan | Phase 8.2 nav removed; Pi deployment not yet validated |
+| `TARS_PHASE_8_3_ARCHITECTURE_PLAN.md` | Phase 8.3 detailed plan | Describes monitors not yet implemented (TrueNAS, Plex, etc.) |
+| `TARS_PHASE_7_5_ARCHITECTURE_PLAN.md` | Phase 7.5 observability plan | Describes pre-P1 state; P1 is complete, P2 deferred |
+| `TARS_PHASE_7_5_ROADMAP.md` | Phase 7.5-9 roadmap | Phase 8 scope diverged from original roadmap |
+| `TARS_PHASE_7_5_P1_COMPLETE.md` | Phase 7.5 P1 results | Specific to sub-phase, not general reference |
+| `TARS_PHASE_8_3_1_AUDIT.md` | Alert manager audit | Specific to component, not general reference |

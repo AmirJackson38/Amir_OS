@@ -1,3 +1,6 @@
+> **⚠️ HISTORICAL DOCUMENT**
+> This document describes the Phase 7.5 plan before P1 was completed. Phase 7.5 P1 (score breakdown, runner-up display, decision timeline) has been implemented and committed. P2 (activity statistics, fatigue history, experience viewer) has not been started. Current implementation is documented in `docs/CURRENT_STATE.md` and `docs/ARCHITECTURE.md`.
+
 # Phase 7.5 — Observatory Intelligence Architecture Plan
 
 ## Current State (Post-Phase 7.4 Cleanup)
