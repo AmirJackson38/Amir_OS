@@ -64,7 +64,19 @@
 - **Fix**: Skip full re-render for tabs that have their own event-driven updates (`home`, `infra`, `system`). Let their dedicated handlers (e.g., `refreshHomeLive()`) update only changed data.
 - **Lesson**: A global throttle loop should not re-render stateful views. Prefer event-driven updates for individual panels. The throttle is for the lightweight status header and the 3D scene, not for API-dependent panels.
 
-## 11. CSS/JS Naming Drift
+## 12. Single-File Frontend Risk
+- **Issue**: `tars_face_v1.html` is currently 6900+ lines of HTML, CSS, and JS in a single file
+- **Risk**: High change collision — any edit anywhere in the file can break unrelated functionality. Missing paired tags (`</style>`) can swallow the entire document. Class name contracts between CSS and JS are brittle.
+- **Mitigation**: Verify paired tags after every `<head>` edit. Test in browser after every commit. Use unique IDs and data attributes for JS hooks instead of CSS class selectors.
+- **Future**: Modularize gradually — extract JS into separate files first, then CSS. But do this incrementally; a single big refactor is riskier than the current state.
+- **Lesson**: Single-file architectures are acceptable for prototypes but become a maintenance liability beyond ~3000 lines. Plan modular extraction as technical debt.
+
+## 13. Development Environment vs Deployment Target
+- **Issue**: All architecture documentation targets Raspberry Pi as the primary runtime host, but all development and testing currently occurs on Windows. Pi deployment (systemd service, kiosk mode, physical display, Docker on ARM64) has never been tested.
+- **Risk**: Features developed and tested only on Windows may fail on Pi due to: platform-specific file paths, missing `/sys/class/thermal` sensors, no `/var/run/docker.sock`, different `ping` binary behavior, ARM64 vs x64 binary compatibility, and lower CPU/RAM resources.
+- **Mitigation**: Develop and test on Windows first (current workflow). Before any Pi deployment, verify: Node.js compatibility, all service path assumptions, sensor file existence, Docker socket availability, and memory constraints.
+- **Rule**: Never claim Pi deployment is complete until the server has been started and tested on actual Pi hardware. "Designed for Pi" does not equal "runs on Pi."
+- **Lesson**: Document the deployment gap explicitly so future agents don't assume Pi readiness. A feature working on Windows is Phase 8.4 complete; Pi deployment validation is a separate phase.
 - **Bug**: `TARS_UI.setVal()` used `element.querySelector(".value")` but the DOM was rendered with class `tars-data-value`. The class had been renamed in CSS but the JS `querySelector` was never updated.
 - **Effect**: Metric cards showed empty values with no errors. The gap was invisible in normal debugging because no exception was thrown — just no matching element.
 - **Fix**: Update selector to `.tars-data-value` in all four locations.

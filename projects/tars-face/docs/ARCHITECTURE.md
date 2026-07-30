@@ -47,7 +47,27 @@ health-monitor.js (tick every 10s)
 | alert-manager | alert.system.cpu, alert.system.memory, alert.system.disk, alert.system.temp, alert.service.offline | event-driven | Threshold evaluation on health events |
 | status-reporter | system.heartbeat | 30s | Service registry snapshot |
 
-## UI Component Map
+## UI Ownership Map
+
+### Toolbar (primary navigation)
+
+| Button | Icon | Tab ID | Renderer | Data Source | Status | Notes |
+|--------|------|--------|----------|-------------|--------|-------|
+| Home | 🏠 | `home` | `TARS_UI.renderHome()` | `#tars-connection-dot` className + `tars-events-connected`/`disconnected` events | **Working** | Shows event bus connection status + HA placeholder |
+| INFRA | ◈ | `infra` | `TARS_UI.renderInfra()` | REST `/api/events` (initial) + `tars-event` DOM events (live) + 10s polling | **Working** | CPU, mem, disk, temp, uptime, services, Docker, network, alerts |
+| Observatory | 📊 | `observatory` | `TARS_UI.renderObservatory()` | `worldState.tars.*` + `TARS_AUTONOMY.getActivityScores()` | **Working** | Needs bars, scores, fatigue, decisions, stats, behavior patterns |
+| Brain | 🧠 | `brain` | `TARS_UI.renderBrain()` | `worldState.tars.autonomy` (scoreComponents, alternatives) | **Working** | Activity, score breakdown, runner-up, fatigue |
+| System | ⚙ | `system` | `TARS_UI.renderSystem()` | `GET /health` (runtime version, event bus stats) | **Working** | Version, uptime, event bus stats, dev tool nav buttons |
+
+### Hidden Tabs (no toolbar button — accessible via System tab buttons or `TARS_UI.openTab()`)
+
+| Tab | Icon | Renderer | Data Source | Status | Notes |
+|-----|------|----------|-------------|--------|-------|
+| Journal | 📜 | `TARS_UI.renderJournal()` | `worldState.tars.autonomyHistory` | **Working** | Activity timeline with expand/collapse |
+| Settings | ⚙ | `TARS_UI.renderSettings()` + 400ms `refreshSettingsLive()` | `worldState.tars` + DOM actions | **Working** | System controls, behavior test, need inject, telemetry |
+| Conversation | 💬 | `TARS_CHAT.send()` (no LLM) | `TARS_CHAT.history[]` | **Working but stub** | No toolbar button. Replies "cognitive system offline". |
+
+### Standalone Components
 
 | Component | Renderer | Data Source | Status |
 |-----------|----------|-------------|--------|
@@ -56,13 +76,6 @@ health-monitor.js (tick every 10s)
 | Autonomy | TARS_AUTONOMY loop | worldState.tars | PASS |
 | Persistence | WorldPersistence.save/load | localStorage | PASS |
 | Status Header | TARS_UI.updateStatusHeader() | worldState.tars | PASS |
-| Home Panel | TARS_UI.renderHome/refreshHomeLive | connection-dot state | PASS |
-| INFRA Panel | TARS_UI.renderInfra | health.* events + /api/events | PASS |
-| Observatory | TARS_UI.renderObservatory | worldState.tars | PASS |
-| Brain | TARS_UI.renderBrain | worldState.tars autonomy | PASS |
-| Journal | TARS_UI.renderJournal | worldState.tars autonomyHistory | PASS |
-| System Panel | TARS_UI.renderSystem | /health API | PASS |
-| Settings | TARS_UI.renderSettings | worldState + DOM actions | PASS |
 | Connection Dot | standalone IIFE | tars-events events | PASS |
 | Alert Badge | standalone IIFE | /api/alerts + alert.* events | PASS |
 

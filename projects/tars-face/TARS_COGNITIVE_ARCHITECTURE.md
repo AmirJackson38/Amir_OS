@@ -1,5 +1,34 @@
 # TARS Cognitive Architecture — Local-First Provider Strategy
 
+## LLM Boundary
+
+The LLM operates within strict boundaries. These are enforced at the architectural level:
+
+### LLM IS:
+- ✓ **Interpreter** — explains decisions, context, and events in natural language
+- ✓ **Conversational layer** — responds to user messages with context-aware replies
+- ✓ **Reasoning assistant** — provides analysis, summaries, and suggestions
+- ✓ **Enrichment provider** — enhances raw alerts/metrics with human-readable explanations
+
+### LLM IS NOT:
+- ✗ **Movement controller** — LLM does not directly control TARS position, gestures, or animation
+- ✗ **World state owner** — LLM does not mutate `worldState`, needs, fatigue, or preferences
+- ✗ **Infrastructure controller** — LLM does not modify server state, configs, or external systems
+- ✗ **Event bus writer** — LLM does not publish primary data to the event bus (enriches asynchronously only)
+- ✗ **Code executor** — LLM output is parsed as structured JSON; never eval'd or executed
+
+### Mode Constraints
+
+| Mode | LLM Behavior |
+|------|-------------|
+| `auto` | LLM decision → executed immediately (trusted model only) |
+| `suggest` | LLM decision → logged, not auto-executed (validation/testing) |
+| `offline` | LLM skipped → scoring engine only (no provider available) |
+
+No mode allows the LLM to execute code, access files, or modify state directly.
+
+---
+
 ## Design Principle
 No paid API required. No API keys in code. Every design choice assumes the user may have zero budget and wants TARS running entirely offline or on existing authenticated CLI sessions.
 
