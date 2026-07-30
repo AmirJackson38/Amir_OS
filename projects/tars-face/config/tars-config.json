@@ -26,6 +26,16 @@
             "socketPath": "/var/run/docker.sock",
             "intervalMs": 15000,
             "timeoutMs": 5000
+        },
+        "network": {
+            "enabled": true,
+            "intervalMs": 30000,
+            "timeoutMs": 5000,
+            "hosts": [
+                { "id": "tars", "address": "localhost" },
+                { "id": "optiplex", "address": "192.168.1.100" },
+                { "id": "truenas", "address": "192.168.1.100" }
+            ]
         }
     }
 }

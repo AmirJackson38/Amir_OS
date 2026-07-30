@@ -6748,6 +6748,11 @@ setInterval(() => TARS_UI.throttledUpdate(Date.now()), 400);
                 '<div id="tars-docker-summary" class="tars-dashboard-row"><span class="label">Containers</span><span class="value" style="color:rgba(210,235,255,0.2)">No Docker</span></div>' +
                 '<div id="tars-docker-list"></div>' +
             '</div>' +
+            '<div class="tars-dashboard" style="margin-top:8px" id="tars-network-card">' +
+                '<div class="tars-dashboard-title">Network</div>' +
+                '<div id="tars-network-summary" class="tars-dashboard-row"><span class="label">Hosts</span><span class="value" style="color:rgba(210,235,255,0.2)">No network data</span></div>' +
+                '<div id="tars-network-list"></div>' +
+            '</div>' +
             '<div class="tars-dashboard" style="margin-top:8px" id="tars-alert-timeline">' +
                 '<div class="tars-dashboard-title">Alerts</div>' +
                 '<div id="tars-alert-list"><div class="tars-dashboard-row"><span class="label" style="color:rgba(210,235,255,0.2)">No active alerts</span></div></div>' +
@@ -6804,6 +6809,7 @@ setInterval(() => TARS_UI.throttledUpdate(Date.now()), 400);
         }
 
         let tarsDockerContainers = [];
+        let tarsNetworkHosts = [];
 
         function renderDockerSummary(summary) {
             const sumEl = document.getElementById("tars-docker-summary");
@@ -6860,6 +6866,50 @@ setInterval(() => TARS_UI.throttledUpdate(Date.now()), 400);
             }).catch(() => {});
         }
 
+        function renderNetworkSummary(summary) {
+            const sumEl = document.getElementById("tars-network-summary");
+            if (!sumEl) return;
+            if (!summary || summary.total === 0) {
+                sumEl.querySelector(".value").textContent = "No network data";
+                sumEl.querySelector(".value").style.color = "rgba(210,235,255,0.2)";
+                return;
+            }
+            const color = summary.offline > 0 ? "#f87171" : "#4ade80";
+            const text = summary.online + "/" + summary.total + " online" + (summary.avgLatencyMs !== null ? "  avg " + summary.avgLatencyMs + "ms" : "");
+            sumEl.querySelector(".value").textContent = text;
+            sumEl.querySelector(".value").style.color = color;
+        }
+
+        function renderNetworkHostList(hosts) {
+            const listEl = document.getElementById("tars-network-list");
+            if (!listEl) return;
+            if (!hosts || hosts.length === 0) { listEl.innerHTML = ""; return; }
+            let html = "";
+            for (const h of hosts) {
+                const color = h.reachable ? "#4ade80" : "#f87171";
+                const latency = h.latencyMs !== null && h.latencyMs !== undefined ? h.latencyMs + "ms" : "—";
+                html += '<div class="tars-dashboard-row" style="padding-left:6px">' +
+                    '<span class="label" style="font-size:9px"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:' + color + ';margin-right:4px;vertical-align:middle"></span>' + h.host + '</span>' +
+                    '<span class="value" style="font-size:8px;color:' + color + '">' + (h.reachable ? "online " + latency : "offline") + '</span>' +
+                '</div>';
+            }
+            listEl.innerHTML = html;
+        }
+
+        function fetchNetwork() {
+            fetch("/api/events?count=50&type=infra.network.summary").then(r => r.json()).then(events => {
+                if (!Array.isArray(events) || events.length === 0) { renderNetworkSummary(null); return; }
+                renderNetworkSummary(events[events.length - 1].data);
+            }).catch(() => { renderNetworkSummary(null); });
+            fetch("/api/events?count=100&type=infra.network.host").then(r => r.json()).then(events => {
+                if (!Array.isArray(events) || events.length === 0) return;
+                const seen = {};
+                for (const e of events) { seen[e.data.host] = e.data; }
+                tarsNetworkHosts = Object.values(seen);
+                renderNetworkHostList(tarsNetworkHosts);
+            }).catch(() => {});
+        }
+
         // Fetch latest metrics from API
         function fetchMetrics() {
             fetch("/api/events?count=50").then(r => r.json()).then(events => {
@@ -6883,11 +6933,13 @@ setInterval(() => TARS_UI.throttledUpdate(Date.now()), 400);
         fetchMetrics();
         fetchAlerts();
         fetchDocker();
+        fetchNetwork();
         if (infraTimer) clearInterval(infraTimer);
         infraTimer = setInterval(function () {
             fetchMetrics();
             fetchAlerts();
             fetchDocker();
+            fetchNetwork();
         }, 10000);
 
         // Live events from WebSocket
@@ -6932,6 +6984,22 @@ setInterval(() => TARS_UI.throttledUpdate(Date.now()), 400);
                 }
                 if (!updated && c.state !== "removed") { tarsDockerContainers.push(c); }
                 renderDockerContainerList(tarsDockerContainers);
+            }
+            // Live Network events
+            if (ev.type === "infra.network.summary") {
+                renderNetworkSummary(ev.data);
+            }
+            if (ev.type === "infra.network.host") {
+                const h = ev.data;
+                let updated = false;
+                for (let i = 0; i < tarsNetworkHosts.length; i++) {
+                    if (tarsNetworkHosts[i].host === h.host) {
+                        tarsNetworkHosts[i] = h;
+                        updated = true; break;
+                    }
+                }
+                if (!updated) { tarsNetworkHosts.push(h); }
+                renderNetworkHostList(tarsNetworkHosts);
             }
         };
         document.addEventListener("tars-event", handler);

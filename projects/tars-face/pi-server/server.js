@@ -9,6 +9,7 @@ const { HealthMonitor } = require("./services/health-monitor");
 const { StatusReporter } = require("./services/status-reporter");
 const { AlertManager } = require("./services/alert-manager");
 const { DockerMonitor } = require("./services/infra/docker-monitor");
+const { NetworkMonitor } = require("./services/infra/network-monitor");
 
 const ROOT = path.resolve(__dirname, "..");
 const CONFIG_PATH = path.resolve(ROOT, "config", "tars-config.json");
@@ -121,11 +122,15 @@ alertManager.start();
 const dockerMonitor = new DockerMonitor(eventBus, config.monitors?.docker);
 dockerMonitor.start();
 
+const networkMonitor = new NetworkMonitor(eventBus, config.monitors?.network);
+networkMonitor.start();
+
 statusReporter.reportUp("tars.runtime", { version: "0.1.0" });
 statusReporter.reportUp("tars.monitor.health", { version: "0.1.0" });
 statusReporter.reportUp("tars.wsbridge", { version: "0.1.0" });
 statusReporter.reportUp("tars.alert", { version: "0.1.0" });
 statusReporter.reportUp("tars.monitor.docker", { version: "0.1.0" });
+statusReporter.reportUp("tars.monitor.network", { version: "0.1.0" });
 
 eventBus.publish({
     id: crypto.randomUUID(),
@@ -158,6 +163,7 @@ function shutdown(signal) {
 
     healthMonitor.stop();
     dockerMonitor.stop();
+    networkMonitor.stop();
     alertManager.stop();
     statusReporter.stop();
     wsBridge.close();
