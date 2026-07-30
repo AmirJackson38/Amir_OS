@@ -250,7 +250,143 @@
     .tars-journal-detail .comp-row .cv { text-align: right; }
     .tars-journal-detail .comp-total { border-top: 1px solid rgba(80,180,255,0.1); margin-top: 2px; padding-top: 2px; font-weight: bold; }
     .tars-journal-detail .alt-row { display: flex; justify-content: space-between; padding: 1px 8px; color: rgba(210,235,255,0.35); font-size: 8px; }
-</style>
+
+    /* Phase 8.2 — TARS OS Navigation Shell */
+    #tars-nav-bar {
+        position: fixed; bottom: 0; left: 0; right: 0;
+        display: flex; align-items: center; justify-content: center;
+        background: rgba(8, 12, 20, 0.85);
+        backdrop-filter: blur(6px);
+        border-top: 1px solid rgba(80, 180, 255, 0.08);
+        padding: 4px env(safe-area-inset-right, 8px) 4px env(safe-area-inset-left, 8px);
+        z-index: 800;
+        gap: 2px;
+        min-height: 52px;
+    }
+    .tars-nav-btn {
+        flex: 1; max-width: 100px;
+        background: transparent;
+        border: 1px solid transparent;
+        color: rgba(210, 235, 255, 0.35);
+        font-size: 9px;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        padding: 8px 4px;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: color 0.2s, border-color 0.2s, background 0.2s;
+        text-align: center;
+        min-height: 48px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        line-height: 1.2;
+        -webkit-tap-highlight-color: transparent;
+        user-select: none;
+    }
+    .tars-nav-btn:hover { color: rgba(210, 235, 255, 0.6); background: rgba(80, 180, 255, 0.04); }
+    .tars-nav-btn:active { background: rgba(80, 180, 255, 0.08); }
+    .tars-nav-btn.active { color: #5fd0ff; border-color: rgba(95, 208, 255, 0.2); background: rgba(95, 208, 255, 0.06); }
+    .tars-nav-btn .nav-icon { font-size: 14px; line-height: 1; }
+
+    #tars-screen-container {
+        position: fixed; top: 0; left: 0; right: 0;
+        bottom: 56px;
+        z-index: 750;
+        pointer-events: none;
+        overflow: hidden;
+    }
+    #tars-screen-container.active {
+        pointer-events: auto;
+    }
+    .tars-screen {
+        position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+        overflow-y: auto;
+        opacity: 0;
+        transition: opacity 0.25s ease;
+        pointer-events: none;
+        padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
+    }
+    .tars-screen.active {
+        opacity: 1;
+        pointer-events: auto;
+    }
+    .tars-screen-inner {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    /* World screen — minimal overlay */
+    .tars-world-screen {
+        pointer-events: none;
+    }
+    .tars-world-screen .tars-world-badge {
+        display: inline-block;
+        background: rgba(8, 12, 20, 0.6);
+        border: 1px solid rgba(80, 180, 255, 0.1);
+        border-radius: 6px;
+        padding: 4px 10px;
+        font-size: 10px;
+        color: rgba(210, 235, 255, 0.5);
+    }
+
+    /* Dashboard screens — semi-transparent overlay panels */
+    .tars-dashboard {
+        background: rgba(8, 12, 20, 0.7);
+        backdrop-filter: blur(4px);
+        border: 1px solid rgba(80, 180, 255, 0.06);
+        border-radius: 8px;
+        padding: 12px;
+    }
+    .tars-dashboard-title {
+        font-size: 10px;
+        letter-spacing: 2px;
+        color: rgba(95, 208, 255, 0.5);
+        text-transform: uppercase;
+        margin-bottom: 10px;
+    }
+    .tars-dashboard-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 4px 0;
+        font-size: 10px;
+        border-bottom: 1px solid rgba(80, 180, 255, 0.04);
+    }
+    .tars-dashboard-row:last-child { border-bottom: none; }
+    .tars-dashboard-row .label { color: rgba(210, 235, 255, 0.4); }
+    .tars-dashboard-row .value { color: #d2ebff; font-variant-numeric: tabular-nums; }
+
+    /* Connection indicator */
+    #tars-connection-dot {
+        display: inline-block;
+        width: 8px; height: 8px;
+        border-radius: 50%;
+        margin: 0 6px;
+        transition: background 0.3s, box-shadow 0.3s;
+        flex-shrink: 0;
+    }
+    #tars-connection-dot.connecting { background: #fb923c; box-shadow: 0 0 4px #fb923c; }
+    #tars-connection-dot.connected { background: #4ade80; box-shadow: 0 0 4px #4ade80; }
+    #tars-connection-dot.disconnected { background: #f87171; box-shadow: 0 0 4px #f87171; }
+    #tars-connection-dot.unknown { background: rgba(210, 235, 255, 0.15); }
+
+    /* Placeholder screen */
+    .tars-placeholder {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 200px;
+        color: rgba(210, 235, 255, 0.2);
+        font-size: 11px;
+        text-align: center;
+        gap: 8px;
+    }
+    .tars-placeholder .icon { font-size: 28px; opacity: 0.3; }
+    .tars-placeholder .desc { font-size: 9px; color: rgba(210, 235, 255, 0.15); max-width: 280px; }
+
 </head>
 
 <body>
@@ -304,6 +440,27 @@
         <input type="text" id="tars-chat-input-field" placeholder="Message TARS..." autocomplete="off">
         <button id="tars-chat-send">SEND</button>
     </div>
+</div>
+
+<!-- Phase 8.2 — TARS OS Navigation Shell -->
+<div id="tars-screen-container"></div>
+<div id="tars-nav-bar">
+    <button class="tars-nav-btn" data-screen="world" title="TARS World">
+        <span class="nav-icon">⊙</span> TARS
+    </button>
+    <button class="tars-nav-btn" data-screen="home" title="Home Operations">
+        <span class="nav-icon">⊞</span> HOME
+    </button>
+    <button class="tars-nav-btn" data-screen="infra" title="Infrastructure">
+        <span class="nav-icon">◈</span> INFRA
+    </button>
+    <button class="tars-nav-btn" data-screen="monitor" title="World Monitor">
+        <span class="nav-icon">◉</span> MONITOR
+    </button>
+    <button class="tars-nav-btn" data-screen="system" title="System">
+        <span class="nav-icon">⚙</span> SYSTEM
+    </button>
+    <span id="tars-connection-dot" class="unknown" title="Event bus status"></span>
 </div>
 
 <script type="module">
@@ -6380,6 +6537,395 @@ initObservatoryUI();
 // Hook throttled UI refresh into animate loop via patched setInterval
 // Instead of modifying animate(), we run a separate timer
 setInterval(() => TARS_UI.throttledUpdate(Date.now()), 400);
+
+// Phase 8.1 — Event Bus WebSocket Client
+// Connects to TARS runtime server. Silently degrades if server is unavailable.
+(function () {
+    const WS_URL = (() => {
+        const loc = window.location;
+        const proto = loc.protocol === "https:" ? "wss:" : "ws:";
+        return `${proto}//${loc.host}/ws`;
+    })();
+    let ws = null;
+    let reconnectTimer = null;
+    let connected = false;
+
+    const RECONNECT_DELAYS = [1000, 2000, 5000, 10000, 30000];
+    let reconnectAttempt = 0;
+
+    function connect() {
+        if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) return;
+        try {
+            ws = new WebSocket(WS_URL);
+        } catch (e) {
+            scheduleReconnect();
+            return;
+        }
+        ws.onopen = () => {
+            connected = true;
+            reconnectAttempt = 0;
+            console.log("[TARS EVENTS] Connected to event bus");
+            document.dispatchEvent(new CustomEvent("tars-events-connected"));
+        };
+        ws.onmessage = (msg) => {
+            try {
+                const event = JSON.parse(msg.data);
+                if (event.type !== "system.heartbeat") {
+                    console.log("[TARS EVENTS]", event.type, event.source, event.data);
+                }
+                document.dispatchEvent(new CustomEvent("tars-event", { detail: event }));
+            } catch (e) {
+                console.warn("[TARS EVENTS] Failed to parse message:", e);
+            }
+        };
+        ws.onclose = () => {
+            connected = false;
+            ws = null;
+            console.log("[TARS EVENTS] Disconnected");
+            document.dispatchEvent(new CustomEvent("tars-events-disconnected"));
+            scheduleReconnect();
+        };
+        ws.onerror = () => {
+            // onclose will fire after onerror, triggering reconnect
+        };
+    }
+
+    function scheduleReconnect() {
+        if (reconnectTimer) return;
+        const delay = RECONNECT_DELAYS[Math.min(reconnectAttempt, RECONNECT_DELAYS.length - 1)];
+        reconnectAttempt++;
+        reconnectTimer = setTimeout(() => {
+            reconnectTimer = null;
+            connect();
+        }, delay);
+    }
+
+    window.TARS_EVENTS = {
+        isConnected: () => connected,
+        send(event) {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify(event));
+                return true;
+            }
+            return false;
+        },
+        connect,
+        disconnect() {
+            if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+            if (ws) { ws.onclose = null; ws.close(); ws = null; }
+            connected = false;
+        }
+    };
+
+    if (window.location.host && window.location.host !== "") {
+        connect();
+    }
+})();
+
+// Phase 8.2 — TARS OS Navigation Shell
+(function () {
+    const container = document.getElementById("tars-screen-container");
+    const navBtns = document.querySelectorAll(".tars-nav-btn");
+    const connectionDot = document.getElementById("tars-connection-dot");
+
+    if (!container) return;
+
+    let activeScreen = localStorage.getItem("tars_active_screen") || "world";
+    let screens = {};
+    let infraTimer = null;
+
+    // ── Connection Indicator ──
+    function setConnection(state) {
+        connectionDot.className = state;
+        connectionDot.title = { connecting:"Connecting...", connected:"Event bus connected", disconnected:"Event bus disconnected", unknown:"No server" }[state] || "Unknown";
+    }
+    document.addEventListener("tars-events-connected", () => setConnection("connected"));
+    document.addEventListener("tars-events-disconnected", () => setConnection("disconnected"));
+    if (window.TARS_EVENTS && window.TARS_EVENTS.isConnected()) setConnection("connected");
+    else if (window.location.host) setConnection("connecting");
+
+    // ── Screen Registry ──
+    function registerScreen(id, title, icon, renderFn) {
+        screens[id] = { id, title, icon, render: renderFn };
+    }
+
+    // ── Screen Renderers ──
+
+    // Screen 1: TARS World — minimal overlay on Three.js scene
+    registerScreen("world", "TARS World", "⊙", function (el) {
+        el.innerHTML = '<div class="tars-world-screen"><div class="tars-world-badge" id="tars-nav-status">' +
+            (worldState.tars.activity || "idle") + ' @ ' + (worldState.tars.location || "—") +
+            '</div></div>';
+        // Update on throttle (reuses existing worldState updates)
+        const interval = setInterval(() => {
+            const badge = document.getElementById("tars-nav-status");
+            if (badge) badge.textContent = (worldState.tars.activity || "idle") + " @ " + (worldState.tars.location || "—");
+        }, 1000);
+        return () => clearInterval(interval);
+    });
+
+    // Screen 2: Home — placeholder + event bus status
+    registerScreen("home", "Home", "⊞", function (el) {
+        const connState = connectionDot.className;
+        const labels = { connecting:"Connecting...", connected:"Connected", disconnected:"Disconnected", unknown:"No server" };
+        el.innerHTML =
+            '<div class="tars-dashboard">' +
+                '<div class="tars-dashboard-title">Home Operations</div>' +
+                '<div class="tars-placeholder" style="min-height:120px">' +
+                    '<div class="icon">⊞</div>' +
+                    '<div>Home Assistant integration pending</div>' +
+                    '<div class="desc">Phase 8.3 will connect IoT devices, sensors, and automations.</div>' +
+                '</div>' +
+                '<div class="tars-dashboard-row">' +
+                    '<span class="label">Event Bus</span>' +
+                    '<span class="value" id="tars-home-conn">' + (labels[connState] || "Unknown") + '</span>' +
+                '</div>' +
+            '</div>';
+        const updateConn = () => {
+            const el2 = document.getElementById("tars-home-conn");
+            if (el2) el2.textContent = labels[connectionDot.className] || "Unknown";
+        };
+        document.addEventListener("tars-events-connected", updateConn);
+        document.addEventListener("tars-events-disconnected", updateConn);
+    });
+
+    // Screen 3: Infrastructure — consumes Phase 8.1 event stream
+    registerScreen("infra", "Infrastructure", "◈", function (el) {
+        el.innerHTML =
+            '<div class="tars-dashboard">' +
+                '<div class="tars-dashboard-title">Infrastructure</div>' +
+                '<div id="tars-infra-cpu" class="tars-dashboard-row"><span class="label">CPU</span><span class="value">—</span></div>' +
+                '<div id="tars-infra-mem" class="tars-dashboard-row"><span class="label">Memory</span><span class="value">—</span></div>' +
+                '<div id="tars-infra-disk" class="tars-dashboard-row"><span class="label">Disk</span><span class="value">—</span></div>' +
+                '<div id="tars-infra-temp" class="tars-dashboard-row"><span class="label">Temperature</span><span class="value">—</span></div>' +
+                '<div id="tars-infra-uptime" class="tars-dashboard-row"><span class="label">Uptime</span><span class="value">—</span></div>' +
+                '<div id="tars-infra-services" class="tars-dashboard-row"><span class="label">Services</span><span class="value">—</span></div>' +
+            '</div>';
+
+        function updateMetrics(data) {
+            const setVal = (id, val) => { const e = document.getElementById(id); if (e) e.querySelector(".value").textContent = val; };
+            if (data.cpu !== undefined) setVal("tars-infra-cpu", data.cpu + "%");
+            if (data.mem !== undefined) setVal("tars-infra-mem", data.mem + "%");
+            if (data.disk !== undefined) setVal("tars-infra-disk", data.disk + "%");
+            if (data.temp !== undefined) setVal("tars-infra-temp", data.temp + "°C");
+            if (data.uptime !== undefined) {
+                const h = Math.floor(data.uptime / 3600);
+                const m = Math.floor((data.uptime % 3600) / 60);
+                setVal("tars-infra-uptime", h + "h " + m + "m");
+            }
+            if (data.services !== undefined) setVal("tars-infra-services", data.services);
+        }
+
+        // Fetch latest from API
+        function fetchMetrics() {
+            fetch("/api/events?count=50").then(r => r.json()).then(events => {
+                if (!Array.isArray(events)) return;
+                const cpu = events.filter(e => e.type === "health.cpu").pop();
+                const mem = events.filter(e => e.type === "health.memory").pop();
+                const disk = events.filter(e => e.type === "health.disk").pop();
+                const uptime = events.filter(e => e.type === "health.uptime").pop();
+                const service = events.filter(e => e.type === "system.heartbeat").pop();
+
+                updateMetrics({
+                    cpu: cpu?.data?.percent,
+                    mem: mem?.data?.percent,
+                    disk: disk?.data?.percent,
+                    temp: cpu?.data?.tempC,
+                    uptime: uptime?.data?.uptimeSeconds,
+                    services: service?.data?.services ? service.data.services.filter(s => s.status !== "stale").length + " online" : undefined
+                });
+            }).catch(() => {});
+        }
+
+        fetchMetrics();
+        if (infraTimer) clearInterval(infraTimer);
+        infraTimer = setInterval(fetchMetrics, 10000);
+
+        // Live events from WebSocket
+        const handler = function (e) {
+            const ev = e.detail;
+            if (!ev || !ev.type) return;
+            const setVal = (id, val) => { const el2 = document.getElementById(id); if (el2) el2.querySelector(".value").textContent = val; };
+            if (ev.type === "health.cpu") {
+                if (ev.data.percent !== undefined) setVal("tars-infra-cpu", ev.data.percent + "%");
+                if (ev.data.tempC !== undefined) setVal("tars-infra-temp", ev.data.tempC + "°C");
+            }
+            if (ev.type === "health.memory" && ev.data.percent !== undefined) setVal("tars-infra-mem", ev.data.percent + "%");
+            if (ev.type === "health.disk" && ev.data.percent !== undefined) {
+                const diskEl = document.getElementById("tars-infra-disk");
+                if (diskEl) diskEl.querySelector(".value").textContent = ev.data.percent + "% (" + ev.data.device + ")";
+            }
+            if (ev.type === "health.uptime" && ev.data.uptimeSeconds !== undefined) {
+                const h = Math.floor(ev.data.uptimeSeconds / 3600);
+                const m = Math.floor((ev.data.uptimeSeconds % 3600) / 60);
+                setVal("tars-infra-uptime", h + "h " + m + "m");
+            }
+            if (ev.type === "system.heartbeat" && ev.data.services) {
+                const online = ev.data.services.filter(s => s.status !== "stale").length;
+                setVal("tars-infra-services", online + " online");
+            }
+        };
+        document.addEventListener("tars-event", handler);
+
+        return () => {
+            clearInterval(infraTimer);
+            document.removeEventListener("tars-event", handler);
+        };
+    });
+
+    // Screen 4: Monitor — placeholder for World Monitor, alerts, news
+    registerScreen("monitor", "Monitor", "◉", function (el) {
+        el.innerHTML =
+            '<div class="tars-dashboard">' +
+                '<div class="tars-dashboard-title">World Monitor</div>' +
+                '<div class="tars-placeholder">' +
+                    '<div class="icon">◉</div>' +
+                    '<div>External monitoring pending</div>' +
+                    '<div class="desc">Phase 8.3 will integrate weather, news, alerts, and calendar feeds.</div>' +
+                '</div>' +
+            '</div>';
+    });
+
+    // Screen 5: System — gateway to developer tools + system info
+    registerScreen("system", "System", "⚙", function (el) {
+        el.innerHTML =
+            '<div class="tars-dashboard">' +
+                '<div class="tars-dashboard-title">System</div>' +
+                '<div class="tars-dashboard-row"><span class="label">TARS Face</span><span class="value">v7.5</span></div>' +
+                '<div class="tars-dashboard-row"><span class="label">Runtime Server</span><span class="value" id="tars-sys-runtime">—</span></div>' +
+                '<div class="tars-dashboard-row"><span class="label">Event Bus</span><span class="value" id="tars-sys-events">—</span></div>' +
+                '<div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap">' +
+                    '<button class="btn btn-sm" data-action="open-dev-tool" data-tab="brain">🧠 Brain</button>' +
+                    '<button class="btn btn-sm" data-action="open-dev-tool" data-tab="observatory">📊 Observatory</button>' +
+                    '<button class="btn btn-sm" data-action="open-dev-tool" data-tab="journal">📜 Journal</button>' +
+                    '<button class="btn btn-sm" data-action="open-dev-tool" data-tab="settings">⚙ Creator Console</button>' +
+                '</div>' +
+            '</div>';
+
+        // Fetch runtime info
+        fetch("/health").then(r => r.json()).then(h => {
+            const el2 = document.getElementById("tars-sys-runtime");
+            if (el2) el2.textContent = "v0.1.0 · up " + Math.floor(h.uptime / 60) + "m";
+            const el3 = document.getElementById("tars-sys-events");
+            if (el3) el3.textContent = h.eventBus.published + " pub, " + h.eventBus.subscriberCount + " subs";
+        }).catch(() => {
+            const el2 = document.getElementById("tars-sys-runtime");
+            if (el2) el2.textContent = "Offline";
+        });
+    });
+
+    // ── Navigation Controller ──
+    function switchScreen(id, skipSave) {
+        if (!screens[id]) return;
+        activeScreen = id;
+        if (!skipSave) localStorage.setItem("tars_active_screen", id);
+
+        // Cleanup previous screen
+        if (window.__tarsScreenCleanup) {
+            window.__tarsScreenCleanup();
+            window.__tarsScreenCleanup = null;
+        }
+
+        // Build screen divs if not exist
+        for (const sid of Object.keys(screens)) {
+            let screenEl = container.querySelector(".tars-screen[data-screen=\"" + sid + "\"]");
+            if (!screenEl) {
+                screenEl = document.createElement("div");
+                screenEl.className = "tars-screen";
+                screenEl.dataset.screen = sid;
+                container.appendChild(screenEl);
+            }
+            screenEl.classList.toggle("active", sid === id);
+        }
+
+        container.classList.toggle("active", id !== "world");
+
+        // Render active screen
+        const activeEl = container.querySelector(".tars-screen.active");
+        if (activeEl) {
+            activeEl.innerHTML = "";
+            const inner = document.createElement("div");
+            inner.className = "tars-screen-inner";
+            activeEl.appendChild(inner);
+            const cleanup = screens[id].render(inner);
+            if (typeof cleanup === "function") window.__tarsScreenCleanup = cleanup;
+        }
+
+        // Update nav buttons
+        navBtns.forEach(b => b.classList.toggle("active", b.dataset.screen === id));
+    }
+
+    // ── Event Wiring ──
+    navBtns.forEach(btn => {
+        btn.addEventListener("click", () => switchScreen(btn.dataset.screen));
+        btn.addEventListener("touchend", (e) => {
+            e.preventDefault();
+            switchScreen(btn.dataset.screen);
+        });
+    });
+
+    // Swipe handler
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let swiping = false;
+
+    container.addEventListener("touchstart", (e) => {
+        if (e.touches.length === 1) {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+            swiping = true;
+        }
+    }, { passive: true });
+
+    container.addEventListener("touchmove", (e) => {
+        if (!swiping || e.touches.length !== 1) return;
+        const dx = e.touches[0].clientX - touchStartX;
+        const dy = e.touches[0].clientY - touchStartY;
+        if (Math.abs(dx) > 30 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+
+    container.addEventListener("touchend", (e) => {
+        if (!swiping) return;
+        swiping = false;
+        const dx = e.changedTouches[0].clientX - touchStartX;
+        const dy = e.changedTouches[0].clientY - touchStartY;
+        if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+            const keys = Object.keys(screens);
+            const idx = keys.indexOf(activeScreen);
+            if (dx < 0 && idx < keys.length - 1) switchScreen(keys[idx + 1]);
+            else if (dx > 0 && idx > 0) switchScreen(keys[idx - 1]);
+        }
+    }, { passive: true });
+
+    // Keyboard navigation
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+            const activeEl = container.querySelector(".tars-screen.active");
+            if (!activeEl) return;
+            // Don't capture if user is typing in an input
+            if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+            e.preventDefault();
+            const keys = Object.keys(screens);
+            const idx = keys.indexOf(activeScreen);
+            if (e.key === "ArrowRight" && idx < keys.length - 1) switchScreen(keys[idx + 1]);
+            if (e.key === "ArrowLeft" && idx > 0) switchScreen(keys[idx - 1]);
+        }
+    });
+
+    // Open dev tool buttons (System screen)
+    document.addEventListener("click", (e) => {
+        const btn = e.target.closest("[data-action=\"open-dev-tool\"]");
+        if (btn && btn.dataset.tab && window.TARS_UI) {
+            TARS_UI.openTab(btn.dataset.tab);
+        }
+    });
+
+    // ── Init ──
+    switchScreen(activeScreen, true);
+    console.log("[TARS OS] Navigation shell initialized. Active screen:", activeScreen);
+})();
 
 </script>
 

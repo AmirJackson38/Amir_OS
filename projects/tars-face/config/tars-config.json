@@ -1,0 +1,22 @@
+{
+    "_comment": "TARS Runtime Configuration — Phase 8.1",
+
+    "server": {
+        "port": 8080,
+        "host": "0.0.0.0"
+    },
+
+    "eventBus": {
+        "historySize": 1000,
+        "heartbeatIntervalMs": 30000,
+        "defaultEventTtl": 300
+    },
+
+    "monitoring": {
+        "healthIntervalMs": 10000,
+        "cpuWarningThreshold": 80,
+        "memoryWarningThreshold": 85,
+        "diskWarningThreshold": 90,
+        "tempWarningC": 75
+    }
+}
