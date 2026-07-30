@@ -6743,6 +6743,11 @@ setInterval(() => TARS_UI.throttledUpdate(Date.now()), 400);
                 '<div id="tars-infra-uptime" class="tars-dashboard-row"><span class="label">Uptime</span><span class="value">—</span></div>' +
                 '<div id="tars-infra-services" class="tars-dashboard-row"><span class="label">Services</span><span class="value">—</span></div>' +
             '</div>' +
+            '<div class="tars-dashboard" style="margin-top:8px" id="tars-docker-card">' +
+                '<div class="tars-dashboard-title">Docker Containers</div>' +
+                '<div id="tars-docker-summary" class="tars-dashboard-row"><span class="label">Containers</span><span class="value" style="color:rgba(210,235,255,0.2)">No Docker</span></div>' +
+                '<div id="tars-docker-list"></div>' +
+            '</div>' +
             '<div class="tars-dashboard" style="margin-top:8px" id="tars-alert-timeline">' +
                 '<div class="tars-dashboard-title">Alerts</div>' +
                 '<div id="tars-alert-list"><div class="tars-dashboard-row"><span class="label" style="color:rgba(210,235,255,0.2)">No active alerts</span></div></div>' +
@@ -6798,6 +6803,63 @@ setInterval(() => TARS_UI.throttledUpdate(Date.now()), 400);
             }).catch(() => {});
         }
 
+        let tarsDockerContainers = [];
+
+        function renderDockerSummary(summary) {
+            const sumEl = document.getElementById("tars-docker-summary");
+            const listEl = document.getElementById("tars-docker-list");
+            if (!sumEl) return;
+            if (!summary) {
+                sumEl.querySelector(".value").textContent = "No Docker";
+                sumEl.querySelector(".value").style.color = "rgba(210,235,255,0.2)";
+                if (listEl) listEl.innerHTML = "";
+                return;
+            }
+            const crashed = summary.crashed || 0;
+            const stopped = summary.stopped || 0;
+            const running = summary.running || 0;
+            const total = summary.total || 0;
+            const color = crashed > 0 ? "#f87171" : total === 0 ? "rgba(210,235,255,0.2)" : "#5fd0ff";
+            sumEl.querySelector(".value").textContent = running + " running, " + stopped + " stopped" + (crashed > 0 ? ", " + crashed + " crashed" : "");
+            sumEl.querySelector(".value").style.color = color;
+        }
+
+        function renderDockerContainerList(containers) {
+            const listEl = document.getElementById("tars-docker-list");
+            if (!listEl) return;
+            if (!containers || containers.length === 0) {
+                listEl.innerHTML = "";
+                return;
+            }
+            let html = "";
+            const stateColors = { running: "#4ade80", exited: "rgba(210,235,255,0.2)", created: "rgba(210,235,255,0.2)", paused: "#eab308", restarting: "#f87171", removing: "#f87171", removed: "rgba(210,235,255,0.1)", dead: "#f87171" };
+            for (const c of containers) {
+                if (c.state === "removed") continue;
+                const color = stateColors[c.state] || "rgba(210,235,255,0.3)";
+                const uptime = c.uptimeSeconds ? Math.floor(c.uptimeSeconds / 60) + "m" : "";
+                html += '<div class="tars-dashboard-row" style="padding-left:6px">' +
+                    '<span class="label" style="font-size:9px"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:' + color + ';margin-right:4px;vertical-align:middle"></span>' + c.name + '</span>' +
+                    '<span class="value" style="font-size:8px;color:' + color + '">' + c.state + (uptime ? " " + uptime : "") + '</span>' +
+                '</div>';
+            }
+            listEl.innerHTML = html;
+        }
+
+        function fetchDocker() {
+            fetch("/api/events?count=50&type=infra.docker.summary").then(r => r.json()).then(events => {
+                if (!Array.isArray(events) || events.length === 0) { renderDockerSummary(null); return; }
+                const latest = events[events.length - 1];
+                renderDockerSummary(latest.data);
+            }).catch(() => { renderDockerSummary(null); });
+            fetch("/api/events?count=100&type=infra.docker.container").then(r => r.json()).then(events => {
+                if (!Array.isArray(events) || events.length === 0) return;
+                const seen = {};
+                for (const e of events) { seen[e.data.name] = e.data; }
+                tarsDockerContainers = Object.values(seen);
+                renderDockerContainerList(tarsDockerContainers);
+            }).catch(() => {});
+        }
+
         // Fetch latest metrics from API
         function fetchMetrics() {
             fetch("/api/events?count=50").then(r => r.json()).then(events => {
@@ -6820,10 +6882,12 @@ setInterval(() => TARS_UI.throttledUpdate(Date.now()), 400);
 
         fetchMetrics();
         fetchAlerts();
+        fetchDocker();
         if (infraTimer) clearInterval(infraTimer);
         infraTimer = setInterval(function () {
             fetchMetrics();
             fetchAlerts();
+            fetchDocker();
         }, 10000);
 
         // Live events from WebSocket
@@ -6851,6 +6915,23 @@ setInterval(() => TARS_UI.throttledUpdate(Date.now()), 400);
             // Live alert events — refresh full alert list
             if (ev.type.startsWith("alert.")) {
                 fetchAlerts();
+            }
+            // Live Docker events
+            if (ev.type === "infra.docker.summary") {
+                renderDockerSummary(ev.data);
+            }
+            if (ev.type === "infra.docker.container") {
+                const c = ev.data;
+                let updated = false;
+                for (let i = 0; i < tarsDockerContainers.length; i++) {
+                    if (tarsDockerContainers[i].name === c.name) {
+                        if (c.state === "removed") { tarsDockerContainers.splice(i, 1); }
+                        else { tarsDockerContainers[i] = c; }
+                        updated = true; break;
+                    }
+                }
+                if (!updated && c.state !== "removed") { tarsDockerContainers.push(c); }
+                renderDockerContainerList(tarsDockerContainers);
             }
         };
         document.addEventListener("tars-event", handler);

@@ -18,5 +18,14 @@
         "memoryWarningThreshold": 85,
         "diskWarningThreshold": 90,
         "tempWarningC": 75
+    },
+
+    "monitors": {
+        "docker": {
+            "enabled": true,
+            "socketPath": "/var/run/docker.sock",
+            "intervalMs": 15000,
+            "timeoutMs": 5000
+        }
     }
 }
