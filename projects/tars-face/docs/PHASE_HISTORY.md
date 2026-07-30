@@ -63,10 +63,16 @@
 - Cross-platform ping (Windows + Unix)
 - Host state tracking with change detection
 
-## Phase 8.3.4 — UI Refactor (current, uncommitted)
+## Phase 8.3.4 — Stabilization & UI Refactor (committed)
 - Removed Phase 8.2 bottom nav bar and all nav CSS/HTML/JS
 - Repurposed Phase 7 right-side toolbar as primary UI
 - Added 🏠 Home, ◈ INFRA, ⚙ System as toolbar tabs
 - Added `renderHome`, `renderInfra`, `renderSystem` to TARS_UI
 - Fixed service stale heartbeat via periodic `reportUp` in all monitors
 - Created documentation checkpoint
+- **BUG FIX**: `setVal` `.value` → `.tars-data-value` class mismatch (empty metric cards)
+- **BUG FIX**: `open-dev-tool` click handler missing after nav removal
+- **BUG FIX**: `renderInfra` interval/listener leak on tab re-open
+- **BUG FIX**: `renderHome` listener leak on tab re-open
+- **BUG FIX**: `throttledUpdate` hammered INFRA with 4+ API calls every 400ms
+- Stabilization audit: all 10 event types traced, all 15 UI components mapped, 0 regressions

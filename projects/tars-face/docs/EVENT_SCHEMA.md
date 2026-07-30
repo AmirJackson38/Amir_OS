@@ -26,11 +26,12 @@
 ### Health Events
 | Type | Source | Data Fields |
 |------|--------|-------------|
-| `health.cpu` | `tars.monitor.health` | `percent`, `load1`, `load5`, `load15` |
+| `health.cpu` | `tars.monitor.health` | `percent`, `load1`, `load5`, `load15` — also carries `tempC` on systems with thermal sensor |
 | `health.memory` | `tars.monitor.health` | `totalMb`, `usedMb`, `freeMb`, `percent` |
-| `health.disk` | `tars.monitor.health` | `percent`, `device` |
-| `health.temperature` | `tars.monitor.health` | `tempC` |
-| `health.uptime` | `tars.monitor.health` | `uptimeSeconds` |
+| `health.disk` | `tars.monitor.health` | `percent`, `device`, `totalGb`, `usedGb`, `freeGb` |
+| `health.uptime` | `tars.monitor.health` | `uptimeSeconds`, `bootTime` |
+
+Note: Temperature is published as `health.cpu` with `{ tempC }` data (embedded, not a separate event type). Only emitted on Linux/Raspberry Pi with thermal sensor.
 
 ### Status Events
 | Type | Source | Description |
@@ -47,12 +48,12 @@
 | `alert.system.disk` | `tars.alert` | Disk threshold exceeded |
 | `alert.system.temp` | `tars.alert` | Temperature threshold exceeded |
 | `alert.service.offline` | `tars.alert` | Service unreachable |
-| `alert.*.resolved` | `tars.alert` | Alert resolved |
+| `alert.*.resolved` | `tars.alert` | Alert resolved (e.g. `alert.system.cpu.resolved`) |
 
 ### Infrastructure Events
 | Type | Source | Data Fields |
 |------|--------|-------------|
-| `infra.docker.summary` | `tars.monitor.docker` | `total`, `running`, `stopped`, `crashed`, `restartCount`, `engineVersion` |
-| `infra.docker.container` | `tars.monitor.docker` | `name`, `state`, `uptimeSeconds` |
+| `infra.docker.summary` | `tars.monitor.docker` | `total`, `running`, `stopped`, `crashed`, `restartCount`, `engineVersion`, `containersPaused`, `containersRunning`, `containersStopped`, `imagesTotal` |
+| `infra.docker.container` | `tars.monitor.docker` | `name`, `containerId`, `image`, `status`, `state`, `restartCount`, `uptimeSeconds`, `created`, `ports`, `justCrashed`, `justRestored` |
 | `infra.network.summary` | `tars.monitor.network` | `total`, `online`, `offline`, `avgLatencyMs` |
-| `infra.network.host` | `tars.monitor.network` | `host`, `reachable`, `latencyMs`, `status`, `justChanged` |
+| `infra.network.host` | `tars.monitor.network` | `host`, `reachable`, `latencyMs`, `status`, `justChanged`, `error` |
