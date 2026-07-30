@@ -40,36 +40,87 @@
 
 ---
 
+## Deployment Topology
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│ TARS Pi (Raspberry Pi 4 8GB) — PRIMARY RUNTIME HOST              │
+│                                                                   │
+│  Runs: TARS Face (browser kiosk)                                  │
+│        pi-server (HTTP + WS + event bus)                          │
+│        Grafana + Prometheus stack                                 │
+│        Docker (light containers)                                  │
+│        Future: cognitive services, Ollama (3B)                     │
+│                                                                   │
+│  Monitors: itself (CPU, RAM, disk, temp — Phase 8.1)              │
+│            its own Docker containers (Phase 8.3.2)                 │
+│            LAN health (ping, DNS — Phase 8.3.3)                    │
+│            → ALL READ-ONLY                                         │
+└──────────────────────┬───────────────────────────────────────────┘
+                       │ HTTP (read-only)
+                       ▼
+┌──────────────────────────────────────────────────────────────────┐
+│ Dell Optiplex — MEDIA + STORAGE SERVER (observed, unchanged)      │
+│                                                                   │
+│  Runs: TrueNAS Scale (pools, disks, SMB shares)                   │
+│        Plex (media server)                                        │
+│        qBittorrent (download client)                              │
+│        Radarr (movie management)                                  │
+│        Prowlarr (indexer management)                              │
+│                                                                   │
+│  TARS reads: TrueNAS API (pool health, SMART, alerts)              │
+│              Plex API (active streams, library)                   │
+│              qBittorrent API (torrent status, speeds)             │
+│              Radarr/Prowlarr API (library health, queue)         │
+│                                                                   │
+│  TARS NEVER writes to Optiplex services.                          │
+│  Design assumption: Optiplex topology is fixed and permanent.     │
+└──────────────────────────────────────────────────────────────────┘
+```
+
 ## Architecture
 
 ```
-External Services                  TARS Runtime (Pi)
-┌──────────────┐                  ┌─────────────────────────────┐
-│ TrueNAS API  │──HTTP/REST──▶    │ Monitor Services             │
-│ Docker Socket│──Unix Socket──▶  │  infra/truenas-monitor.js    │
-│ Plex API     │──HTTP/REST──▶    │  infra/docker-monitor.js     │
-│ Radarr API   │──HTTP/REST──▶    │  infra/media-monitor.js      │
-│ qBittorrent  │──HTTP/REST──▶    │  infra/network-monitor.js    │
-│ Network Ping │──ICMP────────▶   │  infra/storage-monitor.js    │
-│ HA API       │──WS/REST────▶    │  home/ha-bridge.js           │
-└──────────────┘                  │  home/sensor-monitor.js      │
-                                  │  alert/alert-manager.js      │
-                                  └──────────┬──────────────────┘
-                                             │
-                                             ▼
-                                  ┌─────────────────────────────┐
-                                  │       Event Bus              │
-                                  │  infra.*  |  home.*  | alert.*│
-                                  └──────────┬──────────────────┘
-                                             │
-                    ┌────────────────────────┼────────────────────┐
-                    │                        │                     │
-                    ▼                        ▼                     ▼
-             ┌─────────────┐       ┌───────────────┐    ┌────────────────┐
-             │  SQLite     │       │  WS Bridge    │    │ Alert Manager  │
-             │  (history)  │       │  → Browser    │    │ (dedup, route) │
-             └─────────────┘       └───────────────┘    └────────────────┘
+TARS Pi (monitoring host)                          Dell Optiplex (observed)
+┌─────────────────────────────────────┐           ┌──────────────────────┐
+│ Monitor Services                     │           │ TrueNAS Scale        │
+│  self/health-monitor.js (Phase 8.1)  │ HTTP      │ Plex                 │
+│  infra/docker-monitor.js    ─────────┼──────────▶│ qBittorrent          │
+│  infra/network-monitor.js   ─────────┼──────────▶│ Radarr               │
+│  infra/truenas-monitor.js   ─────────┼──────────▶│ Prowlarr             │
+│  infra/media-monitor.js     ─────────┼──────────▶│                      │
+│  alert/alert-manager.js              │  read     │                      │
+│  home/ha-bridge.js (future)          │  only     └──────────────────────┘
+└─────────────────┬───────────────────┘
+                  │ publish
+                  ▼
+         ┌────────────────────┐
+         │     Event Bus      │
+         │ infra.* | alert.*  │
+         └────────┬───────────┘
+                  │
+      ┌───────────┼───────────┐
+      │           │           │
+      ▼           ▼           ▼
+┌─────────┐ ┌──────────┐ ┌──────────┐
+│ SQLite  │ │WS Bridge │ │  Alert   │
+│(8.4)    │ │→ Browser │ │ Manager  │
+└─────────┘ └──────────┘ └──────────┘
 ```
+
+### Read-Only Integration Rule
+
+Every monitor accessing an external service does so through read-only API calls:
+
+| Service | API calls used | Write operations NOT used |
+|---|---|---|
+| TrueNAS | `GET /pool`, `GET /disk`, `GET /alert` | `POST /pool/scrub`, `POST /disk/offline` |
+| Plex | `GET /status/sessions`, `GET /library` | `POST /library/refresh`, `DELETE /library` |
+| qBittorrent | `GET /torrents/info`, `GET /transfer/info` | `POST /torrents/delete`, `POST /torrents/pause` |
+| Radarr | `GET /movie`, `GET /queue` | `POST /movie`, `PUT /movie` |
+| Docker (Pi) | `GET /containers/json`, `GET /info` | `POST /containers/*/stop`, `POST /containers/*/restart` |
+
+This constraint is enforced at the monitor implementation level — no write endpoints are called.
 
 ### Data Flow (always)
 
@@ -86,21 +137,47 @@ Sensor/Monitor → Event Bus → Storage (SQLite, Phase 8.4)
 
 ## 1. Infrastructure Awareness
 
+### Monitoring Priority Order
+
+```
+Priority 1: Self-monitoring of TARS Pi
+  └── health-monitor.js (Phase 8.1 — exists)
+      CPU, RAM, disk, temp, uptime
+
+Priority 2: Pi container/service awareness
+  └── docker-monitor.js (Phase 8.3.2)
+      Container states on Pi, crash detection, resource usage
+
+Priority 3: LAN/network awareness
+  └── network-monitor.js (Phase 8.3.3)
+      Ping to gateway, DNS resolution, latency, reachability
+
+Priority 4: Optiplex services (read-only)
+  ├── truenas-monitor.js (Phase 8.3.4)
+  │   Pool health, disk SMART, forwarded alerts
+  ├── media-monitor.js (Phase 8.3.3)
+  │   Plex streams, Radarr queue, qBittorrent status
+  └── (no storage-monitor.js needed — TrueNAS handles this)
+
+Priority 5: Home Assistant (future)
+  └── ha-bridge.js
+      Sensors, environment, automations
+```
+
 ### Monitor Service Architecture
 
 Each monitor is a self-contained Node.js module in `pi-server/services/infra/`:
 
 ```
 pi-server/services/
-├── health-monitor.js         (Phase 8.1 — CPU, RAM, uptime)
+├── health-monitor.js         (Phase 8.1 — CPU, RAM, uptime — Pi self)
 ├── status-reporter.js         (Phase 8.1 — service registry)
-├── alert-manager.js           (Phase 8.3 — new, see §3)
+├── alert-manager.js           (Phase 8.3.1 — new, see §3)
 └── infra/
-    ├── truenas-monitor.js      (Phase 8.3 — TrueNAS pool/SMART)
-    ├── docker-monitor.js       (Phase 8.3 — container health)
-    ├── media-monitor.js        (Phase 8.3 — Plex/Radarr/qBittorrent)
-    ├── network-monitor.js      (Phase 8.3 — ping, DNS, bandwidth)
-    └── storage-monitor.js      (Phase 8.3 — disk health, SMART)
+    ├── docker-monitor.js      (Phase 8.3.2 — Pi container awareness)
+    ├── network-monitor.js     (Phase 8.3.3 — LAN ping, DNS)
+    ├── media-monitor.js       (Phase 8.3.3 — Optiplex: Plex/Radarr/qBittorrent)
+    └── truenas-monitor.js     (Phase 8.3.4 — Optiplex: TrueNAS)
 ```
 
 Every monitor follows the same pattern:
@@ -440,11 +517,13 @@ Sensor/Monitor → Event Bus → Storage → UI → Optional Cognitive
 
 ---
 
-## Implementation Phases
+## Implementation Phases (Priority Order)
 
 ### Phase 8.3.1 — Alert System + INFRA Screen Evolution
 
-**Purpose**: Add alert manager, evolve INFRA screen to show service cards + alert timeline. Do not connect external services yet — use existing `health.*` events as alert sources.
+**Purpose**: Add alert manager, evolve INFRA screen to show service cards + alert timeline. Uses existing `health.*` events as alert sources — no external dependencies.
+
+**Why first**: Zero external dependencies. Proves the alert pipeline on data we already have. Delivers immediate UI improvement.
 
 | File | Change |
 |---|---|
@@ -455,56 +534,80 @@ Sensor/Monitor → Event Bus → Storage → UI → Optional Cognitive
 
 **Deliverable**: Infrastructure screen shows system health card + alert timeline (fed from health thresholds). No external monitors yet.
 
-**Risk**: Low — all data sources are the existing `health.*` events.
+**Risk**: Low — all data sources are existing `health.*` events.
 
 **Dependencies**: Phase 8.1 event bus, Phase 8.2 screen registry.
 
-### Phase 8.3.2 — Docker + Storage Monitors
+### Phase 8.3.2 — Pi Docker Container Awareness
 
-**Purpose**: First external monitors. Docker is the most reliable integration (Unix socket, no auth). Storage monitor wraps existing `health.disk` with SMART data.
+**Purpose**: Monitor TARS Pi's own Docker containers. Unix socket, no auth, no network dependency.
 
-| File | Change |
-|---|---|
-| `pi-server/services/infra/docker-monitor.js` | New — Docker socket polling |
-| `pi-server/services/infra/storage-monitor.js` | New — enhanced disk monitoring with SMART |
-| `pi-server/server.js` | Register monitors on startup |
-| `config/tars-config.json` | Add docker + storage config |
-| `tars_face_v1.html` | INFRA screen: services card shows Docker + Storage status |
-
-**Deliverable**: INFRA screen shows Docker containers (running/stopped/crashed) + enhanced disk status with volume breakdown.
-
-**Risk**: Low — Docker integration is well-understood. socket path configurable.
-
-### Phase 8.3.3 — Network + Media Monitors
-
-**Purpose**: Network connectivity monitoring + Plex/Radarr/qBittorrent awareness.
+**Why second**: Runs on the Pi itself — no network dependency. Most reliable external integration.
 
 | File | Change |
 |---|---|
-| `pi-server/services/infra/network-monitor.js` | New — ping, DNS, bandwidth tests |
-| `pi-server/services/infra/media-monitor.js` | New — Plex/Radarr/qBittorrent API polling |
-| `config/tars-config.json` | Add network + media config |
-| `tars_face_v1.html` | INFRA screen: services card expands to show network + media |
+| `pi-server/services/infra/docker-monitor.js` | New — Docker socket polling for Pi containers |
+| `pi-server/server.js` | Register monitor on startup |
+| `config/tars-config.json` | Add docker config (socket path) |
+| `tars_face_v1.html` | INFRA screen: services card shows Pi container overview |
 
-**Deliverable**: INFRA screen shows network latency per target + media server active streams.
+**Deliverable**: INFRA screen shows Pi Docker containers (running/stopped/crashed, restart counts).
 
-**Risk**: Medium — network tests require `ping` binary. Media APIs require tokens. All optional.
+**Risk**: Low — Docker integration is well-understood. Socket path configurable. Monitor disabled if socket missing.
 
-### Phase 8.3.4 — TrueNAS Monitor
+### Phase 8.3.3 — Network + Optiplex Media Services
 
-**Purpose**: TrueNAS pool health, SMART data, alert forwarding.
+**Purpose**: LAN connectivity awareness + read-only monitoring of Plex/Radarr/qBittorrent on the Dell Optiplex.
+
+**Why third**: Network is required to reach the Optiplex. Network + media can be implemented together since both target the LAN.
 
 | File | Change |
 |---|---|
-| `pi-server/services/infra/truenas-monitor.js` | New — TrueNAS API polling |
+| `pi-server/services/infra/network-monitor.js` | New — ping to gateway, DNS resolution, latency per target |
+| `pi-server/services/infra/media-monitor.js` | New — read-only polling of Plex/Radarr/qBittorrent on Optiplex |
+| `config/tars-config.json` | Add network targets + media API config |
+| `tars_face_v1.html` | INFRA screen: services card expands with network latency + media status |
+
+**Deliverable**: INFRA screen shows network latency per target + Optiplex media service status (active Plex streams, Radarr queue, qBittorrent transfers).
+
+**Risk**: Medium — network tests require `ping` binary. Media APIs require tokens. OPTIONAL — all monitors disable gracefully if unreachable.
+
+**Read-only constraint**: Only `GET` endpoints are called. No write operations on any Optiplex service.
+
+### Phase 8.3.4 — TrueNAS Scale Awareness
+
+**Purpose**: Read-only monitoring of TrueNAS on the Optiplex — pool health, disk SMART data, alert forwarding.
+
+**Why last**: Most complex API, requires API key, saved until the alert pipeline and screen evolution are proven in 8.3.1–8.3.3.
+
+| File | Change |
+|---|---|
+| `pi-server/services/infra/truenas-monitor.js` | New — read-only TrueNAS API polling for pools, disks, alerts |
 | `config/tars-config.json` | Add truenas config (url, apiKey) |
-| `tars_face_v1.html` | INFRA screen: TrueNAS pool card with capacity bar + disk SMART status |
+| `tars_face_v1.html` | INFRA screen: TrueNAS pool card with capacity bar + per-disk SMART status |
 
-**Deliverable**: INFRA screen shows TrueNAS pool health + per-disk SMART.
+**Deliverable**: INFRA screen shows TrueNAS pool health + per-disk SMART data + forwarded TrueNAS alerts.
 
-**Risk**: Medium — TrueNAS API key required. API structure varies by TrueNAS version.
+**Risk**: Medium — TrueNAS API key required. API structure varies by TrueNAS version. Read-only via API key permissions.
 
 ---
+
+## What Runs Where
+
+| Component | Host | Network path |
+|---|---|---|
+| TARS Face (browser kiosk) | Pi | Local (display) |
+| pi-server (HTTP + WS + event bus) | Pi | `localhost` |
+| Grafana + Prometheus | Pi | `http://tars-pi:3000` |
+| Docker (Pi containers) | Pi | `/var/run/docker.sock` |
+| Future cognitive services | Pi | `localhost` |
+| TrueNAS Scale | Optiplex | `http://truenas.lan` |
+| Plex | Optiplex | `http://optiplex.lan:32400` |
+| qBittorrent | Optiplex | `http://optiplex.lan:8080` |
+| Radarr | Optiplex | `http://optiplex.lan:7878` |
+| Prowlarr | Optiplex | `http://optiplex.lan:9696` |
+
+**Design rule**: TARS never assumes it can move these services. The Optiplex topology is permanent and treated as a fixed external system.
 
 ## Risks
 
@@ -513,24 +616,26 @@ Sensor/Monitor → Event Bus → Storage → UI → Optional Cognitive
 | Docker socket permission denied | Medium | Docker monitor fails | Document `docker` group membership. Fallback: skip, no crash. |
 | TrueNAS API changes between versions | Medium | Truenas monitor breaks | Version-check on connect. Isolated module, other monitors unaffected. |
 | Plex token rotation | Low | Plex monitor stops | Log warning with re-auth instructions. Media monitor degrades gracefully. |
+| Optiplex offline or unreachable | Low | All Optiplex monitors show unavailable | Each monitor has independent backoff. System health card shows "Optiplex unreachable." |
 | Network ping blocked by firewall | Low | Ping returns failure | Document expected ICMP rules. Alternative: TCP connect test. |
 | Event volume overwhelms browser | Low | UI lag, memory growth | WS bridge filters per client. Browser caps visible events. Phase 8.4 SQLite for history. |
-| Config file with API keys committed to git | Medium | Credential leak | `.gitignore` must include `config/tars-config.json`. Document this in setup. |
+| Config file with API keys committed to git | Medium | Credential leak | `.gitignore` includes `config/tars-config.json`. Warn on first setup. |
+| Pi SD card wear from event logging | Low | Storage failure | Boot from SSD (required). SQLite WAL mode reduces writes. |
 
 ## Recommended Order
 
 ```
 Phase 8.3.1 — Alert System + INFRA Evolution
-  (quickest win, uses existing data, proves alert architecture)
+  (zero external deps, proves alert pipeline on existing health data)
 
-Phase 8.3.2 — Docker + Storage Monitors
-  (most reliable external integrations, visible impact)
+Phase 8.3.2 — Pi Docker Container Awareness
+  (most reliable: Unix socket, no network, no auth)
 
-Phase 8.3.3 — Network + Media Monitors
-  (adds depth, requires API keys but all optional)
+Phase 8.3.3 — Network + Optiplex Media Services
+  (adds LAN depth + read-only media monitoring)
 
-Phase 8.3.4 — TrueNAS Monitor
-  (most complex API, saves for last when architecture is proven)
+Phase 8.3.4 — TrueNAS Scale Awareness
+  (most complex API, saved for last when pipeline is proven)
 ```
 
-Start with Phase 8.3.1. It has zero external dependencies, proves the alert pipeline, and immediately improves the INFRA screen with alert timeline.
+Start with Phase 8.3.1. It has zero external dependencies, proves the alert pipeline on data we already have, and immediately improves the INFRA screen with an alert timeline.
