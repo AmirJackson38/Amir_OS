@@ -17,6 +17,7 @@ class AlertManager {
         this.dedupWindowMs = options.dedupWindowMs || 300000;
         this._subscriptions = [];
         this._timer = null;
+        this.statusReporter = options.statusReporter || null;
     }
 
     start() {
@@ -45,12 +46,19 @@ class AlertManager {
             domain: "system",
             priority: "low"
         });
+
+        if (this.statusReporter) {
+            this._heartbeatTimer = setInterval(() => {
+                this.statusReporter.reportUp("tars.alert");
+            }, 30000);
+        }
     }
 
     stop() {
         for (const sub of this._subscriptions) {
             this.eventBus.unsubscribe(sub);
         }
+        if (this._heartbeatTimer) clearInterval(this._heartbeatTimer);
     }
 
     _createAlert(type, severity, title, message, source, data = {}) {

@@ -110,27 +110,25 @@ const server = http.createServer((req, res) => {
 const wsBridge = new WsBridge(eventBus);
 wsBridge.attach(server);
 
-const healthMonitor = new HealthMonitor(eventBus, config.monitoring);
-healthMonitor.start();
-
 const statusReporter = new StatusReporter(eventBus);
 statusReporter.start();
 
-const alertManager = new AlertManager(eventBus, config.alerts);
+const healthMonitor = new HealthMonitor(eventBus, { ...config.monitoring, statusReporter });
+healthMonitor.start();
+
+const alertManager = new AlertManager(eventBus, { ...config.alerts, statusReporter });
 alertManager.start();
 
-const dockerMonitor = new DockerMonitor(eventBus, config.monitors?.docker);
+const dockerMonitor = new DockerMonitor(eventBus, { ...config.monitors?.docker, statusReporter });
 dockerMonitor.start();
 
-const networkMonitor = new NetworkMonitor(eventBus, config.monitors?.network);
+const networkMonitor = new NetworkMonitor(eventBus, { ...config.monitors?.network, statusReporter });
 networkMonitor.start();
 
 statusReporter.reportUp("tars.runtime", { version: "0.1.0" });
-statusReporter.reportUp("tars.monitor.health", { version: "0.1.0" });
 statusReporter.reportUp("tars.wsbridge", { version: "0.1.0" });
-statusReporter.reportUp("tars.alert", { version: "0.1.0" });
-statusReporter.reportUp("tars.monitor.docker", { version: "0.1.0" });
-statusReporter.reportUp("tars.monitor.network", { version: "0.1.0" });
+setInterval(() => statusReporter.reportUp("tars.runtime", { version: "0.1.0" }), 30000);
+setInterval(() => statusReporter.reportUp("tars.wsbridge", { version: "0.1.0" }), 30000);
 
 eventBus.publish({
     id: crypto.randomUUID(),

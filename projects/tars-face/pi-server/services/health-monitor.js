@@ -13,6 +13,7 @@ class HealthMonitor {
         this.tempWarningC = options.tempWarningC || 75;
         this._timer = null;
         this._prevCpus = os.cpus();
+        this.statusReporter = options.statusReporter || null;
     }
 
     start() {
@@ -40,6 +41,7 @@ class HealthMonitor {
         try { this._reportDisk(); } catch (e) { this._publishError("disk", e); }
         try { this._reportUptime(); } catch (e) { this._publishError("uptime", e); }
         try { this._reportTemperature(); } catch (e) { this._publishError("temperature", e); }
+        if (this.statusReporter) this.statusReporter.reportUp("tars.monitor.health");
     }
 
     _reportCpu() {

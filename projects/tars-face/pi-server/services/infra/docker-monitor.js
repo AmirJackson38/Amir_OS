@@ -13,6 +13,7 @@ class DockerMonitor {
         this._timer = null;
         this._available = false;
         this._lastContainerStates = new Map();
+        this.statusReporter = options.statusReporter || null;
     }
 
     start() {
@@ -56,6 +57,7 @@ class DockerMonitor {
         } catch (e) {
             this._publishError(e);
         }
+        if (this.statusReporter) this.statusReporter.reportUp("tars.monitor.docker");
     }
 
     _dockerGet(path) {

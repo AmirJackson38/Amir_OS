@@ -101,12 +101,12 @@
     #tars-status-badge { margin-left:auto; font-size:9px; opacity:0.5; }
 
     #tars-toolbar {
-        position: fixed; right: 20px; top: 50%; transform: translateY(-50%); z-index: 40;
+        position: fixed; right: 20px; top: 50%; transform: translateY(-50%); z-index: 900;
         display: flex; flex-direction: column; gap: 6px;
     }
     .tars-tab-btn {
         width: 48px; height: 48px; border-radius: 10px;
-        background: rgba(10,16,24,0.8); backdrop-filter: blur(8px);
+        background: rgba(10,16,24,0.85); backdrop-filter: blur(8px);
         border: 1px solid rgba(80,180,255,0.25);
         color: rgba(210,235,255,0.6); font-size: 18px; cursor: pointer;
         display: flex; align-items: center; justify-content: center;
@@ -251,94 +251,14 @@
     .tars-journal-detail .comp-total { border-top: 1px solid rgba(80,180,255,0.1); margin-top: 2px; padding-top: 2px; font-weight: bold; }
     .tars-journal-detail .alt-row { display: flex; justify-content: space-between; padding: 1px 8px; color: rgba(210,235,255,0.35); font-size: 8px; }
 
-    /* Phase 8.2 — TARS OS Navigation Shell */
-    #tars-nav-bar {
-        position: fixed; bottom: 0; left: 0; right: 0;
-        display: flex; align-items: center; justify-content: center;
-        background: rgba(8, 12, 20, 0.85);
-        backdrop-filter: blur(6px);
-        border-top: 1px solid rgba(80, 180, 255, 0.08);
-        padding: 4px env(safe-area-inset-right, 8px) 4px env(safe-area-inset-left, 8px);
-        z-index: 800;
-        gap: 2px;
-        min-height: 52px;
-    }
-    .tars-nav-btn {
-        flex: 1; max-width: 100px;
-        background: transparent;
-        border: 1px solid transparent;
-        color: rgba(210, 235, 255, 0.35);
-        font-size: 9px;
-        letter-spacing: 1.5px;
-        text-transform: uppercase;
-        padding: 8px 4px;
-        cursor: pointer;
-        border-radius: 4px;
-        transition: color 0.2s, border-color 0.2s, background 0.2s;
-        text-align: center;
-        min-height: 48px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 2px;
-        line-height: 1.2;
-        -webkit-tap-highlight-color: transparent;
-        user-select: none;
-    }
-    .tars-nav-btn:hover { color: rgba(210, 235, 255, 0.6); background: rgba(80, 180, 255, 0.04); }
-    .tars-nav-btn:active { background: rgba(80, 180, 255, 0.08); }
-    .tars-nav-btn.active { color: #5fd0ff; border-color: rgba(95, 208, 255, 0.2); background: rgba(95, 208, 255, 0.06); }
-    .tars-nav-btn .nav-icon { font-size: 14px; line-height: 1; }
-
-    #tars-screen-container {
-        position: fixed; top: 0; left: 0; right: 0;
-        bottom: 56px;
-        z-index: 750;
-        pointer-events: none;
-        overflow: hidden;
-    }
-    #tars-screen-container.active {
-        pointer-events: auto;
-    }
-    .tars-screen {
-        position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-        overflow-y: auto;
-        opacity: 0;
-        transition: opacity 0.25s ease;
-        pointer-events: none;
-        padding: 8px 12px calc(8px + env(safe-area-inset-bottom, 0px));
-    }
-    .tars-screen.active {
-        opacity: 1;
-        pointer-events: auto;
-    }
-    .tars-screen-inner {
-        max-width: 600px;
-        margin: 0 auto;
-    }
-
-    /* World screen — minimal overlay */
-    .tars-world-screen {
-        pointer-events: none;
-    }
-    .tars-world-screen .tars-world-badge {
-        display: inline-block;
-        background: rgba(8, 12, 20, 0.6);
-        border: 1px solid rgba(80, 180, 255, 0.1);
-        border-radius: 6px;
-        padding: 4px 10px;
-        font-size: 10px;
-        color: rgba(210, 235, 255, 0.5);
-    }
-
-    /* Dashboard screens — semi-transparent overlay panels */
+    /* Dashboard panel cards — used by INFRA, System panels */
     .tars-dashboard {
         background: rgba(8, 12, 20, 0.7);
         backdrop-filter: blur(4px);
         border: 1px solid rgba(80, 180, 255, 0.06);
         border-radius: 8px;
         padding: 12px;
+        margin-bottom: 8px;
     }
     .tars-dashboard-title {
         font-size: 10px;
@@ -358,7 +278,7 @@
     .tars-dashboard-row .label { color: rgba(210, 235, 255, 0.4); }
     .tars-dashboard-row .value { color: #d2ebff; font-variant-numeric: tabular-nums; }
 
-    /* Connection indicator */
+    /* Connection indicator + alert count — in status header */
     #tars-connection-dot {
         display: inline-block;
         width: 8px; height: 8px;
@@ -392,7 +312,7 @@
     #tars-alert-count.warning { color: #eab308; border-color: rgba(234, 179, 8, 0.3); background: rgba(234, 179, 8, 0.08); }
     #tars-alert-count.critical { color: #f87171; border-color: rgba(248, 113, 113, 0.3); background: rgba(248, 113, 113, 0.1); }
 
-    /* Placeholder screen */
+    /* Placeholder screen — for future panels */
     .tars-placeholder {
         display: flex;
         flex-direction: column;
@@ -406,6 +326,8 @@
     }
     .tars-placeholder .icon { font-size: 28px; opacity: 0.3; }
     .tars-placeholder .desc { font-size: 9px; color: rgba(210, 235, 255, 0.15); max-width: 280px; }
+
+</style>
 
 </head>
 
@@ -431,15 +353,17 @@
     <span id="tars-status-activity">initializing</span>
     <span class="status-divider">|</span>
     <span id="tars-status-location">—</span>
+    <span id="tars-connection-dot" class="unknown" title="Event bus status"></span>
+    <span id="tars-alert-count" class="empty" title="Active alerts">0</span>
     <span id="tars-status-badge">🧠 OFFLINE</span>
 </div>
 
 <div id="tars-toolbar">
+    <button class="tars-tab-btn" data-tab="home" title="Home">🏠</button>
+    <button class="tars-tab-btn" data-tab="infra" title="Infrastructure">◈</button>
+    <button class="tars-tab-btn" data-tab="observatory" title="Observatory">📊</button>
     <button class="tars-tab-btn" data-tab="brain" title="Cognitive State">🧠</button>
-    <button class="tars-tab-btn" data-tab="observatory" title="Developer Observatory">📊</button>
-    <button class="tars-tab-btn" data-tab="journal" title="Activity Journal">📜</button>
-    <button class="tars-tab-btn" data-tab="conversation" title="Conversation">💬</button>
-    <button class="tars-tab-btn" data-tab="settings" title="Settings">⚙</button>
+    <button class="tars-tab-btn" data-tab="system" title="System">⚙</button>
 </div>
 
 <div id="tars-overlay">
@@ -460,28 +384,6 @@
         <input type="text" id="tars-chat-input-field" placeholder="Message TARS..." autocomplete="off">
         <button id="tars-chat-send">SEND</button>
     </div>
-</div>
-
-<!-- Phase 8.2 — TARS OS Navigation Shell -->
-<div id="tars-screen-container"></div>
-<div id="tars-nav-bar">
-    <button class="tars-nav-btn" data-screen="world" title="TARS World">
-        <span class="nav-icon">⊙</span> TARS
-    </button>
-    <button class="tars-nav-btn" data-screen="home" title="Home Operations">
-        <span class="nav-icon">⊞</span> HOME
-    </button>
-    <button class="tars-nav-btn" data-screen="infra" title="Infrastructure">
-        <span class="nav-icon">◈</span> INFRA
-    </button>
-    <button class="tars-nav-btn" data-screen="monitor" title="World Monitor">
-        <span class="nav-icon">◉</span> MONITOR
-    </button>
-    <button class="tars-nav-btn" data-screen="system" title="System">
-        <span class="nav-icon">⚙</span> SYSTEM
-    </button>
-    <span id="tars-connection-dot" class="unknown" title="Event bus status"></span>
-    <span id="tars-alert-count" class="empty" title="Active alerts">0</span>
 </div>
 
 <script type="module">
@@ -5867,7 +5769,7 @@ const TARS_UI = {
         const overlay = document.getElementById("tars-overlay");
         overlay.classList.add("visible");
         document.querySelectorAll(".tars-tab-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
-        const titles = { brain: "🧠 COGNITIVE STATE", observatory: "📊 OBSERVATORY", journal: "📜 JOURNAL", settings: "⚙ CREATOR CONSOLE" };
+        const titles = { home: "🏠 HOME", infra: "◈ INFRASTRUCTURE", brain: "🧠 COGNITIVE STATE", observatory: "📊 OBSERVATORY", journal: "📜 JOURNAL", system: "⚙ SYSTEM", settings: "⚙ CREATOR CONSOLE" };
         document.getElementById("tars-overlay-title").textContent = titles[tab] || tab.toUpperCase();
         this.renderTab(tab);
     },
@@ -5890,9 +5792,12 @@ const TARS_UI = {
         const body = document.getElementById("tars-overlay-body");
         if (!body) return;
         switch (tab) {
+            case "home": this.renderHome(body); break;
+            case "infra": this.renderInfra(body); break;
             case "brain": this.renderBrain(body); break;
             case "observatory": this.renderObservatory(body); break;
             case "journal": this.renderJournal(body); break;
+            case "system": this.renderSystem(body); break;
             case "settings": this.renderSettings(body); break;
         }
     },
@@ -6329,9 +6234,21 @@ const TARS_UI = {
         if (!this.activeTab || !this.overlayVisible) return;
         if (this.activeTab === "settings") {
             this.refreshSettingsLive();
+        } else if (this.activeTab === "home") {
+            this.refreshHomeLive();
+        } else if (this.activeTab === "infra" || this.activeTab === "system") {
+            // infra refreshes via polling timer + live events
+            // system fetched once on open
         } else {
             this.renderTab(this.activeTab);
         }
+    },
+
+    refreshHomeLive() {
+        const el = document.getElementById("tars-home-conn");
+        const d = document.getElementById("tars-connection-dot");
+        const labels = { connecting:"Connecting...", connected:"Connected", disconnected:"Disconnected", unknown:"No server" };
+        if (el && d) el.textContent = labels[d.className] || "Unknown";
     },
 
     refreshSettingsLive() {
@@ -6372,6 +6289,321 @@ const TARS_UI = {
             telemetryEl.innerHTML = html || '<div class="tars-console-entry" style="color:rgba(210,235,255,0.2)">No decisions recorded yet.</div>';
             telemetryEl.scrollTop = telemetryEl.scrollHeight;
         }
+    },
+
+    renderHome(el) {
+        if (this._homeUpdate) {
+            document.removeEventListener("tars-events-connected", this._homeUpdate);
+            document.removeEventListener("tars-events-disconnected", this._homeUpdate);
+        }
+        const dot = document.getElementById("tars-connection-dot");
+        const labels = { connecting:"Connecting...", connected:"Connected", disconnected:"Disconnected", unknown:"No server" };
+        const connState = dot ? dot.className : "unknown";
+        el.innerHTML =
+            '<div class="tars-section">' +
+                '<div class="tars-section-title">Home Operations</div>' +
+                '<div class="tars-placeholder" style="min-height:120px">' +
+                    '<div class="icon">⊞</div>' +
+                    '<div>Home Assistant integration pending</div>' +
+                    '<div class="desc">Phase 8.4 will connect IoT devices, sensors, and automations.</div>' +
+                '</div>' +
+                '<div class="tars-data-row"><span class="tars-data-label">Event Bus</span><span class="tars-data-value" id="tars-home-conn">' + (labels[connState] || "Unknown") + '</span></div>' +
+            '</div>';
+        this._homeUpdate = () => {
+            const el2 = document.getElementById("tars-home-conn");
+            const d = document.getElementById("tars-connection-dot");
+            if (el2 && d) el2.textContent = labels[d.className] || "Unknown";
+        };
+        document.addEventListener("tars-events-connected", this._homeUpdate);
+        document.addEventListener("tars-events-disconnected", this._homeUpdate);
+    },
+
+    renderInfra(el) {
+        if (this._infraTimer) { clearInterval(this._infraTimer); this._infraTimer = null; }
+        if (this._infraHandler) { document.removeEventListener("tars-event", this._infraHandler); this._infraHandler = null; }
+        let tarsDockerContainers = [];
+        let tarsNetworkHosts = [];
+
+        function setVal(id, val) {
+            const e = document.getElementById(id);
+            if (e) e.querySelector(".value").textContent = val;
+        }
+
+        function updateMetrics(data) {
+            if (data.cpu !== undefined) setVal("tars-infra-cpu", data.cpu + "%");
+            if (data.mem !== undefined) setVal("tars-infra-mem", data.mem + "%");
+            if (data.disk !== undefined) setVal("tars-infra-disk", data.disk + "%");
+            if (data.temp !== undefined) setVal("tars-infra-temp", data.temp + "°C");
+            if (data.uptime !== undefined) {
+                const h = Math.floor(data.uptime / 3600);
+                const m = Math.floor((data.uptime % 3600) / 60);
+                setVal("tars-infra-uptime", h + "h " + m + "m");
+            }
+            if (data.services !== undefined) setVal("tars-infra-services", data.services);
+        }
+
+        function renderAlertList(alerts) {
+            const list = document.getElementById("tars-alert-list");
+            if (!list) return;
+            if (!alerts || alerts.length === 0) {
+                list.innerHTML = '<div class="tars-data-row tars-data-row-empty"><span class="tars-data-label" style="color:rgba(210,235,255,0.2)">No active alerts</span></div>';
+                return;
+            }
+            const colors = { critical: "#f87171", warning: "#eab308", info: "#5fd0ff" };
+            const labels = { critical: "CRIT", warning: "WARN", info: "INFO" };
+            let html = "";
+            for (const a of alerts) {
+                const color = colors[a.severity] || "rgba(210,235,255,0.3)";
+                const time = a.createdAt ? new Date(a.createdAt).toLocaleTimeString() : "";
+                html += '<div class="tars-data-row" style="border-left:2px solid ' + color + ';padding-left:6px;margin:2px 0">' +
+                    '<span class="tars-data-label"><span style="color:' + color + ';font-weight:bold">' + (labels[a.severity] || a.severity) + '</span> ' +
+                    a.title + (a.count > 1 ? ' <span style="color:rgba(210,235,255,0.2)">(x' + a.count + ')</span>' : '') + '</span>' +
+                    '<span class="tars-data-value" style="font-size:8px;color:rgba(210,235,255,0.3)">' + time + '</span>' +
+                '</div>';
+                if (a.message) {
+                    html += '<div class="tars-data-row" style="border-left:2px solid ' + color + ';padding:0 0 4px 10px;font-size:8px;color:rgba(210,235,255,0.3)">' +
+                        a.message + '</div>';
+                }
+            }
+            list.innerHTML = html;
+        }
+
+        function fetchAlerts() {
+            fetch("/api/alerts?state=active").then(r => r.json()).then(alerts => {
+                if (Array.isArray(alerts)) renderAlertList(alerts);
+            }).catch(() => {});
+        }
+
+        function renderDockerSummary(summary) {
+            const sumEl = document.getElementById("tars-docker-summary");
+            const listEl = document.getElementById("tars-docker-list");
+            if (!sumEl) return;
+            if (!summary) {
+                sumEl.querySelector(".value").textContent = "No Docker";
+                sumEl.querySelector(".value").style.color = "rgba(210,235,255,0.2)";
+                if (listEl) listEl.innerHTML = "";
+                return;
+            }
+            const crashed = summary.crashed || 0;
+            const stopped = summary.stopped || 0;
+            const running = summary.running || 0;
+            const total = summary.total || 0;
+            const color = crashed > 0 ? "#f87171" : total === 0 ? "rgba(210,235,255,0.2)" : "#5fd0ff";
+            sumEl.querySelector(".value").textContent = running + " running, " + stopped + " stopped" + (crashed > 0 ? ", " + crashed + " crashed" : "");
+            sumEl.querySelector(".value").style.color = color;
+        }
+
+        function renderDockerContainerList(containers) {
+            const listEl = document.getElementById("tars-docker-list");
+            if (!listEl) return;
+            if (!containers || containers.length === 0) {
+                listEl.innerHTML = "";
+                return;
+            }
+            let html = "";
+            const stateColors = { running: "#4ade80", exited: "rgba(210,235,255,0.2)", created: "rgba(210,235,255,0.2)", paused: "#eab308", restarting: "#f87171", removing: "#f87171", removed: "rgba(210,235,255,0.1)", dead: "#f87171" };
+            for (const c of containers) {
+                if (c.state === "removed") continue;
+                const color = stateColors[c.state] || "rgba(210,235,255,0.3)";
+                const uptime = c.uptimeSeconds ? Math.floor(c.uptimeSeconds / 60) + "m" : "";
+                html += '<div class="tars-data-row" style="padding-left:6px">' +
+                    '<span class="tars-data-label" style="font-size:9px"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:' + color + ';margin-right:4px;vertical-align:middle"></span>' + c.name + '</span>' +
+                    '<span class="tars-data-value" style="font-size:8px;color:' + color + '">' + c.state + (uptime ? " " + uptime : "") + '</span>' +
+                '</div>';
+            }
+            listEl.innerHTML = html;
+        }
+
+        function fetchDocker() {
+            fetch("/api/events?count=50&type=infra.docker.summary").then(r => r.json()).then(events => {
+                if (!Array.isArray(events) || events.length === 0) { renderDockerSummary(null); return; }
+                renderDockerSummary(events[events.length - 1].data);
+            }).catch(() => { renderDockerSummary(null); });
+            fetch("/api/events?count=100&type=infra.docker.container").then(r => r.json()).then(events => {
+                if (!Array.isArray(events) || events.length === 0) return;
+                const seen = {};
+                for (const e of events) { seen[e.data.name] = e.data; }
+                tarsDockerContainers = Object.values(seen);
+                renderDockerContainerList(tarsDockerContainers);
+            }).catch(() => {});
+        }
+
+        function renderNetworkSummary(summary) {
+            const sumEl = document.getElementById("tars-network-summary");
+            if (!sumEl) return;
+            if (!summary || summary.total === 0) {
+                sumEl.querySelector(".value").textContent = "No network data";
+                sumEl.querySelector(".value").style.color = "rgba(210,235,255,0.2)";
+                return;
+            }
+            const color = summary.offline > 0 ? "#f87171" : "#4ade80";
+            const text = summary.online + "/" + summary.total + " online" + (summary.avgLatencyMs !== null ? "  avg " + summary.avgLatencyMs + "ms" : "");
+            sumEl.querySelector(".value").textContent = text;
+            sumEl.querySelector(".value").style.color = color;
+        }
+
+        function renderNetworkHostList(hosts) {
+            const listEl = document.getElementById("tars-network-list");
+            if (!listEl) return;
+            if (!hosts || hosts.length === 0) { listEl.innerHTML = ""; return; }
+            let html = "";
+            for (const h of hosts) {
+                const color = h.reachable ? "#4ade80" : "#f87171";
+                const latency = h.latencyMs !== null && h.latencyMs !== undefined ? h.latencyMs + "ms" : "—";
+                html += '<div class="tars-data-row" style="padding-left:6px">' +
+                    '<span class="tars-data-label" style="font-size:9px"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:' + color + ';margin-right:4px;vertical-align:middle"></span>' + h.host + '</span>' +
+                    '<span class="tars-data-value" style="font-size:8px;color:' + color + '">' + (h.reachable ? "online " + latency : "offline") + '</span>' +
+                '</div>';
+            }
+            listEl.innerHTML = html;
+        }
+
+        function fetchNetwork() {
+            fetch("/api/events?count=50&type=infra.network.summary").then(r => r.json()).then(events => {
+                if (!Array.isArray(events) || events.length === 0) { renderNetworkSummary(null); return; }
+                renderNetworkSummary(events[events.length - 1].data);
+            }).catch(() => { renderNetworkSummary(null); });
+            fetch("/api/events?count=100&type=infra.network.host").then(r => r.json()).then(events => {
+                if (!Array.isArray(events) || events.length === 0) return;
+                const seen = {};
+                for (const e of events) { seen[e.data.host] = e.data; }
+                tarsNetworkHosts = Object.values(seen);
+                renderNetworkHostList(tarsNetworkHosts);
+            }).catch(() => {});
+        }
+
+        function fetchMetrics() {
+            fetch("/api/events?count=50").then(r => r.json()).then(events => {
+                if (!Array.isArray(events)) return;
+                const cpu = events.filter(e => e.type === "health.cpu").pop();
+                const mem = events.filter(e => e.type === "health.memory").pop();
+                const disk = events.filter(e => e.type === "health.disk").pop();
+                const uptime = events.filter(e => e.type === "health.uptime").pop();
+                const service = events.filter(e => e.type === "system.heartbeat").pop();
+                updateMetrics({
+                    cpu: cpu?.data?.percent,
+                    mem: mem?.data?.percent,
+                    disk: disk?.data?.percent,
+                    temp: cpu?.data?.tempC,
+                    uptime: uptime?.data?.uptimeSeconds,
+                    services: service?.data?.services ? service.data.services.filter(s => s.status !== "stale").length + " online" : undefined
+                });
+            }).catch(() => {});
+        }
+
+        el.innerHTML =
+            '<div class="tars-section">' +
+                '<div class="tars-section-title">Infrastructure</div>' +
+                '<div id="tars-infra-cpu" class="tars-data-row"><span class="tars-data-label">CPU</span><span class="tars-data-value">—</span></div>' +
+                '<div id="tars-infra-mem" class="tars-data-row"><span class="tars-data-label">Memory</span><span class="tars-data-value">—</span></div>' +
+                '<div id="tars-infra-disk" class="tars-data-row"><span class="tars-data-label">Disk</span><span class="tars-data-value">—</span></div>' +
+                '<div id="tars-infra-temp" class="tars-data-row"><span class="tars-data-label">Temperature</span><span class="tars-data-value">—</span></div>' +
+                '<div id="tars-infra-uptime" class="tars-data-row"><span class="tars-data-label">Uptime</span><span class="tars-data-value">—</span></div>' +
+                '<div id="tars-infra-services" class="tars-data-row"><span class="tars-data-label">Services</span><span class="tars-data-value">—</span></div>' +
+            '</div>' +
+            '<div class="tars-section">' +
+                '<div class="tars-section-title">Docker Containers</div>' +
+                '<div id="tars-docker-summary" class="tars-data-row"><span class="tars-data-label">Containers</span><span class="tars-data-value" style="color:rgba(210,235,255,0.2)">No Docker</span></div>' +
+                '<div id="tars-docker-list"></div>' +
+            '</div>' +
+            '<div class="tars-section">' +
+                '<div class="tars-section-title">Network</div>' +
+                '<div id="tars-network-summary" class="tars-data-row"><span class="tars-data-label">Hosts</span><span class="tars-data-value" style="color:rgba(210,235,255,0.2)">No network data</span></div>' +
+                '<div id="tars-network-list"></div>' +
+            '</div>' +
+            '<div class="tars-section">' +
+                '<div class="tars-section-title">Alerts</div>' +
+                '<div id="tars-alert-list"><div class="tars-data-row tars-data-row-empty"><span class="tars-data-label" style="color:rgba(210,235,255,0.2)">No active alerts</span></div></div>' +
+            '</div>';
+
+        fetchMetrics();
+        fetchAlerts();
+        fetchDocker();
+        fetchNetwork();
+        this._infraTimer = setInterval(function () {
+            fetchMetrics();
+            fetchAlerts();
+            fetchDocker();
+            fetchNetwork();
+        }, 10000);
+
+        this._infraHandler = function (e) {
+            const ev = e.detail;
+            if (!ev || !ev.type) return;
+            if (ev.type === "health.cpu") {
+                if (ev.data.percent !== undefined) setVal("tars-infra-cpu", ev.data.percent + "%");
+                if (ev.data.tempC !== undefined) setVal("tars-infra-temp", ev.data.tempC + "°C");
+            }
+            if (ev.type === "health.memory" && ev.data.percent !== undefined) setVal("tars-infra-mem", ev.data.percent + "%");
+            if (ev.type === "health.disk" && ev.data.percent !== undefined) {
+                const diskEl = document.getElementById("tars-infra-disk");
+                if (diskEl) diskEl.querySelector(".value").textContent = ev.data.percent + "% (" + ev.data.device + ")";
+            }
+            if (ev.type === "health.uptime" && ev.data.uptimeSeconds !== undefined) {
+                const h = Math.floor(ev.data.uptimeSeconds / 3600);
+                const m = Math.floor((ev.data.uptimeSeconds % 3600) / 60);
+                setVal("tars-infra-uptime", h + "h " + m + "m");
+            }
+            if (ev.type === "system.heartbeat" && ev.data.services) {
+                const online = ev.data.services.filter(s => s.status !== "stale").length;
+                setVal("tars-infra-services", online + " online");
+            }
+            if (ev.type.startsWith("alert.")) fetchAlerts();
+            if (ev.type === "infra.docker.summary") renderDockerSummary(ev.data);
+            if (ev.type === "infra.docker.container") {
+                const c = ev.data;
+                let updated = false;
+                for (let i = 0; i < tarsDockerContainers.length; i++) {
+                    if (tarsDockerContainers[i].name === c.name) {
+                        if (c.state === "removed") { tarsDockerContainers.splice(i, 1); }
+                        else { tarsDockerContainers[i] = c; }
+                        updated = true; break;
+                    }
+                }
+                if (!updated && c.state !== "removed") { tarsDockerContainers.push(c); }
+                renderDockerContainerList(tarsDockerContainers);
+            }
+            if (ev.type === "infra.network.summary") renderNetworkSummary(ev.data);
+            if (ev.type === "infra.network.host") {
+                const h = ev.data;
+                let updated = false;
+                for (let i = 0; i < tarsNetworkHosts.length; i++) {
+                    if (tarsNetworkHosts[i].host === h.host) {
+                        tarsNetworkHosts[i] = h;
+                        updated = true; break;
+                    }
+                }
+                if (!updated) { tarsNetworkHosts.push(h); }
+                renderNetworkHostList(tarsNetworkHosts);
+            }
+        };
+        document.addEventListener("tars-event", this._infraHandler);
+    },
+
+    renderSystem(el) {
+        el.innerHTML =
+            '<div class="tars-section">' +
+                '<div class="tars-section-title">System</div>' +
+                '<div class="tars-data-row"><span class="tars-data-label">TARS Face</span><span class="tars-data-value">v7.5</span></div>' +
+                '<div class="tars-data-row"><span class="tars-data-label">Runtime Server</span><span class="tars-data-value" id="tars-sys-runtime">—</span></div>' +
+                '<div class="tars-data-row"><span class="tars-data-label">Event Bus</span><span class="tars-data-value" id="tars-sys-events">—</span></div>' +
+                '<div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap">' +
+                    '<button class="btn btn-sm" data-action="open-dev-tool" data-tab="brain">🧠 Brain</button>' +
+                    '<button class="btn btn-sm" data-action="open-dev-tool" data-tab="observatory">📊 Observatory</button>' +
+                    '<button class="btn btn-sm" data-action="open-dev-tool" data-tab="journal">📜 Journal</button>' +
+                    '<button class="btn btn-sm" data-action="open-dev-tool" data-tab="settings">⚙ Creator Console</button>' +
+                '</div>' +
+            '</div>';
+
+        fetch("/health").then(r => r.json()).then(h => {
+            const el2 = document.getElementById("tars-sys-runtime");
+            if (el2) el2.textContent = "v0.1.0 · up " + Math.floor(h.uptime / 60) + "m";
+            const el3 = document.getElementById("tars-sys-events");
+            if (el3) el3.textContent = h.eventBus.published + " pub, " + h.eventBus.subscriberCount + " subs";
+        }).catch(() => {
+            const el2 = document.getElementById("tars-sys-runtime");
+            if (el2) el2.textContent = "Offline";
+        });
     }
 };
 
@@ -6536,6 +6768,11 @@ function initObservatoryUI() {
                 window.TARS.lookAt(e.target.dataset.target, "test_injection");
                 setFb(`Gaze: ${e.target.dataset.target}`, "");
                 break;
+            case "open-dev-tool":
+                if (e.target.dataset.tab && window.TARS_UI) {
+                    TARS_UI.openTab(e.target.dataset.tab);
+                }
+                break;
         }
         setTimeout(() => { if (fb) fb.textContent = ""; }, 3000);
     });
@@ -6643,30 +6880,23 @@ setInterval(() => TARS_UI.throttledUpdate(Date.now()), 400);
     }
 })();
 
-// Phase 8.2 — TARS OS Navigation Shell
+// ── Connection Indicator ──
 (function () {
-    const container = document.getElementById("tars-screen-container");
-    const navBtns = document.querySelectorAll(".tars-nav-btn");
-    const connectionDot = document.getElementById("tars-connection-dot");
-
-    if (!container) return;
-
-    let activeScreen = localStorage.getItem("tars_active_screen") || "world";
-    let screens = {};
-    let infraTimer = null;
-
-    // ── Connection Indicator ──
-    function setConnection(state) {
-        connectionDot.className = state;
-        connectionDot.title = { connecting:"Connecting...", connected:"Event bus connected", disconnected:"Event bus disconnected", unknown:"No server" }[state] || "Unknown";
+    const dot = document.getElementById("tars-connection-dot");
+    if (!dot) return;
+    function set(state) {
+        dot.className = state;
+        dot.title = { connecting:"Connecting...", connected:"Event bus connected", disconnected:"Event bus disconnected", unknown:"No server" }[state] || "Unknown";
     }
-    document.addEventListener("tars-events-connected", () => setConnection("connected"));
-    document.addEventListener("tars-events-disconnected", () => setConnection("disconnected"));
-    if (window.TARS_EVENTS && window.TARS_EVENTS.isConnected()) setConnection("connected");
-    else if (window.location.host) setConnection("connecting");
+    document.addEventListener("tars-events-connected", () => set("connected"));
+    document.addEventListener("tars-events-disconnected", () => set("disconnected"));
+    if (window.TARS_EVENTS && window.TARS_EVENTS.isConnected()) set("connected");
+    else if (window.location.host) set("connecting");
+})();
 
-    // ── Alert Count Badge ──
-    function updateAlertBadge() {
+// ── Alert Count Badge ──
+(function () {
+    function update() {
         const badge = document.getElementById("tars-alert-count");
         if (!badge) return;
         fetch("/api/alerts?state=active").then(r => r.json()).then(alerts => {
@@ -6680,488 +6910,9 @@ setInterval(() => TARS_UI.throttledUpdate(Date.now()), 400);
         }).catch(() => { badge.className = "empty"; });
     }
     document.addEventListener("tars-event", function (e) {
-        if (e.detail && e.detail.type && e.detail.type.startsWith("alert.")) {
-            updateAlertBadge();
-        }
+        if (e.detail && e.detail.type && e.detail.type.startsWith("alert.")) update();
     });
-    updateAlertBadge();
-
-    // ── Screen Registry ──
-    function registerScreen(id, title, icon, renderFn) {
-        screens[id] = { id, title, icon, render: renderFn };
-    }
-
-    // ── Screen Renderers ──
-
-    // Screen 1: TARS World — minimal overlay on Three.js scene
-    registerScreen("world", "TARS World", "⊙", function (el) {
-        el.innerHTML = '<div class="tars-world-screen"><div class="tars-world-badge" id="tars-nav-status">' +
-            (worldState.tars.activity || "idle") + ' @ ' + (worldState.tars.location || "—") +
-            '</div></div>';
-        // Update on throttle (reuses existing worldState updates)
-        const interval = setInterval(() => {
-            const badge = document.getElementById("tars-nav-status");
-            if (badge) badge.textContent = (worldState.tars.activity || "idle") + " @ " + (worldState.tars.location || "—");
-        }, 1000);
-        return () => clearInterval(interval);
-    });
-
-    // Screen 2: Home — placeholder + event bus status
-    registerScreen("home", "Home", "⊞", function (el) {
-        const connState = connectionDot.className;
-        const labels = { connecting:"Connecting...", connected:"Connected", disconnected:"Disconnected", unknown:"No server" };
-        el.innerHTML =
-            '<div class="tars-dashboard">' +
-                '<div class="tars-dashboard-title">Home Operations</div>' +
-                '<div class="tars-placeholder" style="min-height:120px">' +
-                    '<div class="icon">⊞</div>' +
-                    '<div>Home Assistant integration pending</div>' +
-                    '<div class="desc">Phase 8.3 will connect IoT devices, sensors, and automations.</div>' +
-                '</div>' +
-                '<div class="tars-dashboard-row">' +
-                    '<span class="label">Event Bus</span>' +
-                    '<span class="value" id="tars-home-conn">' + (labels[connState] || "Unknown") + '</span>' +
-                '</div>' +
-            '</div>';
-        const updateConn = () => {
-            const el2 = document.getElementById("tars-home-conn");
-            if (el2) el2.textContent = labels[connectionDot.className] || "Unknown";
-        };
-        document.addEventListener("tars-events-connected", updateConn);
-        document.addEventListener("tars-events-disconnected", updateConn);
-    });
-
-    // Screen 3: Infrastructure — consumes Phase 8.1 event stream
-    registerScreen("infra", "Infrastructure", "◈", function (el) {
-        el.innerHTML =
-            '<div class="tars-dashboard">' +
-                '<div class="tars-dashboard-title">Infrastructure</div>' +
-                '<div id="tars-infra-cpu" class="tars-dashboard-row"><span class="label">CPU</span><span class="value">—</span></div>' +
-                '<div id="tars-infra-mem" class="tars-dashboard-row"><span class="label">Memory</span><span class="value">—</span></div>' +
-                '<div id="tars-infra-disk" class="tars-dashboard-row"><span class="label">Disk</span><span class="value">—</span></div>' +
-                '<div id="tars-infra-temp" class="tars-dashboard-row"><span class="label">Temperature</span><span class="value">—</span></div>' +
-                '<div id="tars-infra-uptime" class="tars-dashboard-row"><span class="label">Uptime</span><span class="value">—</span></div>' +
-                '<div id="tars-infra-services" class="tars-dashboard-row"><span class="label">Services</span><span class="value">—</span></div>' +
-            '</div>' +
-            '<div class="tars-dashboard" style="margin-top:8px" id="tars-docker-card">' +
-                '<div class="tars-dashboard-title">Docker Containers</div>' +
-                '<div id="tars-docker-summary" class="tars-dashboard-row"><span class="label">Containers</span><span class="value" style="color:rgba(210,235,255,0.2)">No Docker</span></div>' +
-                '<div id="tars-docker-list"></div>' +
-            '</div>' +
-            '<div class="tars-dashboard" style="margin-top:8px" id="tars-network-card">' +
-                '<div class="tars-dashboard-title">Network</div>' +
-                '<div id="tars-network-summary" class="tars-dashboard-row"><span class="label">Hosts</span><span class="value" style="color:rgba(210,235,255,0.2)">No network data</span></div>' +
-                '<div id="tars-network-list"></div>' +
-            '</div>' +
-            '<div class="tars-dashboard" style="margin-top:8px" id="tars-alert-timeline">' +
-                '<div class="tars-dashboard-title">Alerts</div>' +
-                '<div id="tars-alert-list"><div class="tars-dashboard-row"><span class="label" style="color:rgba(210,235,255,0.2)">No active alerts</span></div></div>' +
-            '</div>';
-
-        function setVal(id, val) {
-            const e = document.getElementById(id);
-            if (e) e.querySelector(".value").textContent = val;
-        }
-
-        function updateMetrics(data) {
-            if (data.cpu !== undefined) setVal("tars-infra-cpu", data.cpu + "%");
-            if (data.mem !== undefined) setVal("tars-infra-mem", data.mem + "%");
-            if (data.disk !== undefined) setVal("tars-infra-disk", data.disk + "%");
-            if (data.temp !== undefined) setVal("tars-infra-temp", data.temp + "°C");
-            if (data.uptime !== undefined) {
-                const h = Math.floor(data.uptime / 3600);
-                const m = Math.floor((data.uptime % 3600) / 60);
-                setVal("tars-infra-uptime", h + "h " + m + "m");
-            }
-            if (data.services !== undefined) setVal("tars-infra-services", data.services);
-        }
-
-        function renderAlertList(alerts) {
-            const list = document.getElementById("tars-alert-list");
-            if (!list) return;
-            if (!alerts || alerts.length === 0) {
-                list.innerHTML = '<div class="tars-dashboard-row"><span class="label" style="color:rgba(210,235,255,0.2)">No active alerts</span></div>';
-                return;
-            }
-            const colors = { critical: "#f87171", warning: "#eab308", info: "#5fd0ff" };
-            const labels = { critical: "CRIT", warning: "WARN", info: "INFO" };
-            let html = "";
-            for (const a of alerts) {
-                const color = colors[a.severity] || "rgba(210,235,255,0.3)";
-                const time = a.createdAt ? new Date(a.createdAt).toLocaleTimeString() : "";
-                html += '<div class="tars-dashboard-row" style="border-left:2px solid ' + color + ';padding-left:6px">' +
-                    '<span class="label"><span style="color:' + color + ';font-weight:bold">' + (labels[a.severity] || a.severity) + '</span> ' +
-                    a.title + (a.count > 1 ? ' <span style="color:rgba(210,235,255,0.2)">(x' + a.count + ')</span>' : '') + '</span>' +
-                    '<span class="value" style="font-size:8px;color:rgba(210,235,255,0.3)">' + time + '</span>' +
-                '</div>';
-                if (a.message) {
-                    html += '<div class="tars-dashboard-row" style="border-left:2px solid ' + color + ';padding:0 0 4px 10px;font-size:8px;color:rgba(210,235,255,0.3)">' +
-                        a.message + '</div>';
-                }
-            }
-            list.innerHTML = html;
-        }
-
-        function fetchAlerts() {
-            fetch("/api/alerts?state=active").then(r => r.json()).then(alerts => {
-                if (Array.isArray(alerts)) renderAlertList(alerts);
-            }).catch(() => {});
-        }
-
-        let tarsDockerContainers = [];
-        let tarsNetworkHosts = [];
-
-        function renderDockerSummary(summary) {
-            const sumEl = document.getElementById("tars-docker-summary");
-            const listEl = document.getElementById("tars-docker-list");
-            if (!sumEl) return;
-            if (!summary) {
-                sumEl.querySelector(".value").textContent = "No Docker";
-                sumEl.querySelector(".value").style.color = "rgba(210,235,255,0.2)";
-                if (listEl) listEl.innerHTML = "";
-                return;
-            }
-            const crashed = summary.crashed || 0;
-            const stopped = summary.stopped || 0;
-            const running = summary.running || 0;
-            const total = summary.total || 0;
-            const color = crashed > 0 ? "#f87171" : total === 0 ? "rgba(210,235,255,0.2)" : "#5fd0ff";
-            sumEl.querySelector(".value").textContent = running + " running, " + stopped + " stopped" + (crashed > 0 ? ", " + crashed + " crashed" : "");
-            sumEl.querySelector(".value").style.color = color;
-        }
-
-        function renderDockerContainerList(containers) {
-            const listEl = document.getElementById("tars-docker-list");
-            if (!listEl) return;
-            if (!containers || containers.length === 0) {
-                listEl.innerHTML = "";
-                return;
-            }
-            let html = "";
-            const stateColors = { running: "#4ade80", exited: "rgba(210,235,255,0.2)", created: "rgba(210,235,255,0.2)", paused: "#eab308", restarting: "#f87171", removing: "#f87171", removed: "rgba(210,235,255,0.1)", dead: "#f87171" };
-            for (const c of containers) {
-                if (c.state === "removed") continue;
-                const color = stateColors[c.state] || "rgba(210,235,255,0.3)";
-                const uptime = c.uptimeSeconds ? Math.floor(c.uptimeSeconds / 60) + "m" : "";
-                html += '<div class="tars-dashboard-row" style="padding-left:6px">' +
-                    '<span class="label" style="font-size:9px"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:' + color + ';margin-right:4px;vertical-align:middle"></span>' + c.name + '</span>' +
-                    '<span class="value" style="font-size:8px;color:' + color + '">' + c.state + (uptime ? " " + uptime : "") + '</span>' +
-                '</div>';
-            }
-            listEl.innerHTML = html;
-        }
-
-        function fetchDocker() {
-            fetch("/api/events?count=50&type=infra.docker.summary").then(r => r.json()).then(events => {
-                if (!Array.isArray(events) || events.length === 0) { renderDockerSummary(null); return; }
-                const latest = events[events.length - 1];
-                renderDockerSummary(latest.data);
-            }).catch(() => { renderDockerSummary(null); });
-            fetch("/api/events?count=100&type=infra.docker.container").then(r => r.json()).then(events => {
-                if (!Array.isArray(events) || events.length === 0) return;
-                const seen = {};
-                for (const e of events) { seen[e.data.name] = e.data; }
-                tarsDockerContainers = Object.values(seen);
-                renderDockerContainerList(tarsDockerContainers);
-            }).catch(() => {});
-        }
-
-        function renderNetworkSummary(summary) {
-            const sumEl = document.getElementById("tars-network-summary");
-            if (!sumEl) return;
-            if (!summary || summary.total === 0) {
-                sumEl.querySelector(".value").textContent = "No network data";
-                sumEl.querySelector(".value").style.color = "rgba(210,235,255,0.2)";
-                return;
-            }
-            const color = summary.offline > 0 ? "#f87171" : "#4ade80";
-            const text = summary.online + "/" + summary.total + " online" + (summary.avgLatencyMs !== null ? "  avg " + summary.avgLatencyMs + "ms" : "");
-            sumEl.querySelector(".value").textContent = text;
-            sumEl.querySelector(".value").style.color = color;
-        }
-
-        function renderNetworkHostList(hosts) {
-            const listEl = document.getElementById("tars-network-list");
-            if (!listEl) return;
-            if (!hosts || hosts.length === 0) { listEl.innerHTML = ""; return; }
-            let html = "";
-            for (const h of hosts) {
-                const color = h.reachable ? "#4ade80" : "#f87171";
-                const latency = h.latencyMs !== null && h.latencyMs !== undefined ? h.latencyMs + "ms" : "—";
-                html += '<div class="tars-dashboard-row" style="padding-left:6px">' +
-                    '<span class="label" style="font-size:9px"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:' + color + ';margin-right:4px;vertical-align:middle"></span>' + h.host + '</span>' +
-                    '<span class="value" style="font-size:8px;color:' + color + '">' + (h.reachable ? "online " + latency : "offline") + '</span>' +
-                '</div>';
-            }
-            listEl.innerHTML = html;
-        }
-
-        function fetchNetwork() {
-            fetch("/api/events?count=50&type=infra.network.summary").then(r => r.json()).then(events => {
-                if (!Array.isArray(events) || events.length === 0) { renderNetworkSummary(null); return; }
-                renderNetworkSummary(events[events.length - 1].data);
-            }).catch(() => { renderNetworkSummary(null); });
-            fetch("/api/events?count=100&type=infra.network.host").then(r => r.json()).then(events => {
-                if (!Array.isArray(events) || events.length === 0) return;
-                const seen = {};
-                for (const e of events) { seen[e.data.host] = e.data; }
-                tarsNetworkHosts = Object.values(seen);
-                renderNetworkHostList(tarsNetworkHosts);
-            }).catch(() => {});
-        }
-
-        // Fetch latest metrics from API
-        function fetchMetrics() {
-            fetch("/api/events?count=50").then(r => r.json()).then(events => {
-                if (!Array.isArray(events)) return;
-                const cpu = events.filter(e => e.type === "health.cpu").pop();
-                const mem = events.filter(e => e.type === "health.memory").pop();
-                const disk = events.filter(e => e.type === "health.disk").pop();
-                const uptime = events.filter(e => e.type === "health.uptime").pop();
-                const service = events.filter(e => e.type === "system.heartbeat").pop();
-                updateMetrics({
-                    cpu: cpu?.data?.percent,
-                    mem: mem?.data?.percent,
-                    disk: disk?.data?.percent,
-                    temp: cpu?.data?.tempC,
-                    uptime: uptime?.data?.uptimeSeconds,
-                    services: service?.data?.services ? service.data.services.filter(s => s.status !== "stale").length + " online" : undefined
-                });
-            }).catch(() => {});
-        }
-
-        fetchMetrics();
-        fetchAlerts();
-        fetchDocker();
-        fetchNetwork();
-        if (infraTimer) clearInterval(infraTimer);
-        infraTimer = setInterval(function () {
-            fetchMetrics();
-            fetchAlerts();
-            fetchDocker();
-            fetchNetwork();
-        }, 10000);
-
-        // Live events from WebSocket
-        const handler = function (e) {
-            const ev = e.detail;
-            if (!ev || !ev.type) return;
-            if (ev.type === "health.cpu") {
-                if (ev.data.percent !== undefined) setVal("tars-infra-cpu", ev.data.percent + "%");
-                if (ev.data.tempC !== undefined) setVal("tars-infra-temp", ev.data.tempC + "°C");
-            }
-            if (ev.type === "health.memory" && ev.data.percent !== undefined) setVal("tars-infra-mem", ev.data.percent + "%");
-            if (ev.type === "health.disk" && ev.data.percent !== undefined) {
-                const diskEl = document.getElementById("tars-infra-disk");
-                if (diskEl) diskEl.querySelector(".value").textContent = ev.data.percent + "% (" + ev.data.device + ")";
-            }
-            if (ev.type === "health.uptime" && ev.data.uptimeSeconds !== undefined) {
-                const h = Math.floor(ev.data.uptimeSeconds / 3600);
-                const m = Math.floor((ev.data.uptimeSeconds % 3600) / 60);
-                setVal("tars-infra-uptime", h + "h " + m + "m");
-            }
-            if (ev.type === "system.heartbeat" && ev.data.services) {
-                const online = ev.data.services.filter(s => s.status !== "stale").length;
-                setVal("tars-infra-services", online + " online");
-            }
-            // Live alert events — refresh full alert list
-            if (ev.type.startsWith("alert.")) {
-                fetchAlerts();
-            }
-            // Live Docker events
-            if (ev.type === "infra.docker.summary") {
-                renderDockerSummary(ev.data);
-            }
-            if (ev.type === "infra.docker.container") {
-                const c = ev.data;
-                let updated = false;
-                for (let i = 0; i < tarsDockerContainers.length; i++) {
-                    if (tarsDockerContainers[i].name === c.name) {
-                        if (c.state === "removed") { tarsDockerContainers.splice(i, 1); }
-                        else { tarsDockerContainers[i] = c; }
-                        updated = true; break;
-                    }
-                }
-                if (!updated && c.state !== "removed") { tarsDockerContainers.push(c); }
-                renderDockerContainerList(tarsDockerContainers);
-            }
-            // Live Network events
-            if (ev.type === "infra.network.summary") {
-                renderNetworkSummary(ev.data);
-            }
-            if (ev.type === "infra.network.host") {
-                const h = ev.data;
-                let updated = false;
-                for (let i = 0; i < tarsNetworkHosts.length; i++) {
-                    if (tarsNetworkHosts[i].host === h.host) {
-                        tarsNetworkHosts[i] = h;
-                        updated = true; break;
-                    }
-                }
-                if (!updated) { tarsNetworkHosts.push(h); }
-                renderNetworkHostList(tarsNetworkHosts);
-            }
-        };
-        document.addEventListener("tars-event", handler);
-
-        return () => {
-            clearInterval(infraTimer);
-            document.removeEventListener("tars-event", handler);
-        };
-    });
-
-    // Screen 4: Monitor — placeholder for World Monitor, alerts, news
-    registerScreen("monitor", "Monitor", "◉", function (el) {
-        el.innerHTML =
-            '<div class="tars-dashboard">' +
-                '<div class="tars-dashboard-title">World Monitor</div>' +
-                '<div class="tars-placeholder">' +
-                    '<div class="icon">◉</div>' +
-                    '<div>External monitoring pending</div>' +
-                    '<div class="desc">Phase 8.3 will integrate weather, news, alerts, and calendar feeds.</div>' +
-                '</div>' +
-            '</div>';
-    });
-
-    // Screen 5: System — gateway to developer tools + system info
-    registerScreen("system", "System", "⚙", function (el) {
-        el.innerHTML =
-            '<div class="tars-dashboard">' +
-                '<div class="tars-dashboard-title">System</div>' +
-                '<div class="tars-dashboard-row"><span class="label">TARS Face</span><span class="value">v7.5</span></div>' +
-                '<div class="tars-dashboard-row"><span class="label">Runtime Server</span><span class="value" id="tars-sys-runtime">—</span></div>' +
-                '<div class="tars-dashboard-row"><span class="label">Event Bus</span><span class="value" id="tars-sys-events">—</span></div>' +
-                '<div style="margin-top:12px;display:flex;gap:6px;flex-wrap:wrap">' +
-                    '<button class="btn btn-sm" data-action="open-dev-tool" data-tab="brain">🧠 Brain</button>' +
-                    '<button class="btn btn-sm" data-action="open-dev-tool" data-tab="observatory">📊 Observatory</button>' +
-                    '<button class="btn btn-sm" data-action="open-dev-tool" data-tab="journal">📜 Journal</button>' +
-                    '<button class="btn btn-sm" data-action="open-dev-tool" data-tab="settings">⚙ Creator Console</button>' +
-                '</div>' +
-            '</div>';
-
-        // Fetch runtime info
-        fetch("/health").then(r => r.json()).then(h => {
-            const el2 = document.getElementById("tars-sys-runtime");
-            if (el2) el2.textContent = "v0.1.0 · up " + Math.floor(h.uptime / 60) + "m";
-            const el3 = document.getElementById("tars-sys-events");
-            if (el3) el3.textContent = h.eventBus.published + " pub, " + h.eventBus.subscriberCount + " subs";
-        }).catch(() => {
-            const el2 = document.getElementById("tars-sys-runtime");
-            if (el2) el2.textContent = "Offline";
-        });
-    });
-
-    // ── Navigation Controller ──
-    function switchScreen(id, skipSave) {
-        if (!screens[id]) return;
-        activeScreen = id;
-        if (!skipSave) localStorage.setItem("tars_active_screen", id);
-
-        // Cleanup previous screen
-        if (window.__tarsScreenCleanup) {
-            window.__tarsScreenCleanup();
-            window.__tarsScreenCleanup = null;
-        }
-
-        // Build screen divs if not exist
-        for (const sid of Object.keys(screens)) {
-            let screenEl = container.querySelector(".tars-screen[data-screen=\"" + sid + "\"]");
-            if (!screenEl) {
-                screenEl = document.createElement("div");
-                screenEl.className = "tars-screen";
-                screenEl.dataset.screen = sid;
-                container.appendChild(screenEl);
-            }
-            screenEl.classList.toggle("active", sid === id);
-        }
-
-        container.classList.toggle("active", id !== "world");
-
-        // Render active screen
-        const activeEl = container.querySelector(".tars-screen.active");
-        if (activeEl) {
-            activeEl.innerHTML = "";
-            const inner = document.createElement("div");
-            inner.className = "tars-screen-inner";
-            activeEl.appendChild(inner);
-            const cleanup = screens[id].render(inner);
-            if (typeof cleanup === "function") window.__tarsScreenCleanup = cleanup;
-        }
-
-        // Update nav buttons
-        navBtns.forEach(b => b.classList.toggle("active", b.dataset.screen === id));
-    }
-
-    // ── Event Wiring ──
-    navBtns.forEach(btn => {
-        btn.addEventListener("click", () => switchScreen(btn.dataset.screen));
-        btn.addEventListener("touchend", (e) => {
-            e.preventDefault();
-            switchScreen(btn.dataset.screen);
-        });
-    });
-
-    // Swipe handler
-    let touchStartX = 0;
-    let touchStartY = 0;
-    let swiping = false;
-
-    container.addEventListener("touchstart", (e) => {
-        if (e.touches.length === 1) {
-            touchStartX = e.touches[0].clientX;
-            touchStartY = e.touches[0].clientY;
-            swiping = true;
-        }
-    }, { passive: true });
-
-    container.addEventListener("touchmove", (e) => {
-        if (!swiping || e.touches.length !== 1) return;
-        const dx = e.touches[0].clientX - touchStartX;
-        const dy = e.touches[0].clientY - touchStartY;
-        if (Math.abs(dx) > 30 && Math.abs(dx) > Math.abs(dy) * 1.5) {
-            e.preventDefault();
-        }
-    }, { passive: false });
-
-    container.addEventListener("touchend", (e) => {
-        if (!swiping) return;
-        swiping = false;
-        const dx = e.changedTouches[0].clientX - touchStartX;
-        const dy = e.changedTouches[0].clientY - touchStartY;
-        if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
-            const keys = Object.keys(screens);
-            const idx = keys.indexOf(activeScreen);
-            if (dx < 0 && idx < keys.length - 1) switchScreen(keys[idx + 1]);
-            else if (dx > 0 && idx > 0) switchScreen(keys[idx - 1]);
-        }
-    }, { passive: true });
-
-    // Keyboard navigation
-    document.addEventListener("keydown", (e) => {
-        if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
-            const activeEl = container.querySelector(".tars-screen.active");
-            if (!activeEl) return;
-            // Don't capture if user is typing in an input
-            if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
-            e.preventDefault();
-            const keys = Object.keys(screens);
-            const idx = keys.indexOf(activeScreen);
-            if (e.key === "ArrowRight" && idx < keys.length - 1) switchScreen(keys[idx + 1]);
-            if (e.key === "ArrowLeft" && idx > 0) switchScreen(keys[idx - 1]);
-        }
-    });
-
-    // Open dev tool buttons (System screen)
-    document.addEventListener("click", (e) => {
-        const btn = e.target.closest("[data-action=\"open-dev-tool\"]");
-        if (btn && btn.dataset.tab && window.TARS_UI) {
-            TARS_UI.openTab(btn.dataset.tab);
-        }
-    });
-
-    // ── Init ──
-    switchScreen(activeScreen, true);
-    console.log("[TARS OS] Navigation shell initialized. Active screen:", activeScreen);
+    update();
 })();
 
 </script>

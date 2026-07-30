@@ -9,6 +9,7 @@ class NetworkMonitor {
         this.timeoutMs = options.timeoutMs || 5000;
         this._timer = null;
         this._prevStates = new Map();
+        this.statusReporter = options.statusReporter || null;
     }
 
     start() {
@@ -41,6 +42,7 @@ class NetworkMonitor {
             this._publishHost(r);
         }
         this._publishSummary(results);
+        if (this.statusReporter) this.statusReporter.reportUp("tars.monitor.network");
     }
 
     _pingHost(address) {
