@@ -31,6 +31,21 @@ This file contains archived session logs rotated from SESSION_LOG_v2.md.
 
 
 
+## Session 2026-07-23-01
+
+**Start Time:** 2026-07-23 17:15:00  
+**Status:** Completed  
+**Objective:** Home Lab Network Reconnaissance
+
+### Log
+
+* Confirmed TrueNAS IP: `192.168.0.100` via CLI
+* Identified Apple iMac: `10.0.0.190` (Wi-Fi, VNC 5900 open)
+* Documented dual-router topology: `10.0.0.0/24` WAN + `192.168.0.0/24` LAN
+* Updated `docs/home-lab-network.md` with device inventory, service catalog, TSE troubleshooting analysis
+
+---
+
 ## Session 2026-07-27-1530
 **Start Time:** 2026-07-27 22:10
 **Status:** In Progress

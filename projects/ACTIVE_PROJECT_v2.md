@@ -1,49 +1,40 @@
 # Active Project (v2 — Compressed to 1,500 chars max)
 
-**Last Updated:** July 26, 2026  
-**Character Budget:** 1,500 chars | **Current:** 1,134 chars | **Status:** ✅ Within limit
+**Last Updated:** July 29, 2026  
+**Character Budget:** 1,500 chars | **Current:** ~1,450 chars | **Status:** ✅ Within limit
 
 ---
 
 ## Current Priority
 
-**Amir OS v0.8.0** — Memory architecture consolidation & hard character limits complete. System now enforces intelligent context scarcity.
+**TARS Observatory Layer** — Stop behavioral tuning. Build comprehensive observability.
 
 ---
 
 ## Current Phase
 
-**Context Optimization & Resilient Memory Engine** (v0.8.0)
+**Observability & Telemetry System** (Phase 7.4)
 
-Just completed:
-- Added hard character limits (1,500-2,500 chars per file)
-- Consolidated scattered AGENTS.md files
-- Documented TSE-Production-Lab in memory
-- Created BOOT_PRECEDENCE.md for explicit agent loading order
+Completed (Phase 7.3):
+- Fatigue, scoring rebalance, wander, experience buffer, persistence v2
+- **Clock delta bug fix**: getElapsedTime/getDelta order froze loop since creation
+- Scoring: continuation bypass → decaying bias, NEED_RESTORATION 0.003→3-6pts, noise ±7.5→±3
+
+Objective:
+1. **Repair activity log** — reliable starts, completions, moves, durations
+2. **Developer Observatory** — F3 toggle: needs, fatigue, scores, intent, runner-up, countdowns
+3. **Upgrade telemetry** — full score breakdown per decision
+4. **Timeline view** — chronological record of movement, activity changes, weather, events
+5. **Subsystem design** — browser/Pi/phone subscribe to same event stream
 
 ---
 
 ## Recent Progress
 
-- v0.7.0: Memory compaction engine working (~2,500 char budget)
-- v0.8.0: Enforced hard limits across all memory files
-- Pushed Amir_OS to GitHub (github.com/AmirJackson38/Amir_OS)
-- Updated version.md, created ARCHITECTURE_AUDIT_v2.md
+Phases 7.1-7.3: Full autonomy (needs, fatigue, wander, scoring, persistence). Scoring fixes applied.
 
 ---
 
 ## Next Milestone
 
-**v0.9.0 — Project Auto-Discovery & Tool Integration**
-
-Focus: Automated project detection, character limit enforcement, session end routines.
-
----
-
-## Learning Connection
-
-This project builds: Documentation, system design, information architecture, automation, AI workflows, vendor independence.
-
----
-
-**See:** `CURRENT_STATE_v2.md` for broader context. `SESSION_LOG_v2.md` for session details.
+**Phase 7.4: Observatory Layer** — Answer *why*, not just *what*.

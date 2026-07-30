@@ -1,20 +1,23 @@
 ## Active Focus
 
-TARS World Engine (Phases 1-7.2 ✅, Telemetry ✅) complete in single-file `tars_face_v1.html`. Architecture evolved with skills/workflows/manifest system (adopted from AG Kit patterns).
+**Phase 7.4: TARS Observatory Layer** — Stop adding instincts. Build observability so we can answer *why* TARS does things.
 
 ---
 
 ## Active Projects
 
-1. **TARS World Engine** — Needs-based autonomous behavior, 7 activities, location scoring, activity effects, decision telemetry, world persistence. `http://localhost:8080/tars_face_v1.html`
-2. **TARS Architecture Evolution** — Skills/workflows/manifest: Agent/Skill/Workflow separation, progressive loading, manifest validation, frontmatter metadata.
+1. **TARS Observatory** — Repair activity log, build Developer Observatory (F3 toggle), upgrade telemetry with full score breakdown, add timeline view, design as subscribable subsystem (browser/Pi/phone).
+2. **TARS World Engine** — Complete, receiving observability layer. Behavioral tuning on hold until we can see what's happening.
 
 ---
 
 ## Next Actions
 
-1. Phase 7.2A observation protocol: 30-60 min autonomous run + controlled need scenarios + weather observation
-2. Tune behavior based on telemetry data
+1. Repair activity log: reliable starts, completions, moves, durations
+2. Build Developer Observatory panel (F3/Ctrl+Shift+D): live needs, fatigue, scores, intent, runner-up, countdowns
+3. Upgrade telemetry: log full score breakdown per decision
+4. Add chronological timeline view
+5. Design as subsystem — decouple from browser UI so Pi/phone can subscribe
 
 ---
 

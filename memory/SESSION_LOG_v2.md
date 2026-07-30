@@ -1,7 +1,22 @@
 # Session Log (v2 — Flight Recorder, 2,500 chars max)
 
-**Last Updated:** July 27, 2026  
-**Character Budget:** 2,500 chars | **Current:** ~2,200 chars | **Status:** ✅ Within limit
+**Last Updated:** July 29, 2026  
+**Character Budget:** 2,500 chars | **Current:** ~1,200 chars | **Status:** ✅ Within limit
+
+---
+
+## Session 2026-07-29
+
+**Start Time:** 2026-07-29  
+**Status:** In Progress  
+**Objective:** Phase 7.3 scoring + bug fix + observability shift
+
+### Log
+
+* Phase 7.3: fatigue, wander, scoring rebalance, experience buffer, telemetry, persistence v2
+* **Bug fix**: Three.js clock delta order caused frozen loop
+* **Scoring**: Continuation bypass→decaying bias. Noise ±7.5→±3. NEED_RESTORATION enabled
+* **Shift**: Stop tuning. Next: Phase 7.4 Observatory — Dev panel (F3), score telemetry, timeline
 
 ---
 
@@ -84,20 +99,4 @@
 
 
 
-## Session 2026-07-23-01
-
-**Start Time:** 2026-07-23 17:15:00  
-**Status:** Completed  
-**Objective:** Home Lab Network Reconnaissance
-
-### Log
-
-* Confirmed TrueNAS IP: `192.168.0.100` via CLI
-* Identified Apple iMac: `10.0.0.190` (Wi-Fi, VNC 5900 open)
-* Documented dual-router topology: `10.0.0.0/24` WAN + `192.168.0.0/24` LAN
-* Updated `docs/home-lab-network.md` with device inventory, service catalog, TSE troubleshooting analysis
-
----
-
-**Older sessions archived to SESSION_LOG_ARCHIVE.m
-... [TRUNCATED]
+**Older sessions archived to SESSION_LOG_ARCHIVE.md**

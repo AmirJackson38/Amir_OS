@@ -372,6 +372,26 @@
     #tars-connection-dot.disconnected { background: #f87171; box-shadow: 0 0 4px #f87171; }
     #tars-connection-dot.unknown { background: rgba(210, 235, 255, 0.15); }
 
+    #tars-alert-count {
+        display: inline-block;
+        font-size: 8px;
+        font-weight: bold;
+        color: #f87171;
+        background: rgba(248, 113, 113, 0.1);
+        border: 1px solid rgba(248, 113, 113, 0.2);
+        border-radius: 8px;
+        padding: 0 5px;
+        min-width: 14px;
+        text-align: center;
+        line-height: 14px;
+        margin: 0 4px;
+        flex-shrink: 0;
+        transition: opacity 0.3s;
+    }
+    #tars-alert-count.empty { opacity: 0; pointer-events: none; }
+    #tars-alert-count.warning { color: #eab308; border-color: rgba(234, 179, 8, 0.3); background: rgba(234, 179, 8, 0.08); }
+    #tars-alert-count.critical { color: #f87171; border-color: rgba(248, 113, 113, 0.3); background: rgba(248, 113, 113, 0.1); }
+
     /* Placeholder screen */
     .tars-placeholder {
         display: flex;
@@ -461,6 +481,7 @@
         <span class="nav-icon">⚙</span> SYSTEM
     </button>
     <span id="tars-connection-dot" class="unknown" title="Event bus status"></span>
+    <span id="tars-alert-count" class="empty" title="Active alerts">0</span>
 </div>
 
 <script type="module">
@@ -6644,6 +6665,27 @@ setInterval(() => TARS_UI.throttledUpdate(Date.now()), 400);
     if (window.TARS_EVENTS && window.TARS_EVENTS.isConnected()) setConnection("connected");
     else if (window.location.host) setConnection("connecting");
 
+    // ── Alert Count Badge ──
+    function updateAlertBadge() {
+        const badge = document.getElementById("tars-alert-count");
+        if (!badge) return;
+        fetch("/api/alerts?state=active").then(r => r.json()).then(alerts => {
+            if (!Array.isArray(alerts)) return;
+            const n = alerts.length;
+            badge.textContent = n;
+            if (n === 0) { badge.className = "empty"; return; }
+            const hasCritical = alerts.some(a => a.severity === "critical");
+            const hasWarning = alerts.some(a => a.severity === "warning");
+            badge.className = hasCritical ? "critical" : hasWarning ? "warning" : "";
+        }).catch(() => { badge.className = "empty"; });
+    }
+    document.addEventListener("tars-event", function (e) {
+        if (e.detail && e.detail.type && e.detail.type.startsWith("alert.")) {
+            updateAlertBadge();
+        }
+    });
+    updateAlertBadge();
+
     // ── Screen Registry ──
     function registerScreen(id, title, icon, renderFn) {
         screens[id] = { id, title, icon, render: renderFn };
@@ -6700,10 +6742,18 @@ setInterval(() => TARS_UI.throttledUpdate(Date.now()), 400);
                 '<div id="tars-infra-temp" class="tars-dashboard-row"><span class="label">Temperature</span><span class="value">—</span></div>' +
                 '<div id="tars-infra-uptime" class="tars-dashboard-row"><span class="label">Uptime</span><span class="value">—</span></div>' +
                 '<div id="tars-infra-services" class="tars-dashboard-row"><span class="label">Services</span><span class="value">—</span></div>' +
+            '</div>' +
+            '<div class="tars-dashboard" style="margin-top:8px" id="tars-alert-timeline">' +
+                '<div class="tars-dashboard-title">Alerts</div>' +
+                '<div id="tars-alert-list"><div class="tars-dashboard-row"><span class="label" style="color:rgba(210,235,255,0.2)">No active alerts</span></div></div>' +
             '</div>';
 
+        function setVal(id, val) {
+            const e = document.getElementById(id);
+            if (e) e.querySelector(".value").textContent = val;
+        }
+
         function updateMetrics(data) {
-            const setVal = (id, val) => { const e = document.getElementById(id); if (e) e.querySelector(".value").textContent = val; };
             if (data.cpu !== undefined) setVal("tars-infra-cpu", data.cpu + "%");
             if (data.mem !== undefined) setVal("tars-infra-mem", data.mem + "%");
             if (data.disk !== undefined) setVal("tars-infra-disk", data.disk + "%");
@@ -6716,7 +6766,39 @@ setInterval(() => TARS_UI.throttledUpdate(Date.now()), 400);
             if (data.services !== undefined) setVal("tars-infra-services", data.services);
         }
 
-        // Fetch latest from API
+        function renderAlertList(alerts) {
+            const list = document.getElementById("tars-alert-list");
+            if (!list) return;
+            if (!alerts || alerts.length === 0) {
+                list.innerHTML = '<div class="tars-dashboard-row"><span class="label" style="color:rgba(210,235,255,0.2)">No active alerts</span></div>';
+                return;
+            }
+            const colors = { critical: "#f87171", warning: "#eab308", info: "#5fd0ff" };
+            const labels = { critical: "CRIT", warning: "WARN", info: "INFO" };
+            let html = "";
+            for (const a of alerts) {
+                const color = colors[a.severity] || "rgba(210,235,255,0.3)";
+                const time = a.createdAt ? new Date(a.createdAt).toLocaleTimeString() : "";
+                html += '<div class="tars-dashboard-row" style="border-left:2px solid ' + color + ';padding-left:6px">' +
+                    '<span class="label"><span style="color:' + color + ';font-weight:bold">' + (labels[a.severity] || a.severity) + '</span> ' +
+                    a.title + (a.count > 1 ? ' <span style="color:rgba(210,235,255,0.2)">(x' + a.count + ')</span>' : '') + '</span>' +
+                    '<span class="value" style="font-size:8px;color:rgba(210,235,255,0.3)">' + time + '</span>' +
+                '</div>';
+                if (a.message) {
+                    html += '<div class="tars-dashboard-row" style="border-left:2px solid ' + color + ';padding:0 0 4px 10px;font-size:8px;color:rgba(210,235,255,0.3)">' +
+                        a.message + '</div>';
+                }
+            }
+            list.innerHTML = html;
+        }
+
+        function fetchAlerts() {
+            fetch("/api/alerts?state=active").then(r => r.json()).then(alerts => {
+                if (Array.isArray(alerts)) renderAlertList(alerts);
+            }).catch(() => {});
+        }
+
+        // Fetch latest metrics from API
         function fetchMetrics() {
             fetch("/api/events?count=50").then(r => r.json()).then(events => {
                 if (!Array.isArray(events)) return;
@@ -6725,7 +6807,6 @@ setInterval(() => TARS_UI.throttledUpdate(Date.now()), 400);
                 const disk = events.filter(e => e.type === "health.disk").pop();
                 const uptime = events.filter(e => e.type === "health.uptime").pop();
                 const service = events.filter(e => e.type === "system.heartbeat").pop();
-
                 updateMetrics({
                     cpu: cpu?.data?.percent,
                     mem: mem?.data?.percent,
@@ -6738,14 +6819,17 @@ setInterval(() => TARS_UI.throttledUpdate(Date.now()), 400);
         }
 
         fetchMetrics();
+        fetchAlerts();
         if (infraTimer) clearInterval(infraTimer);
-        infraTimer = setInterval(fetchMetrics, 10000);
+        infraTimer = setInterval(function () {
+            fetchMetrics();
+            fetchAlerts();
+        }, 10000);
 
         // Live events from WebSocket
         const handler = function (e) {
             const ev = e.detail;
             if (!ev || !ev.type) return;
-            const setVal = (id, val) => { const el2 = document.getElementById(id); if (el2) el2.querySelector(".value").textContent = val; };
             if (ev.type === "health.cpu") {
                 if (ev.data.percent !== undefined) setVal("tars-infra-cpu", ev.data.percent + "%");
                 if (ev.data.tempC !== undefined) setVal("tars-infra-temp", ev.data.tempC + "°C");
@@ -6763,6 +6847,10 @@ setInterval(() => TARS_UI.throttledUpdate(Date.now()), 400);
             if (ev.type === "system.heartbeat" && ev.data.services) {
                 const online = ev.data.services.filter(s => s.status !== "stale").length;
                 setVal("tars-infra-services", online + " online");
+            }
+            // Live alert events — refresh full alert list
+            if (ev.type.startsWith("alert.")) {
+                fetchAlerts();
             }
         };
         document.addEventListener("tars-event", handler);

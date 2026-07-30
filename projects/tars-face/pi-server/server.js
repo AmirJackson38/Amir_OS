@@ -7,6 +7,7 @@ const { EventBus } = require("./event-bus");
 const { WsBridge } = require("./ws-bridge");
 const { HealthMonitor } = require("./services/health-monitor");
 const { StatusReporter } = require("./services/status-reporter");
+const { AlertManager } = require("./services/alert-manager");
 
 const ROOT = path.resolve(__dirname, "..");
 const CONFIG_PATH = path.resolve(ROOT, "config", "tars-config.json");
@@ -51,8 +52,21 @@ const server = http.createServer((req, res) => {
             uptime: Math.floor(process.uptime()),
             timestamp: Date.now(),
             eventBus: eventBus.getStats(),
-            services: statusReporter ? statusReporter.getStatus() : []
+            services: statusReporter ? statusReporter.getStatus() : [],
+            alerts: alertManager ? alertManager.getAlertStats() : {}
         }));
+        return;
+    }
+
+    if (url.pathname === "/api/alerts") {
+        const count = parseInt(url.searchParams.get("count")) || 20;
+        const state = url.searchParams.get("state");
+        res.writeHead(200, { "Content-Type": "application/json" });
+        if (state === "active") {
+            res.end(JSON.stringify(alertManager ? alertManager.getActiveAlerts() : []));
+        } else {
+            res.end(JSON.stringify(alertManager ? alertManager.getAlertHistory(count) : []));
+        }
         return;
     }
 
@@ -100,9 +114,13 @@ healthMonitor.start();
 const statusReporter = new StatusReporter(eventBus);
 statusReporter.start();
 
+const alertManager = new AlertManager(eventBus, config.alerts);
+alertManager.start();
+
 statusReporter.reportUp("tars.runtime", { version: "0.1.0" });
 statusReporter.reportUp("tars.monitor.health", { version: "0.1.0" });
 statusReporter.reportUp("tars.wsbridge", { version: "0.1.0" });
+statusReporter.reportUp("tars.alert", { version: "0.1.0" });
 
 eventBus.publish({
     id: crypto.randomUUID(),
@@ -134,6 +152,7 @@ function shutdown(signal) {
     });
 
     healthMonitor.stop();
+    alertManager.stop();
     statusReporter.stop();
     wsBridge.close();
     server.close(() => {

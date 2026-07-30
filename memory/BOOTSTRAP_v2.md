@@ -1,7 +1,7 @@
 # Amir OS Session Resume Bootstrap (v2 Fast-Boot)
-> Generated: 2026-07-27 21:50:00 UTC
-> Amir OS Version: v0.9.0 (Single-File Fast-Boot Engine)
-> Memory Efficiency: 4833 / 5,500 chars used
+> Generated: 2026-07-29 20:41:27 UTC
+> Amir OS Version: v0.8.0 (Single-File Fast-Boot Engine)
+> Memory Efficiency: 4877 / 5,500 chars used
 
 This file contains the consolidated runtime state of Amir OS v0.8.0.
 Single-File Fast Boot: Reading this file provides 100% of the active context in 1 tool call.
@@ -39,10 +39,10 @@ Single-File Fast Boot: Reading this file provides 100% of the active context in 
 
 ## Active Staged Action
 
-- **Timestamp:** 2026-07-27 20:50:00 UTC
-- **Target Component:** T.A.R.S. World Engine — Phase 3: LLM Intent Parsing & Behavioral JSON
-- **Planned Action:** Phase 3a (Foundation Audit) + Phase 3b (Priority & Control Integration) complete. Ready for real LLM integration.
-- **Status:** Completed (Schema, Mock Generator, Prompt Template, Audit, Control Mode, Priority Gate, Reason Propagation — all built)
+- **Timestamp:** 2026-07-27 22:42:00 UTC
+- **Target Component:** TARS Architecture Evolution — Agent/Skill/Workflow Separation
+- **Planned Action:** Adopt AG Kit architectural patterns: skill modules with progressive loading, workflow definitions, YAML frontmatter, manifest.json component registry, enhanced health_check.py validation. Preserve all existing boot precedence, memory architecture, and TARS runtime.
+- **Status:** Completed. Skills/workflows/manifest created. BOOT_PRECEDENCE.md and Boot.md updated with skill/workflow awareness. health_check.py extended with manifest validation. Frontmatter added to agent config files. AGENTS_GLOBAL.md created.
 
 ---
 
@@ -384,7 +384,7 @@ Restore flow:
 
 | Category | Fields | Storage |
 |----------|--------|---------|
-| **TARS State** | location, activity, activityStartedAt, activityReason, previousActivity, mood, energy, controlMode (always restored to "autonomous"), needs, preferences (full object) | Snapshot |
+| **TARS State** | location, activity, activityStartedAt, activityEndsAt, activityReason, previousActivity, mood, energy, controlMode (always restored to "autonomous"), needs, preferences (full object), locationRecency | Snapshot |
 | **Environment** | weather (condition, intensity, precipitation, wind, lightning, visibility), timeOfDay, temperature | Snapshot |
 | **World Memory** | Curated array of meaningful events cross-session (~20 max) | Array |
 | **Session** | previousSessionEnd, totalElapsed (ms since last save) | Computed at restore |
@@ -414,8 +414,8 @@ Restore flow:
 
 ### Autonomy integration
 
-- On startup, restored activity is set as current, but autonomy engine is free to override on next decision cycle (1-3s)
-- `controlMode` always restored to "autonomous" — no stuck LLM mode across sessions
+- On startup, restored activity is set as current, with remaining duration preserved via persisted `activityEndsAt` (adjusted for real-time elapsed since save, or expired if the activity completed offline)
+- Autonomy gates on `now < activityEndsAt` — does not override mid-activity
 - Needs decay/restoration continues normally after restore
 - Phase 3b priority gate (llm vs autonomous) preserved
 
@@ -430,6 +430,9 @@ Restore flow:
 | Missing fields → fallback to defaults | PASS |
 | Needs values preserved | PASS |
 | worldMemory preserved across sessions | PASS |
+| activityEndsAt persisted and restored with correct remaining duration | PASS |
+| locationRecency timestamps shifted by offline elapsed time | PASS |
+| Activity expired during offline → autonomy free on reload | PASS |
 
 ### Known limitations
 
@@ -585,69 +588,25 @@ Exposed as `window.getTARSContext`.
 - No chat UI (Phase 7)
 - Interruption system uses a simple array queue — no dedup or cooldown yet
 
-## Phase 6 Stabilization (Complete) — Activity Pacing & Log Usability
-
-**Objective:** Fix autonomous activity pacing (rapid weather/server ping-pong) and activity-log usability.
-
-**Timestamp:** 2026-07-27
-
-### Root Cause Analysis
-
-The scoring system had three structural biases causing rapid alternation between `weather_observation` at `window_right` and `server_check` at `rack-a`:
-
-1. **Location key mismatch:** `LOCATIONS` array used `"desk"` and `"user"` but `prefs.locations` stored `"workstation"`. Both fell back to 0.5, giving `window_right` (pref 0.9 → 9pts) and `rack-a` (pref 0.85 → 8.5pts) a massive structural advantage.
-
-2. **Flat weather affinity:** Windows had an unconditional `+7.5` bonus from `(prefs.conditions[weather] || 0.5) * 15`. This was always active regardless of TARS's need state, making windows the default best location.
-
-3. **No activity lifecycle:** `makeAutonomousDecision()` could make a new decision every 1-3s regardless of whether the current activity was still in progress. There was no concept of "minimum activity duration."
-
-### What Changed
-
-| Change | File Location | Description |
-|--------|--------------|-------------|
-| **Activity durations** | `ACTIVITY_REGISTRY` entries | Each activity has `minDuration`/`maxDuration` (seconds): weather_observation (12-35), computer_work (20-60), server_check (10-30), user_interaction (15-40), gaming (20-90), tv_watching (20-90), idle (5-15) |
-| **Activity lifecycle field** | `worldState.tars.activityEndsAt` | Computed on every `setTARSActivity()` call from registry metadata + random variance |
-| **Decision gating** | `makeAutonomousDecision()` | Returns early if `now < activityEndsAt` — activity stays engaged for its natural duration |
-| **Activity completion logging** | `setTARSActivity()` | Logs `activity_completed` event with duration when transitioning away from previous activity |
-| **Location recency penalty** | `worldState.tars.locationRecency` | Each location tracks `lastLeft` timestamp; scoring applies a decaying penalty if location was left <45s ago |
-| **Location key mapping** | `LOCATION_PREF_KEYS` lookup table | Maps `"desk"` → `"workstation"`, `"user"` → `"user"` so preference scores use the correct keys |
-| **Need-weighted weather affinity** | `scoreLocation()` | Weather bonus now multiplied by `(1 - needs.curiosity)` — only interesting when TARS is curious |
-| **Decision interval increased** | `makeAutonomousDecision()` | From 1-3s to 2-4s (less frantic decision noise) |
-| **Switch threshold raised** | `makeAutonomousDecision()` | From `best > current + 3` to `best > current + 5`, current threshold from 40→30 |
-| **Old stay penalty removed** | `scoreLocation()` | Replaced by the combination of activity duration gating + recency penalty |
-| **Smart auto-scroll** | `updateActivityDisplay()` | Only auto-scrolls when user is within 24px of bottom; manual scroll position preserved on new entries |
-
-### Preserved Properties
-
-- HIGH/CRITICAL world events still interrupt via `processWorldEvents() → lookAt()` (bypasses activity duration gate)
-- LLM control still overrides autonomy (`controlMode === "llm"` check untouched)
-- `updateNeeds()` runs every frame regardless of activity state
-- All existing scoring factors preserved (need deficit, routine bonus, distance, randomness)
-- Activity log continues to show start/completion events without flooding
-
-### Debug API
-
-`window.TARS_AUTONOMY.status()` returns: `{ activity, location, activityEndsAt, remaining (seconds), locationRecency }`
-
-Set `window.TARS_DEBUG = true` for verbose decision logs.
-
 ## Phase 6 Final Fix (Complete) — Mid-Activity State Persistence
 
-**Objective:** Ensure `activityEndsAt` and `locationRecency` survive browser reloads so restored sessions preserve remaining activity duration and location-cooldown state.
+**Objective:** Ensure `activityEndsAt` and `locationRecency` survive browser reloads so that restored sessions preserve remaining activity duration and location-cooldown state.
 
 **Timestamp:** 2026-07-27
 
 **What changed:**
 
-| Change | Location | Description |
-|--------|----------|-------------|
-| `activityEndsAt` in capture/apply | WorldPersistence | Saved to snapshot; restored with `Math.max(saved, Date.now())` for correct real-time remaining duration |
-| `locationRecency` in capture/apply | WorldPersistence | Saved to snapshot; timestamps shifted forward by `Date.now() - savedAt` |
+| Change | File | Description |
+|--------|------|-------------|
+| `activityEndsAt` in capture() | `WorldPersistence.capture()` | Field added to snapshot |
+| `activityEndsAt` in applyToState() | `WorldPersistence.applyToState()` | Restored using `Math.max(saved, Date.now())` so real-time elapsed is accounted for; expired activities immediately free autonomy |
+| `locationRecency` in capture() | `WorldPersistence.capture()` | Shallow copy of map added to snapshot |
+| `locationRecency` in applyToState() | `WorldPersistence.applyToState()` | Timestamps shifted forward by `Date.now() - savedAt` so recency penalties are preserved across sessions |
 
-**Key behaviors:**
-- Activity resumes with correct remaining real-time duration (or expires immediately if the end time passed during offline)
+**Behavior after restore:**
+- Activity resumes with correct remaining real-time duration (or expires immediately if the end time has passed)
 - Autonomy gates on `now < activityEndsAt` — no premature override
-- Location cooldowns preserved across sessions
+- Location cooldowns preserved — TARS remembers which locations were recently visited
 
 ## Phase 7 (Planned) — Environmental Events, Ambient Life & Chat UI
 
@@ -691,93 +650,75 @@ For full release history and milestone details (v0.1.0 – v0.8.0), see: [docs/C
 ### Current State
 ## Active Focus
 
-TARS World Engine Foundation (Phase 1) + Autonomous Scheduler (Phase 2) complete in single-file `tars_face_v1.html`. Zero LLM dependency - all local.
+**Phase 7.4: TARS Observatory Layer** — Stop adding instincts. Build observability so we can answer *why* TARS does things.
 
 ---
-
 
 ## Active Projects
 
-1. **TARS World Engine** (Phase 1 ✅, Phase 2 ✅) — Centralized worldState, dual windows (city + bridge), generalized weather (10+ conditions), preferences/affinities, activity logging, autonomous needs scheduler. Deployed at `http://localhost:8080/tars_face_v1.html`.
-
-2. **Amir OS** — Personal AI environment with memory system. Memory files at `/memory/*_v2.md`.
-
-3. **Home Lab** — TrueNAS, TARS Pi, ER605, dual-subnet.
+1. **TARS Observatory** — Repair activity log, build Developer Observatory (F3 toggle), upgrade telemetry with full score breakdown, add timeline view, design as subscribable subsystem (browser/Pi/phone).
+2. **TARS World Engine** — Complete, receiving observability layer. Behavioral tuning on hold until we can see what's happening.
 
 ---
-
 
 ## Next Actions
 
-1. Verify overnight autonomy run (browser tab throttling)
-2. Phase 3: LLM intent parsing → behavioral JSON
-3. Phase 4: Cross-session memory persistence
+1. Repair activity log: reliable starts, completions, moves, durations
+2. Build Developer Observatory panel (F3/Ctrl+Shift+D): live needs, fatigue, scores, intent, runner-up, countdowns
+3. Upgrade telemetry: log full score breakdown per decision
+4. Add chronological timeline view
+5. Design as subsystem — decouple from browser UI so Pi/phone can subscribe
 
 ---
-
 
 ## Key Files
 
-- `projects/tars-face/tars_face_v1.html` — Single-file Three.js app (no build)
-- `memory/*_v2.md` — Consolidated memory
-
----
-
-
-## See
-
-`PROJECT_REGISTRY.md` for full inventory. `ACTIVE_PROJECT_v2.md` for current priority.
+- `projects/tars-face/tars_face_v1.html` — Single-file Three.js app
+- `skills/*/SKILL.md` — Progressive-load skill modules
+- `workflows/*.md` — Structured procedure definitions
+- `manifest.json` — Component registry
 
 ### Active Project
 # Active Project (v2 — Compressed to 1,500 chars max)
 
-**Last Updated:** July 26, 2026  
-**Character Budget:** 1,500 chars | **Current:** 1,134 chars | **Status:** ✅ Within limit
+**Last Updated:** July 29, 2026  
+**Character Budget:** 1,500 chars | **Current:** ~1,450 chars | **Status:** ✅ Within limit
 
 ---
 
 ## Current Priority
 
-**Amir OS v0.8.0** — Memory architecture consolidation & hard character limits complete. System now enforces intelligent context scarcity.
+**TARS Observatory Layer** — Stop behavioral tuning. Build comprehensive observability.
 
 ---
 
 ## Current Phase
 
-**Context Optimization & Resilient Memory Engine** (v0.8.0)
+**Observability & Telemetry System** (Phase 7.4)
 
-Just completed:
-- Added hard character limits (1,500-2,500 chars per file)
-- Consolidated scattered AGENTS.md files
-- Documented TSE-Production-Lab in memory
-- Created BOOT_PRECEDENCE.md for explicit agent loading order
+Completed (Phase 7.3):
+- Fatigue, scoring rebalance, wander, experience buffer, persistence v2
+- **Clock delta bug fix**: getElapsedTime/getDelta order froze loop since creation
+- Scoring: continuation bypass → decaying bias, NEED_RESTORATION 0.003→3-6pts, noise ±7.5→±3
+
+Objective:
+1. **Repair activity log** — reliable starts, completions, moves, durations
+2. **Developer Observatory** — F3 toggle: needs, fatigue, scores, intent, runner-up, countdowns
+3. **Upgrade telemetry** — full score breakdown per decision
+4. **Timeline view** — chronological record of movement, activity changes, weather, events
+5. **Subsystem design** — browser/Pi/phone subscribe to same event stream
 
 ---
 
 ## Recent Progress
 
-- v0.7.0: Memory compaction engine working (~2,500 char budget)
-- v0.8.0: Enforced hard limits across all memory files
-- Pushed Amir_OS to GitHub (github.com/AmirJackson38/Amir_OS)
-- Updated version.md, created ARCHITECTURE_AUDIT_v2.md
+Phases 7.1-7.3: Full autonomy (needs, fatigue, wander, scoring, persistence). Scoring fixes applied.
 
 ---
 
 ## Next Milestone
 
-**v0.9.0 — Project Auto-Discovery & Tool Integration**
-
-Focus: Automated project detection, character limit enforcement, session end routines.
-
----
-
-## Learning Connection
-
-This project builds: Documentation, system design, information architecture, automation, AI workflows, vendor independence.
-
----
-
-**See:** `CURRENT_STATE_v2.md` for broader context. `SESSION_LOG_v2.md` for session details.
+**Phase 7.4: Observatory Layer** — Answer *why*, not just *what*.
 
 ---
 
@@ -785,41 +726,32 @@ This project builds: Documentation, system design, information architecture, aut
 
 # Session Log (v2 — Flight Recorder, 2,500 chars max)
 
-**Last Updated:** July 27, 2026  
-**Character Budget:** 2,500 chars | **Current:** ~2,200 chars | **Status:** ✅ Within limit
+**Last Updated:** July 29, 2026  
+**Character Budget:** 2,500 chars | **Current:** ~1,200 chars | **Status:** ✅ Within limit
 
 ---
 
+## Session 2026-07-29
 
+**Start Time:** 2026-07-29  
+**Status:** In Progress  
+**Objective:** Phase 7.3 scoring + bug fix + observability shift
 
+### Log
 
+* Phase 7.3: fatigue, wander, scoring rebalance, experience buffer, telemetry, persistence v2
+* **Bug fix**: Three.js clock delta order caused frozen loop
+* **Scoring**: Continuation bypass→decaying bias. Noise ±7.5→±3. NEED_RESTORATION enabled
+* **Shift**: Stop tuning. Next: Phase 7.4 Observatory — Dev panel (F3), score telemetry, timeline
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+---
 
 ## Session 2026-07-27-1529
 **Start Time:** 2026-07-27 20:29
-**Status:** In Progress
+**Status:** Completed
 **Objective:** session end
+
+
 
 ## Session 2026-07-27-1528
 
@@ -832,10 +764,14 @@ This project builds: Documentation, system design, information architecture, aut
 * session end: completed memory promoter fixes and active_project_v2.md cleanup
 
 
+
+
 ## Session 2026-07-27
 **Start Time:** 2026-07-27
 **Status:** In Progress
 **Objective:** Memory promoter cleanup, ACTIVE_PROJECT_v2.md corruption fix, Phase 2 autonomous needs system complete
+
+
 
 
 ## Session 2026-07-24-03
@@ -852,6 +788,8 @@ This project builds: Documentation, system design, information architecture, aut
 * Boot automation live — OmniRoute + boot menu now trigger on system restart
 
 ---
+
+
 
 
 
@@ -885,23 +823,9 @@ This project builds: Documentation, system design, information architecture, aut
 
 
 
-## Session 2026-07-23-01
 
-**Start Time:** 2026-07-23 17:15:00  
-**Status:** Completed  
-**Objective:** Home Lab Network Reconnaissance
 
-### Log
-
-* Confirmed TrueNAS IP: `192.168.0.100` via CLI
-* Identified Apple iMac: `10.0.0.190` (Wi-Fi, VNC 5900 open)
-* Documented dual-router topology: `10.0.0.0/24` WAN + `192.168.0.0/24` LAN
-* Updated `docs/home-lab-network.md` with device inventory, service catalog, TSE troubleshooting analysis
-
----
-
-**Older sessions archived to SESSION_LOG_ARCHIVE.m
-... [TRUNCATED]
+**Older sessions archived to SESSION_LOG_ARCHIVE.md**
 
 ---
 
@@ -909,7 +833,7 @@ This project builds: Documentation, system design, information architecture, aut
 
 # Project Registry (Auto-Generated)
 
-**Last Updated:** 2026-07-27 21:30:14 UTC  
+**Last Updated:** 2026-07-29 20:41:27 UTC  
 **Status:** Active registry  
 **Purpose:** Consolidated inventory of all active, paused, and archived projects
 
@@ -943,8 +867,13 @@ This project builds: Documentation, system design, information architecture, aut
 ## 6. Active Workspace Changes (Git Status)
 
 ```
-M memory/PROJECT_REGISTRY.md
- M memory/STAGING_INTENT.md
+M memory/BOOTSTRAP_v2.md
+ M memory/CURRENT_STATE_v2.md
+ M memory/LESSONS_v2.md
+ M memory/PROJECT_REGISTRY.md
+ M memory/SESSION_LOG_ARCHIVE.md
+ M memory/SESSION_LOG_v2.md
+ M projects/ACTIVE_PROJECT_v2.md
  M projects/tars-face/tars_face_v1.html
 ```
 
@@ -953,56 +882,56 @@ M memory/PROJECT_REGISTRY.md
 ## 7. Current Code Diffs (Capped at 50 Lines)
 
 ```diff
-diff --git a/memory/PROJECT_REGISTRY.md b/memory/PROJECT_REGISTRY.md
-index 0581dcc..f55f73c 100644
---- a/memory/PROJECT_REGISTRY.md
-+++ b/memory/PROJECT_REGISTRY.md
-@@ -1,6 +1,6 @@
- # Project Registry (Auto-Generated)
+diff --git a/memory/BOOTSTRAP_v2.md b/memory/BOOTSTRAP_v2.md
+index caace54..33621a6 100644
+--- a/memory/BOOTSTRAP_v2.md
++++ b/memory/BOOTSTRAP_v2.md
+@@ -1,7 +1,7 @@
+ # Amir OS Session Resume Bootstrap (v2 Fast-Boot)
+-> Generated: 2026-07-27 21:50:00 UTC
+-> Amir OS Version: v0.9.0 (Single-File Fast-Boot Engine)
+-> Memory Efficiency: 4833 / 5,500 chars used
++> Generated: 2026-07-29 20:41:09 UTC
++> Amir OS Version: v0.8.0 (Single-File Fast-Boot Engine)
++> Memory Efficiency: 4914 / 5,500 chars used
  
--**Last Updated:** 2026-07-27 21:21:30 UTC  
-+**Last Updated:** 2026-07-27 21:30:14 UTC  
- **Status:** Active registry  
- **Purpose:** Consolidated inventory of all active, paused, and archived projects
+ This file contains the consolidated runtime state of Amir OS v0.8.0.
+ Single-File Fast Boot: Reading this file provides 100% of the active context in 1 tool call.
+@@ -39,10 +39,10 @@ Single-File Fast Boot: Reading this file provides 100% of the active context in
  
-diff --git a/memory/STAGING_INTENT.md b/memory/STAGING_INTENT.md
-index b7ea38a..f66d4c8 100644
---- a/memory/STAGING_INTENT.md
-+++ b/memory/STAGING_INTENT.md
-@@ -502,7 +502,55 @@ Exposed as `window.getTARSContext`.
+ ## Active Staged Action
  
- - No active hunger restoration yet (no food activity available)
- - Offline rates are linear per hour — no time-of-day variation yet
--- No LLM actually reads the context API yet (Phase 6)
--- Activity registry is minimal (5 entries) — needs expansion in Phase 6
+-- **Timestamp:** 2026-07-27 20:50:00 UTC
+-- **Target Component:** T.A.R.S. World Engine — Phase 3: LLM Intent Parsing & Behavioral JSON
+-- **Planned Action:** Phase 3a (Foundation Audit) + Phase 3b (Priority & Control Integration) complete. Ready for real LLM integration.
+-- **Status:** Completed (Schema, Mock Generator, Prompt Template, Audit, Control Mode, Priority Gate, Reason Propagation — all built)
++- **Timestamp:** 2026-07-27 22:42:00 UTC
++- **Target Component:** TARS Architecture Evolution — Agent/Skill/Workflow Separation
++- **Planned Action:** Adopt AG Kit architectural patterns: skill modules with progressive loading, workflow definitions, YAML frontmatter, manifest.json component registry, enhanced health_check.py validation. Preserve all existing boot precedence, memory architecture, and TARS runtime.
++- **Status:** Completed. Skills/workflows/manifest created. BOOT_PRECEDENCE.md and Boot.md updated with skill/workflow awareness. health_check.py extended with manifest validation. Frontmatter added to agent config files. AGENTS_GLOBAL.md created.
  
--## Phase 6 (Planned) — Environmental Events & Ambient Life
-\ No newline at end of file
-+## Phase 6 (Complete) — LLM ↔ World Engine Integration
-+
-+**Objective:** Build the integration boundary that allows an LLM to observe and participate in the World Engine without creating a second behavior system.
-+
-+**Timestamp:** 2026-07-27
-+
-+### What was built
-+
-+| System | Description |
-+|--------|-------------|
-+| **getTARSContext() enhanced** | Now includes `availableActions` (emotions, gestures, gaze targets, movements, activities), `locations` with coordinates, `isNight` |
-+| **validateIntent()** | Public validation returning `{ valid, errors[], sanitized }` — safe for LLM intents, no mutation |
-+| **TARS_INTENT.sanitize()** | Silently strips invalid fields from raw object input (replaces old `validate()` as the inner pipeline) |
-+| **TARS_INTENT.parse() fixed** | Now returns `{ behavior, validation }` object instead of raw behavior; missing `.shift()` for log pruning fixed; `validateIntent` exposed publicly |
-+| **TARS_LLM** | Clean entry point: `handleIntent(intent)` → validates → routes through existing `TARS.setBehavior()` pipeline; `endConversation()` → releases control; `getContext()` → structured snapshot; `isAvailable()` → checks controlMode |
-+| **queueWorldEvent()** | External event queue with priority; events drain silently if below current activity priority |
-+| **processWorldEvents()** | Called each frame in animate loop; compares event priority vs current activity priority; interrupts only if event > current; defers entirely when controlMode === "llm" |
-+| **ACTIVITY_REGISTRY expanded** | Added `gaming`, `tv_watching` entries; all 6 activities now have `requiredObject` field; `needsSatisfied` expanded; `user_interaction` marked `persistentEvent: true` |
-+| **Wrapper lookAt fixed** | Now accepts and passes `reason` parameter through to `setTARSActivity()` instead of hardcoding `"autonomous_move"`; uses `.call()` instead of `.apply()` for cleaner signature |
-+
-+### Key design properties
-+
-+- **LLM is the intelligence layer, not the World Engine** — the World Engine remains authoritative over simulated world, internal state, available actions, and visual state
-+- **All LLM actions flow through existing pipeline**: `handleIntent()` → `TARS_INTENT.parse()` → `TARS.setBehavior()` → `lookAt()` → `setTARSActivity()` → `WorldPersistence.save()`
-+- **Autonomous behavior preserved when not interacting**: controlMode remains "autonomous" by default; LLM only takes control via `TARS.setBehavior()`
+ ---
+ 
+@@ -384,7 +384,7 @@ Restore flow:
+ 
+ | Category | Fields | Storage |
+ |----------|--------|---------|
+-| **TARS State** | location, activity, activityStartedAt, activityReason, previousActivity, mood, energy, controlMode (always restored to "autonomous"), needs, preferences (full object) | Snapshot |
++| **TARS State** | location, activity, activityStartedAt, activityEndsAt, activityReason, previousActivity, mood, energy, controlMode (always restored to "autonomous"), needs, preferences (full object), locationRecency | Snapshot |
+ | **Environment** | weather (condition, intensity, precipitation, wind, lightning, visibility), timeOfDay, temperature | Snapshot |
+ | **World Memory** | Curated array of meaningful events cross-session (~20 max) | Array |
+ | **Session** | previousSessionEnd, totalElapsed (ms since last save) | Computed at restore |
+@@ -414,8 +414,8 @@ Restore flow:
+ 
+ ### Autonomy integration
+ 
+-- On startup, restored activity is set as current, but autonomy engine is free to override on next decision cycle (1-3s)
+-- `controlMode` always restored to "autonomous" — no stuck LLM mode across sessions
++- On startup, restored activity is set as current, with remaining duration preserved via persisted `activityEndsAt` (adjusted for real-time elapsed since save, or expired if the activity completed offline)
++- Autonomy gates on `now < activityEndsAt` — does not override mid-activity
+ - Needs decay/restoration continues normally after restore
+ - Phase 3b priority gate (llm vs autonomous) preserved
+ 
 
 ... [DIFF TRUNCATED TO 50 LINES FOR BREVITY] ...
 ```
