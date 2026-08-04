@@ -178,7 +178,7 @@ class SomeMonitor {
 
 | File | Description | Why superseded |
 |------|-------------|----------------|
-| `TARS_PHASE_8_AWARENESS_FIRST_ARCHITECTURE.md` | Phase 8 master plan | Phase 8.2 nav removed; Pi deployment not yet validated |
+| `TARS_PHASE_8_AWARENESS_FIRST_ARCHITECTURE.md` | Phase 8 master plan | Phase 8.2 nav removed; pre-Phase 9 view of deployment (now superseded by docker-compose deployment) |
 | `TARS_PHASE_8_3_ARCHITECTURE_PLAN.md` | Phase 8.3 detailed plan | Describes monitors not yet implemented (TrueNAS, Plex, etc.) |
 | `TARS_PHASE_7_5_ARCHITECTURE_PLAN.md` | Phase 7.5 observability plan | Describes pre-P1 state; P1 is complete, P2 deferred |
 | `TARS_PHASE_7_5_ROADMAP.md` | Phase 7.5-9 roadmap | Phase 8 scope diverged from original roadmap |

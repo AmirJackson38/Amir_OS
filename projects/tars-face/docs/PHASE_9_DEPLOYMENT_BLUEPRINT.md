@@ -238,6 +238,7 @@ Approved and executed in order (each step independently verifiable):
 ### Step 5 — Provisioning runbook
 - Document on-Pi steps: install Docker, enable units, copy repo to `/opt/tars`, set config, first-boot check.
 - **Verify**: documented, not executed (no Pi hardware yet).
+  - **UPDATE (Phase 9.2/9.3, executed 2026-08-04)**: Steps 1–3 (Dockerfile, compose, restart policy) and the deployment were **completed and validated** on the Pi node; see `docs/PHASE_9_1_TARS_NODE_DEPLOYMENT_PLAN.md`, `docs/PHASE_9_2_DEPLOYMENT_RESULT.md`, `docs/PHASE_9_3_RECOVERY_TEST_REPORT.md`. Kiosk (Step 4) remains the pending Phase 9.4 item, gated on a physically attached display.
 
 ### Step 6 — Windows-side dev harness (optional)
 - A `dev-start.ps1`/`dev-start.sh` helper that starts server + opens the browser — **development convenience only**, not a dependency.

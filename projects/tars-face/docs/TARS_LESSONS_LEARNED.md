@@ -72,11 +72,8 @@
 - **Lesson**: Single-file architectures are acceptable for prototypes but become a maintenance liability beyond ~3000 lines. Plan modular extraction as technical debt.
 
 ## 13. Development Environment vs Deployment Target
-- **Issue**: All architecture documentation targets Raspberry Pi as the primary runtime host, but all development and testing currently occurs on Windows. Pi deployment (systemd service, kiosk mode, physical display, Docker on ARM64) has never been tested.
-- **Risk**: Features developed and tested only on Windows may fail on Pi due to: platform-specific file paths, missing `/sys/class/thermal` sensors, no `/var/run/docker.sock`, different `ping` binary behavior, ARM64 vs x64 binary compatibility, and lower CPU/RAM resources.
-- **Mitigation**: Develop and test on Windows first (current workflow). Before any Pi deployment, verify: Node.js compatibility, all service path assumptions, sensor file existence, Docker socket availability, and memory constraints.
-- **Rule**: Never claim Pi deployment is complete until the server has been started and tested on actual Pi hardware. "Designed for Pi" does not equal "runs on Pi."
-- **Lesson**: Document the deployment gap explicitly so future agents don't assume Pi readiness. A feature working on Windows is Phase 8.4 complete; Pi deployment validation is a separate phase.
+- **Issue**: All architecture documentation targets Raspberry Pi as the primary runtime host, but all development and testing initially occurred on Windows. Pi deployment (systemd service, kiosk mode, physical display, Docker on ARM64) was originally untested.
+- **UPDATE (Phase 9.2/9.3, 2026-08-04)**: Docker deployment on the Pi node is now complete and recovery-validated — see `PHASE_9_2_DEPLOYMENT_RESULT.md`, `PHASE_9_3_RECOVERY_TEST_REPORT.md`. The software container (`tars_backend` :8080) is live. **Kiosk + physical display remain untested** and are the Phase 9.4 scope, gated on a physically attached screen. So this lesson is now partly superseded: verify the platform before claiming readiness still holds, and hardware (touchscreen/kiosk) is exactly such an unverified platform.
 - **Bug**: `TARS_UI.setVal()` used `element.querySelector(".value")` but the DOM was rendered with class `tars-data-value`. The class had been renamed in CSS but the JS `querySelector` was never updated.
 - **Effect**: Metric cards showed empty values with no errors. The gap was invisible in normal debugging because no exception was thrown — just no matching element.
 - **Fix**: Update selector to `.tars-data-value` in all four locations.
