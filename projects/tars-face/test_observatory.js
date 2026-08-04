@@ -202,9 +202,59 @@ assert("Category-filtered state events exist", stateEvents.length > 0);
 assert("Category-filtered telemetry events exist", telemetryEvents.length > 0);
 
 // ───────────────────────────────────────────────────
-// TEST 12: Buffer Limits — rawEvents (100 max)
+// TEST 12: Phase 8.5 — world.interaction event ingestion
 // ───────────────────────────────────────────────────
-console.log("\nTEST 12: Buffer Limits — rawEvents (100 max)");
+console.log("\nTEST 12: Phase 8.5 — world.interaction ingestion");
+emit("world.interaction", {
+    objectId: "ball",
+    kind: "tap",
+    impulse: 4.2,
+    position: { x: 1.5, y: 0.2, z: -3.0 }
+}, "tars.world");
+
+assert("interactionsCount = 1", ODL.derivedMetrics.interactionsCount === 1);
+assert("totalInteractionImpulse = 4.2", ODL.derivedMetrics.totalInteractionImpulse === 4.2);
+const lastInter = ODL.getLastWorldInteraction();
+assert("getLastWorldInteraction has objectId", lastInter && lastInter.objectId === "ball");
+assert("getLastWorldInteraction kind = tap", lastInter && lastInter.kind === "tap");
+assert("getLastWorldInteraction impulse = 4.2", lastInter && lastInter.impulse === 4.2);
+
+// ───────────────────────────────────────────────────
+// TEST 13: Phase 8.5 — world.physics.collision ingestion
+// ───────────────────────────────────────────────────
+console.log("\nTEST 13: Phase 8.5 — world.physics.collision ingestion");
+emit("world.physics.collision", {
+    a: "ball", b: "floor", impact: 12.5
+}, "tars.world");
+
+assert("collisionCount = 1", ODL.derivedMetrics.collisionCount === 1);
+const summary = ODL.getWorldInteractionSummary();
+assert("summary.interactionsCount = 1", summary.interactionsCount === 1);
+assert("summary.collisionCount = 1", summary.collisionCount === 1);
+assert("summary.impulseCount = 0", summary.impulseCount === 0);
+
+// ───────────────────────────────────────────────────
+// TEST 14: Phase 8.5 — world.physics.impulse ingestion
+// ───────────────────────────────────────────────────
+console.log("\nTEST 14: Phase 8.5 — world.physics.impulse ingestion");
+emit("world.physics.impulse", {
+    objectId: "ball", strength: 2.0, direction: { x: 0, y: 1, z: 0 }
+}, "tars.world");
+
+assert("impulseCount = 1", ODL.derivedMetrics.impulseCount === 1);
+assert("impulse does not double-count user impulse", ODL.derivedMetrics.totalInteractionImpulse === 4.2);
+
+// ───────────────────────────────────────────────────
+// TEST 15: Phase 8.5 — world.event type falls in world category
+// ───────────────────────────────────────────────────
+console.log("\nTEST 15: Phase 8.5 — world.* events are world-categorized");
+const worldEvts = ODL.getRawEvents(100, "world");
+assert("world-category events exist", worldEvts.length >= 3);
+
+// ───────────────────────────────────────────────────
+// TEST 16: Buffer Limits — rawEvents (100 max)
+// ───────────────────────────────────────────────────
+console.log("\nTEST 16: Buffer Limits — rawEvents (100 max)");
 const eventsBefore = ODL.rawEvents.length;
 for (let i = 0; i < 150; i++) {
     emit("need.changed", { currentNeeds: { energy: 50 + i } }, "tars.engine");
@@ -212,9 +262,9 @@ for (let i = 0; i < 150; i++) {
 assert(`rawEvents capped at ${ODL.maxEvents}`, ODL.rawEvents.length === ODL.maxEvents);
 
 // ───────────────────────────────────────────────────
-// TEST 13: Buffer Limits — recentDecisions (50 max)
+// TEST 17: Buffer Limits — recentDecisions (50 max)
 // ───────────────────────────────────────────────────
-console.log("\nTEST 13: Buffer Limits — recentDecisions (50 max)");
+console.log("\nTEST 17: Buffer Limits — recentDecisions (50 max)");
 for (let i = 0; i < 100; i++) {
     emit("decision.made", {
         intent: "explore",
@@ -225,38 +275,38 @@ for (let i = 0; i < 100; i++) {
 assert(`recentDecisions capped at ${ODL.maxDecisions}`, ODL.recentDecisions.length === ODL.maxDecisions);
 
 // ───────────────────────────────────────────────────
-// TEST 14: Public API — getProjectedState (deep copy)
+// TEST 18: Public API — getProjectedState (deep copy)
 // ───────────────────────────────────────────────────
-console.log("\nTEST 14: Public API — getProjectedState returns deep copy");
+console.log("\nTEST 18: Public API — getProjectedState returns deep copy");
 const state1 = ODL.getProjectedState();
 state1.activity.current = "MUTATED";
 assert("Original not mutated", ODL.projectedState.activity.current !== "MUTATED");
 
 // ───────────────────────────────────────────────────
-// TEST 15: Public API — getRecentDecisions(count)
+// TEST 19: Public API — getRecentDecisions(count)
 // ───────────────────────────────────────────────────
-console.log("\nTEST 15: Public API — getRecentDecisions(count)");
+console.log("\nTEST 19: Public API — getRecentDecisions(count)");
 const last5 = ODL.getRecentDecisions(5);
 assert("getRecentDecisions(5) returns 5", last5.length === 5);
 
 // ───────────────────────────────────────────────────
-// TEST 16: Public API — getCurrentActivityDuration
+// TEST 20: Public API — getCurrentActivityDuration
 // ───────────────────────────────────────────────────
-console.log("\nTEST 16: Public API — getCurrentActivityDuration");
+console.log("\nTEST 20: Public API — getCurrentActivityDuration");
 const dur = ODL.getCurrentActivityDuration();
 assert("getCurrentActivityDuration returns number >= 0", typeof dur === "number" && dur >= 0);
 
 // ───────────────────────────────────────────────────
-// TEST 17: Public API — getActivityCountdown
+// TEST 21: Public API — getActivityCountdown
 // ───────────────────────────────────────────────────
-console.log("\nTEST 17: Public API — getActivityCountdown");
+console.log("\nTEST 21: Public API — getActivityCountdown");
 const countdown = ODL.getActivityCountdown();
 assert("getActivityCountdown returns number >= 0", typeof countdown === "number" && countdown >= 0);
 
 // ───────────────────────────────────────────────────
-// TEST 18: Internal Separation Verification
+// TEST 22: Internal Separation Verification
 // ───────────────────────────────────────────────────
-console.log("\nTEST 18: Internal Separation — Raw / Projected / Derived");
+console.log("\nTEST 22: Internal Separation — Raw / Projected / Derived");
 assert("rawEvents is array (raw storage)", Array.isArray(ODL.rawEvents));
 assert("projectedState is object (projected observation)", typeof ODL.projectedState === "object");
 assert("derivedMetrics is object (derived metrics)", typeof ODL.derivedMetrics === "object");
@@ -275,3 +325,4 @@ if (failed === 0) {
 console.log("╚════════════════════════════════════════════════════════╝\n");
 
 process.exit(failed > 0 ? 1 : 0);
+

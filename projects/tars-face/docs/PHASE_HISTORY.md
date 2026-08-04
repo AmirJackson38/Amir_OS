@@ -112,9 +112,18 @@
 - All 22 button data-action values wired to switch cases — zero dead controls
 - Updated collapse state defaults (system, behavior, movement, needs, environment, rendering, debug start collapsed)
 
+## Phase 8.5 — Embodied Interaction Layer
+- **Input classifier**: `TARS_INPUT_CLASSIFIER` (canvas-only pointer listeners → tap/flick/drag/touch), fully UI-isolated with self-suspension while `#tars-overlay` / `#tars-chat` is open
+- **World sensor**: `TARS_WORLD_SENSOR` (Raycaster pick, NDC conversion, `interactFromTouch()` impulse + `world.interaction` emission)
+- **World agent**: `TARS_WORLD_AGENT` response pipeline (join_play / investigate / respond_later) routed only through `setTARSActivity()` / `lookAt()` / `queueWorldEvent()`; cooldown 1800ms, deferred queue cap 10
+- **Physics event hooks**: `TARS_PHYSICS` emits `world.physics.impulse/collision/sleep/wake` (dedup 250ms) + `applyImpulse()` entry point; observation-only, no behavior coupling
+- **Persistence v3**: `worldState.objects` snapshot + restore, `finalizeExperience()` interaction context, worldMemory salient interactions
+- **Observatory telemetry**: world interaction section + ODL world ingest cases + `getWorldInteractionSummary()`
+- **Tests**: `test_observatory.js` extended with world.interaction / collision / impulse ingestion + category tests (59 total, all passing)
+
 ## Phase 8.5 — Planned (not started)
-- Ball dynamics / rolling / contact resolution / friction completion
-- Object interaction (grab/knock/roll), compound collision shapes
+- Ball rolling / contact resolution / friction completion
+- Richer gestures (grab/knock/roll), compound collision shapes
 - SQLite event log + persistent alert/service history
 - LLM cognitive layer (Brain + Chat), Home Assistant bridge
 - Raspberry Pi deployment (kiosk, systemd, physical display)

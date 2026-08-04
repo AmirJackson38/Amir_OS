@@ -708,6 +708,11 @@ const TARS_PHYSICS = {
     _vec3: new THREE.Vector3(),
     _vec3b: new THREE.Vector3(),
 
+    // Phase 8.5: collision event dedup window (ms) + emitted-state tracking
+    collisionDedupWindow: 250,
+    _lastCollisionEmit: new Map(), // objId -> { otherId, lastMs }
+    _lastSleepState: new Map(),    // objId -> boolean (sleeping)
+
     register(spec) {
         this.objects.set(spec.id, spec);
     },
@@ -740,6 +745,23 @@ const TARS_PHYSICS = {
         pos.z += p.velocity.z * dt;
     },
 
+    // Phase 8.5: create the deduped collision emitter (used within resolveCollisions branches)
+    _emitCollision(obj, obs, position) {
+        if (typeof emitTARSEvent !== "function") return;
+        const now = Date.now();
+        const prev = this._lastCollisionEmit.get(obj.id);
+        if (prev && prev.otherId === obs.id && (now - prev.lastMs) < this.collisionDedupWindow) {
+            return;
+        }
+        this._lastCollisionEmit.set(obj.id, { otherId: obs.id, lastMs: now });
+        this._emitPhysics("world.physics.collision", {
+            objectId: obj.id,
+            otherId: obs.id,
+            otherTier: obs.collisionTier,
+            position: { x: +pos.x.toFixed(3), y: +pos.y.toFixed(3), z: +pos.z.toFixed(3) }
+        });
+    },
+
     resolveCollisions(obj) {
         const p = obj.physics;
         const pos = obj.mesh.position;
@@ -753,6 +775,7 @@ const TARS_PHYSICS = {
             if (obs.bounds.type === "plane") {
                 const d = TARS_COLLISION.pointDistanceToPlane(pos, obs.bounds.normal, obs.bounds.constant);
                 if (d < r) {
+                    this._emitCollision(obj, obs, pos);
                     pos.addScaledVector(obs.bounds.normal, r - d);
                     const vn = p.velocity.dot(obs.bounds.normal);
                     if (vn < 0) {
@@ -777,6 +800,7 @@ const TARS_PHYSICS = {
                 const dz = pos.z - closest.z;
                 const distSq = dx * dx + dy * dy + dz * dz;
                 if (distSq < r * r && distSq > 0.0001) {
+                    this._emitCollision(obj, obs, pos);
                     const dist = Math.sqrt(distSq);
                     const normal = this._vec3b.set(dx / dist, dy / dist, dz / dist);
                     pos.addScaledVector(normal, r - dist);
@@ -802,6 +826,7 @@ const TARS_PHYSICS = {
                 const distSq = dx * dx + dy * dy + dz * dz;
                 const combinedR = r + cr;
                 if (distSq < combinedR * combinedR && distSq > 0.0001) {
+                    this._emitCollision(obj, obs, pos);
                     const dist = Math.sqrt(distSq);
                     const normal = this._vec3b.set(dx / dist, dy / dist, dz / dist);
                     pos.addScaledVector(normal, combinedR - dist);
@@ -824,17 +849,43 @@ const TARS_PHYSICS = {
             if (p.sleepTimer > 2.0) {
                 p.sleeping = true;
                 p.velocity.set(0, 0, 0);
+                this._emitSleepIfChanged(obj);
             }
         } else {
             p.sleepTimer = 0;
+            if (p.sleeping) {
+                p.sleeping = false;
+                this._emitSleepIfChanged(obj);
+            }
+        }
+    },
+
+    // Phase 8.5: emit sleep/wake events only on actual state transitions
+    _emitSleepIfChanged(obj) {
+        if (typeof emitTARSEvent !== "function") return;
+        const prev = this._lastSleepState.get(obj.id);
+        const cur = !!obj.physics.sleeping;
+        if (prev !== undefined && prev !== cur) {
+            this._lastSleepState.set(obj.id, cur);
+            this._emitPhysics(cur ? "world.physics.sleep" : "world.physics.wake", {
+                objectId: obj.id
+            });
+        } else if (prev === undefined) {
+            this._lastSleepState.set(obj.id, cur);
         }
     },
 
     wake(obj) {
         if (typeof obj === "string") obj = this.objects.get(obj);
         if (!obj || !obj.physics) return;
-        obj.physics.sleeping = false;
-        obj.physics.sleepTimer = 0;
+        if (obj.physics.sleeping) {
+            obj.physics.sleeping = false;
+            obj.physics.sleepTimer = 0;
+            this._emitSleepIfChanged(obj);
+        } else {
+            obj.physics.sleeping = false;
+            obj.physics.sleepTimer = 0;
+        }
     },
 
     interact(ballId, fromPos, strength) {
@@ -848,6 +899,39 @@ const TARS_PHYSICS = {
             dir.y = Math.max(dir.y, 0.15);
             dir.normalize();
             obj.physics.velocity.addScaledVector(dir, strength * (2.5 - dist) / 2.5);
+            this._emitPhysics("world.physics.impulse", {
+                objectId: obj.id,
+                position: { x: +obj.mesh.position.x.toFixed(3), y: +obj.mesh.position.y.toFixed(3), z: +obj.mesh.position.z.toFixed(3) },
+                velocity: { x: +obj.physics.velocity.x.toFixed(3), y: +obj.physics.velocity.y.toFixed(3), z: +obj.physics.velocity.z.toFixed(3) },
+                strength
+            });
+        }
+    },
+
+    // Phase 8.5: apply a directional impulse (used by the world sensor for flick/drag)
+    applyImpulse(objId, direction, strength) {
+        const obj = typeof objId === "string" ? this.objects.get(objId) : objId;
+        if (!obj || !obj.physics || !obj.physics.enabled) return;
+        this.wake(obj);
+        const dir = this._vec3.copy(direction);
+        const len = dir.length();
+        if (len < 0.0001) return;
+        dir.normalize();
+        dir.y = Math.max(dir.y, 0.12);
+        dir.normalize();
+        obj.physics.velocity.addScaledVector(dir, strength);
+        this._emitPhysics("world.physics.impulse", {
+            objectId: obj.id,
+            position: { x: +obj.mesh.position.x.toFixed(3), y: +obj.mesh.position.y.toFixed(3), z: +obj.mesh.position.z.toFixed(3) },
+            velocity: { x: +obj.physics.velocity.x.toFixed(3), y: +obj.physics.velocity.y.toFixed(3), z: +obj.physics.velocity.z.toFixed(3) },
+            strength
+        });
+    },
+
+    // Phase 8.5: Emit a physics event only when the event bus is available.
+    _emitPhysics(type, payload) {
+        if (typeof emitTARSEvent === "function") {
+            try { emitTARSEvent(type, payload, "tars.physics"); } catch (e) {}
         }
     }
 };
@@ -2659,6 +2743,7 @@ const worldState = {
     maxActivityLogSize: 50,   // Maximum events to keep
     worldMemory: [],          // Curated persistent events cross-session
     maxWorldMemorySize: 20,   // Max curated persistent events
+    objects: {},              // Phase 8.5: persisted dynamic object state snapshots { id: {position:{x,y,z}, sleeping} }
     session: {
         id: `session_${Date.now()}`,
         startTime: Date.now(),
@@ -2672,7 +2757,7 @@ const worldState = {
 // PHASE 4: CROSS-SESSION WORLD PERSISTENCE
 // ============================================================
 
-const TARS_SAVE_VERSION = 2;
+const TARS_SAVE_VERSION = 3;
 const STORAGE_KEY = "tars_world_state_v1";
 const SAVE_INTERVAL_MS = 30000;
 
@@ -2703,8 +2788,44 @@ const WorldPersistence = {
                 timeOfDay: worldState.environment.timeOfDay,
                 temperature: worldState.environment.temperature
             },
-            worldMemory: (worldState.worldMemory || []).slice()
+            worldMemory: (worldState.worldMemory || []).slice(),
+            objects: this.captureObjects()
         };
+    },
+
+    // Phase 8.5: snapshot dynamic object transforms + sleep state for persistence
+    captureObjects() {
+        const snap = {};
+        if (window.TARS_PHYSICS) {
+            for (const [, obj] of TARS_PHYSICS.objects) {
+                if (!obj.physics || !obj.mesh) continue;
+                snap[obj.id] = {
+                    position: { x: obj.mesh.position.x, y: obj.mesh.position.y, z: obj.mesh.position.z },
+                    sleeping: !!obj.physics.sleeping
+                };
+            }
+        }
+        return snap;
+    },
+
+    // Phase 8.5: restore dynamic object transforms + wake/sleep from a snapshot
+    applyObjectsToState(data) {
+        if (!data || !data.objects || typeof data.objects !== "object") return;
+        if (!window.TARS_PHYSICS) return;
+        for (const [id, snap] of Object.entries(data.objects)) {
+            if (!snap || !snap.position) continue;
+            const obj = TARS_PHYSICS.objects.get(id);
+            if (!obj || !obj.mesh || !obj.physics) continue;
+            obj.mesh.position.set(snap.position.x, snap.position.y, snap.position.z);
+            obj.physics.sleeping = !!snap.sleeping;
+            obj.physics.velocity.set(0, 0, 0);
+            if (!obj.physics.sleeping) {
+                TARS_PHYSICS.wake(id);
+            } else {
+                obj.physics.sleepTimer = 2.5;
+                if (obj.physics._lastSleepState === undefined) obj.physics._lastSleepState = null;
+            }
+        }
     },
 
     save() {
@@ -2791,6 +2912,8 @@ const WorldPersistence = {
         if (data.worldMemory && Array.isArray(data.worldMemory)) {
             worldState.worldMemory = data.worldMemory;
         }
+        // Phase 8.5: restore dynamic object positions from persisted snapshot
+        this.applyObjectsToState(data);
         worldState.session.previousSessionEnd = data.savedAt || null;
         const elapsedMs = Date.now() - (data.savedAt || Date.now());
         worldState.session.totalElapsed = elapsedMs;
@@ -2844,7 +2967,16 @@ const EVENT_CATEGORY_MAP = {
     "health.status": "diagnostic",
 
     // User Events
-    "user.interaction": "user"
+    "user.interaction": "user",
+    "user.attention": "user",
+
+    // World Events (Phase 8.5 — embodied interaction layer)
+    "world.interaction": "world",
+    "world.physics.impulse": "world",
+    "world.physics.collision": "world",
+    "world.physics.sleep": "world",
+    "world.physics.wake": "world",
+    "world.object.moved": "world"
 };
 
 const TARS_EVENT_BUS = {
@@ -2968,8 +3100,16 @@ const ObservatoryDataLayer = {
         saveCount: 0,
         errorCount: 0,
         lastUpdatedISO: new Date().toISOString(),
-        lastUpdatedMs: Date.now()
+        lastUpdatedMs: Date.now(),
+        // Phase 8.5: embodied interaction metrics
+        interactionsCount: 0,
+        collisionCount: 0,
+        impulseCount: 0,
+        totalInteractionImpulse: 0
     },
+
+    // Phase 8.5: last embodied world interaction (observational only)
+    lastWorldInteraction: null,
 
     // 4. Decision Telemetry Buffers (Capped Ring Buffer: 50 max)
     latestDecision: null,
@@ -2992,7 +3132,11 @@ const ObservatoryDataLayer = {
             "weather.changed",
             "world.loaded",
             "world.saved",
-            "error.detected"
+            "error.detected",
+            // Phase 8.5: embodied interaction topics
+            "world.interaction",
+            "world.physics.collision",
+            "world.physics.impulse"
         ];
 
         topics.forEach(topic => {
@@ -3084,6 +3228,30 @@ const ObservatoryDataLayer = {
             case "error.detected":
                 this.derivedMetrics.errorCount += 1;
                 break;
+
+            // Phase 8.5: embodied interaction ingestion (observational)
+            case "world.interaction":
+                this.derivedMetrics.interactionsCount += 1;
+                if (typeof payload.impulse === "number") {
+                    this.derivedMetrics.totalInteractionImpulse += payload.impulse;
+                }
+                this.lastWorldInteraction = {
+                    objectId: payload.objectId || null,
+                    kind: payload.kind || "tap",
+                    impulse: payload.impulse ?? 0,
+                    position: payload.position || null,
+                    applied: !!payload.applied,
+                    timestamp: new Date().toISOString()
+                };
+                break;
+
+            case "world.physics.collision":
+                this.derivedMetrics.collisionCount += 1;
+                break;
+
+            case "world.physics.impulse":
+                this.derivedMetrics.impulseCount += 1;
+                break;
         }
 
         // 3. Update freshness timestamps
@@ -3123,12 +3291,379 @@ const ObservatoryDataLayer = {
         const expected = this.projectedState.activity.expectedEndAt;
         if (!expected) return 0;
         return Math.max(0, Math.ceil((expected - Date.now()) / 1000));
+    },
+
+    // Phase 8.5: embodied world interaction telemetry
+    getLastWorldInteraction() {
+        return this.lastWorldInteraction ? { ...this.lastWorldInteraction } : null;
+    },
+
+    getWorldInteractionSummary() {
+        return {
+            interactionsCount: this.derivedMetrics.interactionsCount,
+            collisionCount: this.derivedMetrics.collisionCount,
+            impulseCount: this.derivedMetrics.impulseCount,
+            totalInteractionImpulse: +this.derivedMetrics.totalInteractionImpulse.toFixed(3),
+            lastInteraction: this.getLastWorldInteraction()
+        };
     }
 };
 
 // Initialize on script load
 ObservatoryDataLayer.init();
 window.ObservatoryDataLayer = ObservatoryDataLayer;
+
+// ============================================================
+// PHASE 8.5: EMBODIED INTERACTION LAYER
+// ============================================================
+// Design guarantees:
+//   1. UI handlers and world handlers are bound to disjoint DOM nodes
+//      (UI -> #tars-toolbar/#tars-overlay/etc; world -> renderer.domElement).
+//   2. World input is suspended while any UI overlay/chat is visible.
+//   3. All world input becomes canonical TARS events (world.*). Physics never
+//      calls behavior directly; the autonomy engine observes via events only.
+//   4. Every TARS response routes through existing activity/autonomy systems.
+// ============================================================
+
+// ------------------------------------------------------------
+// 8.5.1 TARS_WORLD_SENSOR — screen → world picking + gesture→event
+// ------------------------------------------------------------
+// Converts classified pointer gestures into canonical `world.interaction`
+// events and optional physics impulses. Holds no behavioral logic.
+// ------------------------------------------------------------
+const TARS_WORLD_SENSOR = {
+    _raycaster: null,
+    _pickables: null,     // list of { mesh, objectId } (built lazily)
+
+    init() {
+        this._raycaster = new THREE.Raycaster();
+    },
+
+    // Build pickable mesh entries from physics objects + world objects with a mesh.
+    // Called lazily so ordering relative to object registration does not matter.
+    _buildPickables() {
+        if (this._pickables) return this._pickables;
+        const entries = [];
+        const seen = new Set();
+        if (window.TARS_PHYSICS) {
+            for (const [, obj] of TARS_PHYSICS.objects) {
+                if (obj.mesh) {
+                    seen.add(obj.mesh);
+                    entries.push({ mesh: obj.mesh, objectId: obj.id });
+                }
+            }
+        }
+        if (window.TARS_WORLD_OBJECTS) {
+            for (const wo of TARS_WORLD_OBJECTS.getAll()) {
+                if (wo.mesh && !seen.has(wo.mesh)) {
+                    seen.add(wo.mesh);
+                    entries.push({ mesh: wo.mesh, objectId: wo.id });
+                }
+            }
+        }
+        this._pickables = entries;
+        return entries;
+    },
+
+    invalidate() {
+        this._pickables = null;
+    },
+
+    // Convert client pixel to normalized device coords
+    _ndc(clientX, clientY) {
+        return new THREE.Vector2(
+            (clientX / window.innerWidth) * 2 - 1,
+            -(clientY / window.innerHeight) * 2 + 1
+        );
+    },
+
+    // Return { objectId, mesh, point, distance } or null
+    pick(clientX, clientY) {
+        if (!this._raycaster || typeof camera === "undefined" || !camera) return null;
+        this._raycaster.setFromCamera(this._ndc(clientX, clientY), camera);
+        const entries = this._buildPickables();
+        if (entries.length === 0) return null;
+        const meshes = entries.map(e => e.mesh);
+        const hits = this._raycaster.intersectObjects(meshes, false);
+        if (hits.length === 0) return null;
+        const hit = hits[0];
+        const entry = entries.find(e => e.mesh === hit.object) || null;
+        return {
+            objectId: entry ? entry.objectId : null,
+            mesh: hit.object,
+            point: hit.point,
+            distance: hit.distance
+        };
+    },
+
+    // Normalize an interaction kind to an event payload and emit + apply impulse.
+    // `spec`: { kind, objectId, point (world Vector3), impulse (0..1), velocityWorld }
+    interactFromTouch(spec) {
+        const { kind, objectId, impulse, velocityWorld } = spec;
+        let applied = false;
+        // Apply impulse through physics if the target is a known physics object.
+        if (objectId && window.TARS_PHYSICS && TARS_PHYSICS.objects.has(objectId)) {
+            const phys = TARS_PHYSICS.objects.get(objectId);
+            if (phys.physics && phys.physics.enabled) {
+                if (kind === "flick" && velocityWorld) {
+                    TARS_PHYSICS.applyImpulse(objectId, velocityWorld, 0.6 + impulse * 2.4);
+                } else {
+                    // tap/drag/touch: push from the pick point away from user
+                    const fromPos = spec.point || spec.fromPos || new THREE.Vector3(0, 0, 3);
+                    TARS_PHYSICS.interact(objectId, fromPos, 0.4 + impulse * 2.0);
+                }
+                applied = true;
+            }
+        }
+        // Emit canonical world.interaction event (always, even empty-space taps).
+        if (typeof emitTARSEvent === "function") {
+            emitTARSEvent("world.interaction", {
+                objectId: objectId || null,
+                kind,
+                impulse: +impulse.toFixed(3),
+                position: spec.point ? { x: +spec.point.x.toFixed(3), y: +spec.point.y.toFixed(3), z: +spec.point.z.toFixed(3) } : null,
+                velocityWorld: velocityWorld ? { x: +velocityWorld.x.toFixed(3), y: +velocityWorld.y.toFixed(3), z: +velocityWorld.z.toFixed(3) } : null,
+                applied
+            }, "tars.sensor");
+        }
+        return applied;
+    }
+};
+window.TARS_WORLD_SENSOR = TARS_WORLD_SENSOR;
+
+// ------------------------------------------------------------
+// 8.5.2 TARS_INPUT_CLASSIFIER — UI vs World input routing
+// ------------------------------------------------------------
+// Binds ONLY to renderer.domElement (the 3D canvas). Gesture detection.
+// Suspends entirely while the UI overlay or chat is visible so a menu
+// tap can never become a world event.
+// ------------------------------------------------------------
+const TARS_INPUT_CLASSIFIER = {
+    _enabled: false,
+    _pointers: new Map(), // pointerId -> gesture accumulator
+
+    init(canvas) {
+        if (!canvas) return;
+        this._enabled = true;
+        canvas.addEventListener("pointerdown", (e) => this._onDown(e));
+        canvas.addEventListener("pointermove", (e) => this._onMove(e));
+        canvas.addEventListener("pointerup", (e) => this._onUp(e));
+        canvas.addEventListener("pointercancel", (e) => this._onCancel(e));
+    },
+
+    // Suspension guard: world input inactive while a UI surface is showing.
+    _uiBlocking() {
+        try {
+            if (window.TARS_UI && (TARS_UI.overlayVisible || TARS_UI.chatVisible)) return true;
+        } catch (e) { /* TARS_UI may not be defined yet */ }
+        const ov = document.getElementById("tars-overlay");
+        if (ov && ov.classList.contains("visible")) return true;
+        const chat = document.getElementById("tars-chat");
+        if (chat && chat.classList.contains("visible")) return true;
+        return false;
+    },
+
+    _onDown(e) {
+        if (!this._enabled || this._uiBlocking()) return;
+        this._pointers.set(e.pointerId, {
+            x: e.clientX, y: e.clientY,
+            t: Date.now(),
+            lastX: e.clientX, lastY: e.clientY,
+            moved: false
+        });
+    },
+
+    _onMove(e) {
+        const p = this._pointers.get(e.pointerId);
+        if (!p) return;
+        p.lastX = e.clientX;
+        p.lastY = e.clientY;
+        p.moved = true;
+    },
+
+    _onUp(e) {
+        const p = this._pointers.get(e.pointerId);
+        if (!p) return;
+        this._pointers.delete(e.pointerId);
+        if (this._uiBlocking()) return;
+
+        const duration = Date.now() - p.t;
+        const dx = e.clientX - p.x;
+        const dy = e.clientY - p.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        // Classify gesture
+        let kind;
+        if (duration < 250 && dist < 16) kind = "tap";
+        else if (duration < 500 && dist >= 16) kind = "flick";
+        else if (dist >= 16) kind = "drag";
+        else kind = "touch";
+
+        // Map screen swipe to an approximate world-space velocity (camera-fixed facing).
+        const velocityWorld = new THREE.Vector3(
+            dx / Math.max(1, window.innerWidth),
+            -dy / Math.max(1, window.innerHeight),
+            -0.05
+        ).multiplyScalar(2.0);
+
+        const pickup = (window.TARS_WORLD_SENSOR && TARS_WORLD_SENSOR.pick(e.clientX, e.clientY)) || null;
+
+        const impulse = Math.min(1, dist / 200 + duration / 2000);
+
+        TARS_WORLD_SENSOR.interactFromTouch({
+            kind,
+            objectId: pickup ? pickup.objectId : null,
+            point: pickup ? pickup.point : null,
+            impulse,
+            velocityWorld: kind === "flick" ? velocityWorld : null
+        });
+    },
+
+    _onCancel(e) {
+        this._pointers.delete(e.pointerId);
+    }
+};
+window.TARS_INPUT_CLASSIFIER = TARS_INPUT_CLASSIFIER;
+
+// ------------------------------------------------------------
+// 8.5.3 TARS_WORLD_AGENT — autonomy-facing response pipeline
+// ------------------------------------------------------------
+// Consumes world.* events. Decides, using ONLY existing TARS systems
+// (needs, fatigue, curiosity, preferences, activity scoring, autonomy),
+// whether to join play / investigate / ignore / respond later. Every
+// concrete action routes through setTARSActivity / TARS.lookAt /
+// window.TARS / queueWorldEvent. Never mutates physics from here.
+// ------------------------------------------------------------
+const TARS_WORLD_AGENT = {
+    _subs: [],
+    _respondLater: [],   // bounded queue of deferred world events
+    _lastResponseMs: 0,
+
+    init() {
+        if (!window.subscribeTARSEvent) return;
+        this._subs.push(subscribeTARSEvent("world.interaction", (evt) => this._onWorldInteraction(evt)));
+        this._subs.push(subscribeTARSEvent("world.physics.collision", (evt) => this._onCollision(evt)));
+        this._subs.push(subscribeTARSEvent("world.physics.impulse", (evt) => this._onImpulse(evt)));
+    },
+
+    _canRespond() {
+        // Respect autonomy cooldown + LLM control + blocking FX (mirrors engine).
+        if (!window.worldState) return false;
+        if (worldState.tars.controlMode === "llm") return false;
+        if (Date.now() - this._lastResponseMs < 1800) return false;
+        const fx = window.currentState && currentState.fx;
+        const blockingFx = ["strobe_orange", "strobe_red", "strobe", "bounce", "expansive"];
+        if (fx && blockingFx.includes(fx)) return false;
+        return true;
+    },
+
+    _onWorldInteraction(evt) {
+        const p = evt.payload || {};
+        const objectId = p.objectId;
+        const kind = p.kind || "tap";
+        const impulse = p.impulse || 0;
+
+        // High-salience (strong flick) can interrupt via world queue.
+        const salience = impulse > 0.6 ? "high" : impulse > 0.3 ? "medium" : "low";
+
+        if (!this._canRespond()) {
+            this._defer(evt);
+            return;
+        }
+
+        // Decide join vs investigate vs respond-later (curiosity/preference driven).
+        const decision = this._decideResponse(p, { objectId, kind, salience });
+        this._lastResponseMs = Date.now();
+
+        // Route through existing systems.
+        if (decision.action === "join_play" && objectId && typeof setTARSActivity === "function") {
+            setTARSActivity("play_with_ball", "ball", "user_initiated_play", { trigger: "world_interaction", source: "tars.agent" });
+            if (window.TARS && window.TARS.lookAt) window.TARS.lookAt("ball", "user_play");
+        } else if (decision.action === "investigate" && window.TARS) {
+            if (window.TARS.lookAt) window.TARS.lookAt(objectId === "ball" ? "ball" : "user", "investigate_world");
+        } else if (decision.action === "respond_later") {
+            this._defer(evt);
+        }
+        // "ignore" → do nothing (observe only), already recorded via the event bus.
+
+        // Emit lightweight response telemetry for the Observatory.
+        if (typeof emitTARSEvent === "function") {
+            emitTARSEvent("world.salience", { objectId, kind, salience, decisionAction: decision.action }, "tars.agent");
+        }
+    },
+
+    _onCollision(evt) {
+        // A ball collision is a notable world event — queue low-priority attention.
+        const p = evt.payload || {};
+        if (typeof queueWorldEvent === "function" && p.objectId === "ball") {
+            queueWorldEvent("ball_collision", PRIORITY.LOW, { objectId: p.objectId, position: p.position });
+        }
+    },
+
+    _onImpulse(evt) {
+        // Impulses are passive observability; the interaction event carries intent.
+        return;
+    },
+
+    _decideResponse(p, { objectId, kind, salience }) {
+        const needs = window.worldState ? worldState.tars.needs : {};
+        const prefs = window.worldState ? (worldState.tars.preferences || {}) : {};
+        const curiosity = 1 - (needs.curiosity ?? 0.5);
+        const playPref = prefs.activities && prefs.activities.play_with_ball != null ? prefs.activities.play_with_ball : 0.5;
+
+        let scoreJoin = 0;
+        if (objectId === "ball") {
+            scoreJoin += curiosity * 40;
+            scoreJoin += playPref * 25;
+            if (salience === "high") scoreJoin += 20;
+        }
+        // If we're already mid-play, continue.
+        if (window.worldState && worldState.tars.activity === "play_with_ball") scoreJoin += 60;
+
+        if (scoreJoin >= 50) return { action: "join_play" };
+        if (curiosity > 0.5 || kind === "flick") return { action: "investigate" };
+        return { action: "respond_later" };
+    },
+
+    _defer(evt) {
+        this._respondLater.push({ atMs: Date.now() + 8000, evt });
+        if (this._respondLater.length > 10) this._respondLater.shift();
+    },
+
+    _flushLaterQueue() {
+        const now = Date.now();
+        while (this._respondLater.length && this._respondLater[0].atMs <= now) {
+            const item = this._respondLater.shift();
+            this._onWorldInteraction(item.evt);
+        }
+    },
+
+    update(dt) {
+        // Called from animate loop to flush deferred responses.
+        this._flushLaterQueue();
+    }
+};
+window.TARS_WORLD_AGENT = TARS_WORLD_AGENT;
+
+// Initialize the embodied layer once events/state are in place.
+try {
+    TARS_WORLD_SENSOR.init();
+    TARS_WORLD_AGENT.init();
+    if (window.renderer && renderer.domElement) {
+        TARS_INPUT_CLASSIFIER.init(renderer.domElement);
+        console.log("[TARS 8.5] Embodied interaction layer ready (classifier+sensor+agent attached to canvas).");
+    } else {
+        console.warn("[TARS 8.5] renderer not available yet; classifier deferred.");
+        const _bindWhenReady = () => {
+            if (window.renderer && renderer.domElement) {
+                TARS_INPUT_CLASSIFIER.init(renderer.domElement);
+            }
+        };
+        if (window.addEventListener) window.addEventListener("load", _bindWhenReady);
+    }
+} catch (e) {
+    console.warn("[TARS 8.5] Embodied layer init deferred:", e && e.message);
+}
 
 // ============================================================
 // PHASE 5: INTERNAL STATE & OFFLINE CONTINUITY
@@ -5405,7 +5940,12 @@ function finalizeExperience() {
         startedAt: worldState.tars.activityStartedAt,
         endedAt: now,
         fatigueAtEnd: worldState.tars.activityFatigue[worldState.tars.activity] || 0,
-        needsSnapshot: { ...worldState.tars.needs }
+        needsSnapshot: { ...worldState.tars.needs },
+        // Phase 8.5: interaction context (additive, backward-compatible)
+        interactions: worldState.tars.activity === "play_with_ball"
+            ? (window.ObservatoryDataLayer ? ObservatoryDataLayer.getWorldInteractionSummary().interactionsCount : 0)
+            : 0,
+        userInitiated: worldState.tars.activityReason === "user_initiated_play"
     };
     worldState.tars.experienceBuffer.push(entry);
     if (worldState.tars.experienceBuffer.length > 100) {
@@ -6043,6 +6583,11 @@ function animate() {
 
     // 6a. Physics update for dynamic objects (ball)
     TARS_PHYSICS.update(dt);
+
+    // 6aa. Embodied agent: flush deferred world responses (Phase 8.5)
+    if (window.TARS_WORLD_AGENT && TARS_WORLD_AGENT.update) {
+        TARS_WORLD_AGENT.update(dt);
+    }
 
     // 6b. Ball glow pulse + ring spin
     if (TARS_PHYSICS.objects.has("ball")) {
@@ -7284,6 +7829,29 @@ const TARS_UI = {
             decisionHtml = '<div class="tars-empty">No decision recorded yet</div>';
         }
 
+        // 3b. World Interaction telemetry (Phase 8.5 — observational only)
+        const worldSum = layer ? layer.getWorldInteractionSummary() : null;
+        const w = worldSum || {};
+        const lastInter = w.lastInteraction || null;
+        let worldHtml = "";
+        if (lastInter) {
+            const pos = lastInter.position ? (lastInter.position.x + ", " + lastInter.position.y + ", " + lastInter.position.z) : "—";
+            worldHtml += `
+                <div class="tars-data-row"><span class="tars-data-label">Last Object</span><span class="tars-data-value">${lastInter.objectId || "empty-space"}</span></div>
+                <div class="tars-data-row"><span class="tars-data-label">Gesture</span><span class="tars-data-value">${lastInter.kind || "—"}</span></div>
+                <div class="tars-data-row"><span class="tars-data-label">Impulse</span><span class="tars-data-value">${typeof lastInter.impulse === "number" ? lastInter.impulse.toFixed(2) : "—"}</span></div>
+                <div class="tars-data-row"><span class="tars-data-label">Position</span><span class="tars-data-value">${pos}</span></div>`;
+        } else {
+            worldHtml = '<div class="tars-empty">No world interactions yet</div>';
+        }
+        worldHtml += `
+            <div style="margin-top:6px;padding-top:4px;border-top:1px solid rgba(80,180,255,0.08)">
+                <div style="display:flex;justify-content:space-between;font-size:9px;padding:1px 0"><span style="color:rgba(210,235,255,0.5)">Interactions</span><span style="color:rgba(210,235,255,0.8)">${w.interactionsCount ?? 0}</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:9px;padding:1px 0"><span style="color:rgba(210,235,255,0.5)">Collisions</span><span style="color:rgba(210,235,255,0.8)">${w.collisionCount ?? 0}</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:9px;padding:1px 0"><span style="color:rgba(210,235,255,0.5)">Impulses</span><span style="color:rgba(210,235,255,0.8)">${w.impulseCount ?? 0}</span></div>
+                <div style="display:flex;justify-content:space-between;font-size:9px;padding:1px 0"><span style="color:rgba(210,235,255,0.5)">Total Impulse</span><span style="color:rgba(210,235,255,0.8)">${typeof w.totalInteractionImpulse === "number" ? w.totalInteractionImpulse.toFixed(3) : "—"}</span></div>
+            </div>`;
+
         // 4. Event Timeline (raw events from ObservatoryDataLayer)
         let timelineHtml = "";
         for (const evt of events) {
@@ -7316,6 +7884,10 @@ const TARS_UI = {
             <div class="tars-section">
                 <div class="tars-section-title">Decision Inspector</div>
                 ${decisionHtml}
+            </div>
+            <div class="tars-section">
+                <div class="tars-section-title">World Interaction</div>
+                ${worldHtml}
             </div>
             <div class="tars-section">
                 <div class="tars-section-title">Event Timeline</div>

@@ -35,7 +35,8 @@ Communication: Event bus → WS bridge → WebSocket → TARS_EVENTS → DOM eve
 - Phase 8.3.4: Complete — UI refactor, nav removal, stabilization audit
 - Phase 8.3.5: Complete — documentation stabilization (this checkpoint)
 - Phase 8.4: Complete — observable spatial runtime base (event bus, ObservatoryDataLayer, developer observatory, world objects, collision, physics foundation, render profiles)
-- **Next: Phase 8.5** — feature development (ball dynamics, object interaction, LLM, Home Assistant, or modularization)
+- Phase 8.5: **Complete** — embodied interaction layer (input classifier, world sensor, world agent, physics event hooks, persistence v3, observatory telemetry)
+- **Next: Phase 8.6** — feature development (ball dynamics completion, richer gestures, LLM, Home Assistant, or modularization)
 
 ## Development Environment Reality
 

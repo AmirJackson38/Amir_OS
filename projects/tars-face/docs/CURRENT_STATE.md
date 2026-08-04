@@ -1,10 +1,19 @@
 # TARS Face — Current State
 
 **Date**: 2026-08-03
-**Version**: v7.5 + Phase 8.3.4 stabilization + Phase 8.4.3.6 Creator Console restoration + Phase 8.4 Observable Spatial Runtime Base
+**Version**: v7.5 + Phase 8.3.4 stabilization + Phase 8.4 Observable Spatial Runtime Base + Phase 8.5 Embodied Interaction Layer
 
 ## Completed
 All behavior delivered and verified (see sections below): Three.js face with expressions/gestures/eye tracking, need-driven autonomy engine with scoring, world state persistence, runtime server (WebSocket + REST), health/asset/docker/network/alert monitoring, Creator Console (7 sections / 22 live actions), in-process event bus, and the Phase 8.4 observable spatial runtime base.
+
+## Newly Integrated (Phase 8.5 — Embodied Interaction Layer)
+- **Input classifier**: `TARS_INPUT_CLASSIFIER` — canvas-only pointer listeners (down/move/up/cancel) that classify gestures (tap / flick / drag / touch) and route only world-space interaction. Fully isolated from UI: suspends itself while `#tars-overlay` or `#tars-chat` is open, emits `world.interaction` events, and never handles chat/panel DOM events.
+- **World sensor**: `TARS_WORLD_SENSOR` — Raycaster-based picking over physics objects (`TARS_PHYSICS.objects` / `TARS_WORLD_OBJECTS.getAll`), scene→NDC conversion, and `interactFromTouch()` that applies impulses (flick→velocity, tap→small nudge) and emits `world.interaction` even for empty taps.
+- **World agent**: `TARS_WORLD_AGENT` — event-driven response pipeline that decides join_play / investigate / respond_later for each world interaction. Responds **only through existing systems** (`setTARSActivity()`, `window.TARS.lookAt()`, `queueWorldEvent()`); no direct physics→behavior calls. Gates on LLM/Brain availability, blocking FX, cooldown (1800ms), and deferred-queue cap (10).
+- **Physics event hooks**: `TARS_PHYSICS` now emits `world.physics.impulse`, `world.physics.collision`, `world.physics.sleep`, `world.physics.wake` (dedup window 250ms) — observation-only, no behavior coupling. `applyImpulse()` added as the single interaction entry point.
+- **Persistence v3**: `worldState.objects` snapshot of dynamic object transforms + sleep state; `WorldPersistence.captureObjects()` / `applyObjectsToState()` restore on load; `finalizeExperience()` enriched with interaction context; worldMemory captures salient interactions.
+- **Observatory telemetry**: world interaction section in `renderObservatory()` (last object/gesture/impulse/position + interaction/collision/impulse/impulse-sum counters) fed by `ObservatoryDataLayer` world ingest cases and `getWorldInteractionSummary()`.
+- **Event categories**: `world.interaction`, `world.physics.impulse`, `world.physics.collision`, `world.physics.sleep`, `world.physics.wake`, `world.object.moved` (category `world`), `user.attention` (user).
 
 ## Newly Integrated (Phase 8.4 — Observable Spatial Runtime Base)
 - **Renderer**: `TARS_RENDER_PROFILES` (DESKTOP_HIGH / PI_BALANCED) + `detectRenderProfile()` for quality selection with persist + reload
@@ -78,7 +87,7 @@ All 10 event types (`health.cpu`, `.memory`, `.disk`, `.uptime`, `system.heartbe
 
 | Store | Content | Mechanism | Survives Refresh? |
 |-------|---------|-----------|-------------------|
-| Browser localStorage | `worldState` (needs, fatigue, activity history, preferences, session, environment) | `WorldPersistence.save()` on every decision/need update | **Yes** |
+| Browser localStorage | `worldState` (needs, fatigue, activity history, preferences, session, environment, objects) | `WorldPersistence.save()` on every decision/need update | **Yes** |
 | Server memory | Event history (last 1000, circular buffer) | In-process array | **No** — lost on server restart |
 | Server memory | Active alerts + alert history | In-process Map + array | **No** — lost on server restart |
 | Server memory | Service registry (status, lastSeen) | In-process Map | **No** — lost on server restart |
@@ -95,7 +104,8 @@ localStorage (browser)           Server memory              Future (Phase 8.5+)
 ├── experience buffer (100)      └── docker/network data    ├── episodic memory
 ├── preferences                                              └── semantic memory
 ├── session data
-└── environment
+├── environment
+└── objects (Phase 8.5: dynamic transforms + sleep)
 ```
 
 ### Future Persistence (Phase 8.5+)
@@ -116,11 +126,11 @@ localStorage (browser)           Server memory              Future (Phase 8.5+)
 - **Home Assistant integration**: Home tab is placeholder
 - **Network monitor**: Uses ICMP ping (may require admin/root on some systems)
 - **No authentication**: All API endpoints are public
-- **Single-file frontend**: `tars_face_v1.html` ~8472 lines
+- **Single-file frontend**: `tars_face_v1.html` ~9040 lines
 
 ## Not Yet Complete
-- **Full ball physics**: gravity/integration primitives exist; ball dynamics, rolling, contact resolution, and friction not implemented
-- **Object interaction**: no world-object TARS interaction (grab/knock/roll) beyond debug placeholders
+- **Full ball dynamics**: interaction impulses + collision/sleep/wake events work, but rolling, contact resolution, friction, and compound shapes remain incomplete
+- **Richer object interaction**: tap/flick impulse works; grab/knock/roll gestures, multi-tier collision response (COLLISION_TIERS), capsule-capsule, compound shapes incomplete
 - **Advanced collision response**: multi-tier (COLLISION_TIERS) response, capsule-capsule, and compound shapes incomplete
 - **SQLite event log / alert history**: still in-memory server buffers (see Future Persistence)
 - **Episodic / semantic memory**: not started
@@ -128,8 +138,8 @@ localStorage (browser)           Server memory              Future (Phase 8.5+)
 - **Home Assistant bridge**: not started
 - **Network monitors for Optiplex/TrueNAS/Plex**: not implemented (ICMP ping only for 3 hosts)
 - **Raspberry Pi deployment**: no Pi hardware, no kiosk/systemd/service config
-- **Frontend modularization**: single file still ~8472 lines
-- **Automated test suite**: only `test_observatory.js` regression exists (run via Node directly)
+- **Frontend modularization**: single file still ~9040 lines
+- **Automated test suite**: `test_observatory.js` regression (Phase 7.4.4 + Phase 8.5 world-event tests) run via Node directly
 
 ## Stabilization Audit (Phase 8.3.4)
 All findings categorized:
@@ -154,7 +164,7 @@ All findings categorized:
 - Phase 8.5: LLM integration, Home Assistant, alert notifications, modularization
 
 ## Next Steps (Phase 8.5+)
-1. Continue Phase 8.5 feature implementation (ball dynamics, object interaction, collision response completion)
+1. Complete ball dynamics (rolling, contact resolution, friction) and richer gestures (grab/knock/roll)
 2. Connect LLM for cognitive layer (Brain tab + Chat)
 3. Home Assistant / IoT integration (Home tab)
 4. Weather, news, calendar feeds (Observatory expansion)

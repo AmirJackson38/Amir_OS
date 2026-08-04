@@ -82,6 +82,16 @@ health-monitor.js (tick every 10s)
 
 All 22 data-action values wired to real handlers. Zero dead controls.
 
+### Embodied Interaction Layer (Phase 8.5)
+
+| Module | Role | Emits / Eats | Isolation Guarantee |
+|--------|------|--------------|---------------------|
+| `TARS_INPUT_CLASSIFIER` | Canvas-only pointer listeners → gestures (tap/flick/drag/touch) | emits `world.interaction` | Never listens to UI/chat DOM; self-suspends while `#tars-overlay` / `#tars-chat` open |
+| `TARS_WORLD_SENSOR` | Raycaster pick + `interactFromTouch()` impulse | emits `world.interaction` | Only reads `TARS_PHYSICS` / `TARS_WORLD_OBJECTS`; no UI coupling |
+| `TARS_WORLD_AGENT` | Response pipeline (join_play/investigate/respond_later) | consumes `world.interaction`; emits `world.salience` | Acts only via `setTARSActivity()` / `lookAt()` / `queueWorldEvent()` — no direct physics→behavior calls |
+| `TARS_PHYSICS` hooks | collision/sleep/wake/impulse emission (dedup 250ms) | emits `world.physics.*` | Observation-only; no behavior coupling |
+| Observatory world telemetry | `renderObservatory()` world section | `ObservatoryDataLayer.getWorldInteractionSummary()` | Reads only the data layer |
+
 ### Standalone Components
 
 | Component | Renderer | Data Source | Status |
