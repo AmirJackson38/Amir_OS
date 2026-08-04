@@ -42,7 +42,8 @@ Communication: Event bus → WS bridge → WebSocket → TARS_EVENTS → DOM eve
 - Phase 9.2: **Complete** — TARS deployed to Pi node (`tars_backend` :8080) `97636ab`
 - Phase 9.3: **Complete** — recovery validation (container/daemon/reboot/network-loss/persistence) `3124ec1`
 - Phase 9.4: **Complete** — physical presence layer (kiosk appliance: Chromium + labwc on DSI touchscreen, systemd service, touch validated, failure recovery validated)
-- **Next: Phase 9.5** — embodied presence polish (touch awareness, object play loop, ambient sensors)
+- Phase 9.5: **Complete** — embodied presence polish (touch play: grab/drag/launch ball, tap=bounce, swipe=kick; root-cause fix for embodied layer binding; emoji font) `eb5210b`/`ab051d9`
+- **Next: Phase 9.6** — play loop refinement (TARS joins/watches ball play), ambient awareness (camera/mic/sensors), offline assistant, complete ball dynamics
 
 ## Development Environment Reality
 

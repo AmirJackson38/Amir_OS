@@ -10,7 +10,7 @@
 
 | Project | Location | Type | Status | Git | Purpose |
 |---------|----------|------|--------|-----|---------|
-| **tars-face** | `projects/tars-face/` | Three.js + Node runtime | Active — **deployed** (Phase 9.3 done) | ✅ | TARS face/autonomy/world engine. Running as `tars_backend` on Pi `tars` `:8080` (image `tars-backend:1.0.0`, `tars_net` bridge, `unless-stopped`). Next: Phase 9.4 physical display/kiosk. |
+| **tars-face** | `projects/tars-face/` | Three.js + Node runtime | Active — **deployed** (Phase 9.5 done) | ✅ | TARS face/autonomy/world engine. Running as `tars_backend` on Pi `tars` `:8080` (image `tars-backend:1.0.0`, `tars_net` bridge, `unless-stopped`). Kiosk appliance live (Phase 9.4) + touch play verified (Phase 9.5). Next: play loop refinement, ambient awareness, LLM layer. |
 | **my-agent** | `projects\my-agent/` | Python | Active | ❌ | Terminal AI client (v1.1.0). Python + Rich TUI. Talks to OmniRoute. |
 
 ---
@@ -79,7 +79,7 @@ When starting a new project:
 - **Total Projects:** 2 active (tars-face, my-agent), 2 known (TSE, Home Lab)
 - **Primary System:** Amir OS (v0.9.0)
 - **Distributed Infrastructure:** Home Lab
-- **Key Deployment:** TARS Face → `tars_backend` on Pi `:8080` (Phase 9.2/9.3); TSE-Production-Lab / T.A.R.S.
+- **Key Deployment:** TARS Face → `tars_backend` on Pi `:8080` (Phase 9.2–9.5); TSE-Production-Lab / T.A.R.S.
 
 ---
 

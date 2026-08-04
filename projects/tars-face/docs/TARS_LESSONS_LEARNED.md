@@ -102,3 +102,16 @@
 ## 19. Extend Existing Systems, Don't Replace Them
 - **Lesson**: Phase 9 added only add-only artifacts (Dockerfile, compose, .dockerignore, local module import) on top of the existing architecture; Phase 9.3 was test-only. Everything old kept working as the fallback (`node server.js` + browser remains valid).
 - **Rule**: Prefer extending established systems over parallel replacements. Rollback stays trivial when new work is additive. If a parallel system must exist, isolate and document it explicitly (as deployment layer does).
+
+## 20. Module-Scoped Consts Are Not on `window` — Guards Silently No-Op
+- **Bug**: In the single-file frontend, `renderer`, `camera`, `scene`, `TARS_PHYSICS`, `TARS_WORLD_OBJECTS`, `TARS_COLLISION`, `worldState`, `currentState`, and `TARS_UI` are all module-scoped `const`s — **not** `window.*` properties. Guards like `if (window.renderer && renderer.domElement)` in `TARS_INPUT_CLASSIFIER.init()` were always `false`, so the embodied layer never bound; `_buildPickables()` never found any objects (`window.TARS_PHYSICS` undefined), so touch picking always returned null.
+- **Effect**: Touch interaction "didn't work" with **zero console errors** — gestures were classified but always landed on nothing. No exception, no log; just silent no-op guards.
+- **Fix**: Expose the module objects on `window` (`window.TARS_PHYSICS = TARS_PHYSICS`, etc.) and use the bare module identifier in the init guard (`if (renderer && renderer.domElement)`). Commits `eb5210b`, `ab051d9`.
+- **Verification**: CDP probe confirmed `touch-action:none` on the canvas (was `auto` pre-fix), physics objects enumerable, and all gestures (grab/drag/launch, tap=bounce, swipe=kick) firing with the ball responding. Zero exceptions.
+- **Rule**: When code guards on `window.X`, verify `X` is actually assigned to `window` — or drop the `window.` prefix for module-scoped identifiers. "Works in the app, silent in production" usually means an always-false guard on a missing global.
+
+## 21. Emoji Rendering Depends on the Platform's Font Stack
+- **Bug**: The Pi's Chromium rendered menu emoji (🧠 📜 📊 ⚙ 🏠 etc.) as empty boxes. `fc-list` showed only DejaVu Sans + Liberation — **no emoji font installed**.
+- **Effect**: UI icons appeared as tofu boxes in the kiosk while rendering fine on desktop Chrome (which bundles/uses OS emoji fonts).
+- **Fix**: `sudo apt-get install fonts-noto-color-emoji` on the Pi; restart kiosk; verified via `document.fonts.check('40px sans-serif', glyph)` → `true` and a canvas pixel test (2638 non-zero pixels).
+- **Rule**: Frontend text glyphs (especially emoji) depend on host fonts. When a glyph renders as a box on one platform but not another, check `fc-list`/`fc-match` on the target before assuming an app bug. Install the font on the node rather than replacing every emoji in the markup.

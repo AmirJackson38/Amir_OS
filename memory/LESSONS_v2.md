@@ -6,6 +6,9 @@
 
 ---
 
+### Lesson: Module-Scoped Consts Aren't on `window` — Guards Silently No-Op
+In the single-file frontend, `renderer`, `camera`, `TARS_PHYSICS`, `worldState` are module consts, NOT `window.*`. Guards like `if (window.renderer && ...)` were always false → classifier never bound, sensor pick always empty, zero errors. Touch "didn't work" for this reason. Verify module vars against `window` exposure before trusting a guard.
+
 ### Lesson: Git History Is the Source of Truth
 Docs drift; `git log` doesn't. Cross-check any phase/deployment claim against commits before building on it. Git wins.
 
@@ -18,10 +21,8 @@ Every safe phase began with an audit + recorded before-state (containers, ports,
 ### Lesson: Runtime Dependencies Must Stay Offline-Capable
 The CDN Three.js was the one hard internet dependency; eliminated by serving locally (Phase 9.1), proven under full egress drop (Phase 9.3). Never reintroduce a hosted requirement.
 
-### Lesson: Extend Existing Systems, Don't Replace Them
-Phase 9 added only add-only artifacts (Dockerfile, compose, .dockerignore, local import) on the existing architecture; old `node server.js` + browser stays the fallback. Parallel systems need isolation + documentation.
-
 ---
 
 ## Lessons Log
 **2026-08-04** — Added Phase 7–9 lessons: git truth, phase drift, audit-first, offline-capable runtime, extend-don't-replace. Full detail in `projects/tars-face/docs/TARS_LESSONS_LEARNED.md` (§14–19).
+**2026-08-04 (9.5)** — Added module-const-vs-window lesson (§20) + emoji font lesson (§21) in project docs.

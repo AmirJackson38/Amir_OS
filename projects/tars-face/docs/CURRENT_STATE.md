@@ -1,10 +1,19 @@
 # TARS Face — Current State
 
 **Date**: 2026-08-04
-**Version**: v7.5 + Phase 8.3.4 stabilization + Phase 8.4 Observable Spatial Runtime Base + Phase 8.5 Embodied Interaction Layer + Phase 9.1 Deployment Preparation + Phase 9.2 Node Deployment + Phase 9.3 Recovery Validation + Phase 9.4 Physical Presence
+**Version**: v7.5 + Phase 8.3.4 stabilization + Phase 8.4 Observable Spatial Runtime Base + Phase 8.5 Embodied Interaction Layer + Phase 9.1 Deployment Preparation + Phase 9.2 Node Deployment + Phase 9.3 Recovery Validation + Phase 9.4 Physical Presence + Phase 9.5 Embodied Presence Polish (Touch Play)
 
 ## Completed
-All behavior described below is delivered and verified. TARS frontend, backend, autonomy, world engine, and persistence are now **deployed and running on the Raspberry Pi node** (`tars_backend` on `:8080`) and have passed power-loss, Docker-restart, network-loss, and persistence recovery validation (Phase 9.3). Phase 9.4 (physical presence layer — display, touchscreen, kiosk) is complete: the Pi boots directly into the TARS frontend on an 800x480 DSI touchscreen. See `docs/PHASE_9_4_IMPLEMENTATION_REPORT.md`, `docs/PHASE_9_3_RECOVERY_TEST_REPORT.md` and `docs/PHASE_9_2_DEPLOYMENT_RESULT.md`.
+All behavior described below is delivered and verified. TARS frontend, backend, autonomy, world engine, and persistence are now **deployed and running on the Raspberry Pi node** (`tars_backend` on `:8080`) and have passed power-loss, Docker-restart, network-loss, and persistence recovery validation (Phase 9.3). Phase 9.4 (physical presence layer — display, touchscreen, kiosk) is complete: the Pi boots directly into the TARS frontend on an 800x480 DSI touchscreen. Phase 9.5 (touch play controls) is complete and verified live on the kiosk via CDP probes. See `docs/PHASE_9_4_IMPLEMENTATION_REPORT.md`, `docs/PHASE_9_3_RECOVERY_TEST_REPORT.md` and `docs/PHASE_9_2_DEPLOYMENT_RESULT.md`.
+
+## Newly Integrated (Phase 9.5 — Embodied Presence Polish: Touch Play)
+- **Touch controls**: long-press (≥300ms, <20px) grabs grabbable objects; `_dragPoint` drags along the plane at object height (clamped to `ROOM_BOUNDS`); `_launchVelocity` converts drag samples to world velocity (clamped 7 u/s); release = launch. Tap = `bounce()`; swipe = `applyImpulse` kick.
+- **Canvas touch fix**: `touch-action:none` + `touchCallout:none` — required on the Pi, where Chromium fires `pointercancel` on touch otherwise, aborting every gesture.
+- **TARS play block**: while `ballObj.physics.grabbed`, TARS sets `focus="user"` + `lookAt("user","watch_play")` instead of playing — user controls the ball, TARS watches.
+- **Physics**: `grab()`, `dragTo()`, `release()`, `bounce()` added; `update()` skips `p.grabbed` and kinematic bodies; `_emitCollision` position-param fix.
+- **Root-cause fix**: the embodied layer had NEVER bound since Phase 8.5 — `TARS_INPUT_CLASSIFIER.init()` guarded on `window.renderer` (a module-scoped `const`, never on `window`), so it always deferred; `TARS_PHYSICS`, `TARS_WORLD_OBJECTS`, `TARS_COLLISION`, `worldState`, `currentState`, `TARS_UI` were also never exposed on `window`, so sensor `pick()` always returned null. All module objects now exposed on `window`. Verified via CDP: `touch-action:none` applied, all gestures fire, ball responds, 0 exceptions.
+- **Emoji fix**: Pi had no emoji font (only DejaVu/Liberation) → menu icons rendered as boxes. Installed `fonts-noto-color-emoji` on the node; verified rendering via `document.fonts.check` + canvas pixel test.
+- **Verification**: live CDP probes on the kiosk confirmed grab (`grabbed:true`), drag (ball tracks finger), release→launch (vel `[0.91,-0.35,-0.05]`), tap→bounce, flick→kick — zero exceptions. CDP debug port 9222 via `tars-kiosk.service.d/debug.conf`.
 
 ## Newly Integrated (Phase 9.3 — Recovery Validation)
 - **Test-only phase** (no runtime/Docker/arch changes): validated `tars_backend` survives real hardware lifecycle events on the node.
@@ -67,7 +76,8 @@ All behavior described below is delivered and verified. TARS frontend, backend, 
 - Three.js 3D face with expressions, gestures, eye tracking
 - Autonomy engine: need-driven activity selection with scoring
 - World state persistence (localStorage)
-- Right-side toolbar: 🏠 Home, ◈ INFRA, 📊 Observatory, 🧠 Brain, 📜 Journal, ⚙ System, 🎛 Creator Console
+- Right-side toolbar: 🏠 Home, ◈ INFRA, 📊 Observatory, 🧠 Brain, 📜 Journal, ⚙ System, 🎛 Creator Console (emoji render — Noto Color Emoji installed on the node)
+- **Touch play (Phase 9.5)**: long-press grab + drag + release-launch the ball, tap = bounce, swipe = kick — verified live on the Pi touchscreen
 - 📊 Observatory: live world, behavior, needs, and event views rendered from `ObservatoryDataLayer` (no direct state reads); toggleable full-screen overlay via **F3 / Ctrl+Shift+D**
 - Runtime server with WebSocket + REST API
 - Health monitoring (CPU, memory, disk, temp, uptime) every 10s via `/api/events`
@@ -167,17 +177,16 @@ localStorage (browser)           Server memory              Future (Phase 8.5+)
 - **Single-file frontend**: `tars_face_v1.html` ~9040 lines
 
 ## Not Yet Complete
-- **Full ball dynamics**: interaction impulses + collision/sleep/wake events work, but rolling, contact resolution, friction, and compound shapes remain incomplete
-- **Richer object interaction**: tap/flick impulse works; grab/knock/roll gestures, multi-tier collision response (COLLISION_TIERS), capsule-capsule, compound shapes incomplete
+- **Richer object interaction**: tap/flick impulse + grab/drag/launch work; knock/roll gestures, multi-tier collision response (COLLISION_TIERS), capsule-capsule, compound shapes incomplete
 - **Advanced collision response**: multi-tier (COLLISION_TIERS) response, capsule-capsule, and compound shapes incomplete
 - **SQLite event log / alert history**: still in-memory server buffers (see Future Persistence)
 - **Episodic / semantic memory**: not started
 - **LLM connection**: chat is placeholder, Brain tab shows "Cognitive layer offline"
 - **Home Assistant bridge**: not started
 - **Network monitors for Optiplex/TrueNAS/Plex**: not implemented (ICMP ping only for 3 hosts)
-- **Raspberry Pi deployment**: **Complete** (Phase 9.2–9.4) — kiosk appliance live on the node
-- **Ambient sensing (Phase 9.5)**: camera / microphone / sensor awareness not yet started
-- **Frontend modularization**: single file still ~9040 lines
+- **Raspberry Pi deployment**: **Complete** (Phase 9.2–9.5) — kiosk appliance live on the node
+- **Ambient sensing (Phase 9.6)**: camera / microphone / sensor awareness not yet started
+- **Frontend modularization**: single file still ~9430 lines
 - **Automated test suite**: `test_observatory.js` regression (Phase 7.4.4 + Phase 8.5 world-event tests) run via Node directly
 
 ## Stabilization Audit (Phase 8.3.4)
@@ -202,15 +211,14 @@ All findings categorized:
 - Two click listeners on `#tars-overlay-body` could be merged (non-critical)
 - Phase 8.5: LLM integration, Home Assistant, alert notifications, modularization
 
-## Next Steps (Phase 9.5 — Embodied Presence Polish)
-Phase 9.4 plan items (display detection, touchscreen validation, kiosk boot, automatic TARS visual startup) are now **complete**. Remaining:
-1. Touch awareness — "Amir tapped me", "Amir poked the ball", interaction detection fed into behavior
-2. Object play loop — ball physics, throw/flick, TARS decides join / watch / ignore
-3. Persistent physical identity — remember screen/device identity ("I am running on TARS hardware")
-4. Ambient awareness — camera, microphone, sensors
-5. Offline assistant behavior — local models, voice, perception
-6. Complete ball dynamics (rolling, contact resolution, friction) and richer gestures (grab/knock/roll)
-7. Connect LLM for cognitive layer (Brain tab + Chat)
-8. Home Assistant / IoT integration (Home tab)
-9. SQLite event log + persistent alert/service history
-10. Automated test suite for server monitors
+## Next Steps (Phase 9.6 — Embodied Presence Polish, continued)
+Phase 9.4 plan items (display detection, touchscreen validation, kiosk boot, automatic TARS visual startup) are now **complete**. Phase 9.5 (touch play: grab/drag/launch, tap=bounce, swipe=kick) is **complete and verified live**. Remaining:
+1. Object play loop refinement — tune `watch_play` focus response timing (TARS joins/watches ball play)
+2. Persistent physical identity — remember screen/device identity ("I am running on TARS hardware")
+3. Ambient awareness — camera, microphone, sensors
+4. Offline assistant behavior — local models, voice, perception
+5. Complete ball dynamics (rolling, contact resolution, friction) and richer gestures (grab/knock/roll)
+6. Connect LLM for cognitive layer (Brain tab + Chat)
+7. Home Assistant / IoT integration (Home tab)
+8. SQLite event log + persistent alert/service history
+9. Automated test suite for server monitors

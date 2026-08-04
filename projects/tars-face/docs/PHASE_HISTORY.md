@@ -159,3 +159,11 @@
 - **Failure recovery validated**: reboot, hard reset, backend/Docker restart, Chromium crash, network unplug/restore
 - **Existing services untouched**: 8 homelab containers + SSH healthy
 - Docs: `PHASE_9_4_IMPLEMENTATION_REPORT.md` + render evidence PNGs
+
+## Phase 9.5 — Embodied Presence Polish: Touch Controls (commits `c80e300`→`ab051d9`)
+- **Touch controls**: long-press (≥300ms, <20px) grabs grabbable objects; `_dragPoint` drags along the plane at object height (clamped to `ROOM_BOUNDS`); `_launchVelocity` converts drag samples to world velocity (clamped 7 u/s); release = launch. Tap = `bounce()` (1.2 + impulse×1.6); swipe = `applyImpulse` kick. `touch-action:none` + `touchCallout:none` on the canvas (required on Pi — Chromium fires `pointercancel` otherwise).
+- **TARS play block**: when `ballObj.physics.grabbed`, TARS sets `currentState.focus="user"` + `lookAt("user","watch_play")` instead of playing — so the ball is user-controlled while TARS watches.
+- **Physics additions**: `grab()`, `dragTo()`, `release()`, `bounce()`; `update()` skips `p.grabbed` and kinematic bodies; `_emitCollision` position-param fix.
+- **Root-cause fix**: embodied layer never bound — init guarded on `window.renderer` (module const, never on `window`) → always deferred; `TARS_PHYSICS`/`TARS_WORLD_OBJECTS`/`TARS_COLLISION`/`worldState`/`currentState`/`TARS_UI` also never exposed → sensor pick always empty. Exposed all on `window`; verified via CDP: `touch-action:none` applied, all gestures fire, ball responds, 0 exceptions.
+- **Emoji fix**: Pi had no emoji font → menu icons as boxes. Installed `fonts-noto-color-emoji` on the node; glyphs render (verified via `document.fonts.check` + canvas pixel test).
+- **Verification**: live CDP probes on the kiosk (grab→`grabbed:true`, drag tracks finger, release→launch vel `[0.91,-0.35,-0.05]`, tap→bounce, flick→kick; zero exceptions). CDP debug port 9222 via `tars-kiosk.service.d/debug.conf`.

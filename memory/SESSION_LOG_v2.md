@@ -1,36 +1,37 @@
 # Session Log (v2 — Flight Recorder, 2,500 chars max)
 
 **Last Updated:** August 4, 2026  
-**Character Budget:** 2,500 chars | **Current:** ~2,100 chars | **Status:** ✅ Within limit
+**Character Budget:** 2,500 chars | **Current:** ~2,200 chars | **Status:** ✅ Within limit
 
 ---
 
-## Session 2026-08-04
+## Session 2026-08-04 (Phase 9.5 — Touch Play + Kiosk Verification)
 
 **Start Time:** 2026-08-04  
 **Status:** Completed  
-**Objective:** Phase 9.4 prep — memory synchronization + next-step planning
+**Objective:** Phase 9.5 embodied presence polish — touch controls, live verification on Pi kiosk, memory sync
 
 ### Handoff Entry
 
-**Current commit:** `3124ec1` (`master`) — TARS recovery validation report
-**Completed phases:** 1–8.5 (feature), 9.1 (deploy prep), 9.2 (Pi node deploy), 9.3 (recovery validation)
-**System state:** `tars_backend` container live on `tars` @ `192.168.0.102:8080`, image `tars-backend:1.0.0`, `tars_net` bridge, `unless-stopped`; 8 homelab containers unchanged; no display/kiosk yet
-**Remaining work:** Phase 9.4 physical presence (display detection, touchscreen validation, kiosk boot, auto TARS visual startup); then richer touch/world interaction, camera/sensors, deeper embodiment; LLM layer, SQLite persistence, modularization
-**Exact next action:** Attach 7" touchscreen to Pi → verify HDMI display detection → validate touch input → set up kiosk/autostart to `http://127.0.0.1:8080`
+**Current commit:** `ab051d9` (`pi-master`) — expose scene/camera/renderer on window (9.5 touch fixes)
+**Completed phases:** 1–8.5 (feature), 9.1–9.4 (deploy + physical presence kiosk), **9.5 (touch play controls)**
+**System state:** Pi boots to kiosk → Chromium on 800x480 DSI touchscreen → `http://127.0.0.1:8080/`; `tars_backend` container live; CDP debug port 9222 via `tars-kiosk.service.d/debug.conf`; Noto Color Emoji font installed
+**Remaining work:** play loop refinement (TARS joins ball play), ambient awareness (camera/mic/sensors), offline assistant (local models/voice), complete ball dynamics, LLM layer, SQLite persistence
+**Exact next action:** Tune `watch_play` response timing; then Phase 9.6 ambient awareness
 
 ### Log
 
-* Synchronized TARS memory: CURRENT_STATE, PHASE_HISTORY, AGENTS, ARCHITECTURE, TARS_LESSONS (all now reflect Phase 9.3 done / 9.4 next)
-* Recorded Phase 7–9 lessons (git-truth, phase drift, audit-first, offline-capable, extend-don't-replace)
-* Confirmed roadmap: Phase 9.4 = physical presence layer, then interaction/camera/embodiment
+* **Root-cause fix**: embodied layer never bound — `TARS_INPUT_CLASSIFIER.init()` guarded on `window.renderer` (module const, never on window) → always deferred; `TARS_PHYSICS`/`TARS_WORLD_OBJECTS`/`TARS_COLLISION`/`worldState`/`currentState`/`TARS_UI` also never exposed → sensor `pick()` always empty. Exposed all on `window` (commits `eb5210b`, `ab051d9`).
+* **Touch controls verified live** (CDP probes): `touch-action:none` applied; grab (`grabbed:true`) on long-press, drag tracks finger, release launches (vel `[0.91,-0.35,-0.05]`), tap=bounce, swipe=kick. Zero exceptions.
+* **Emoji fix**: Pi had no emoji font (DejaVu/Liberation only) → menu icons as boxes. Installed `fonts-noto-color-emoji`; glyphs render (verified via `document.fonts.check` + canvas pixel test).
+* Confirmed roadmap: 9.4 physical presence ✅ → 9.5 touch play ✅ → play loop/ambient/offline/LLM next
 
 ---
 
 ## Session 2026-07-29
 
 **Start Time:** 2026-07-29  
-**Status:** In Progress  
+**Status:** Completed  
 **Objective:** Phase 7.3 scoring + bug fix + observability shift
 
 ### Log
@@ -42,83 +43,4 @@
 
 ---
 
-## Session 2026-07-27-1529
-**Start Time:** 2026-07-27 20:29
-**Status:** Completed
-**Objective:** session end
-
-
-
-## Session 2026-07-27-1528
-
-**Start Time:** 2026-07-27 20:28
-**Status:** In Progress
-**Objective:** session end
-
-### Log
-
-* session end: completed memory promoter fixes and active_project_v2.md cleanup
-
-
-
-
-## Session 2026-07-27
-**Start Time:** 2026-07-27
-**Status:** In Progress
-**Objective:** Memory promoter cleanup, ACTIVE_PROJECT_v2.md corruption fix, Phase 2 autonomous needs system complete
-
-
-
-
-## Session 2026-07-24-03
-
-**Start Time:** 2026-07-24 00:47  
-**Status:** Completed  
-**Objective:** Boot automation — OmniRoute autostart + interactive terminal chooser
-
-### Log
-
-* Created `tools/start_omni.ps1`, `tools/boot_terminal_chooser.ps1`, `tools/register_boot_tasks.ps1`
-* Registered both startup tasks in Windows Task Scheduler under "Amir OS" folder
-* Created `tools/BOOT_SETUP_GUIDE.md` with testing/troubleshooting procedures
-* Boot automation live — OmniRoute + boot menu now trigger on system restart
-
----
-
-
-
-
-
-
-
-
-
-
-
-## Session 2026-07-24-02
-
-**Start Time:** 2026-07-24  
-**Status:** Completed  
-**Objective:** Evolve My Agent v1.0.0 into agent runtime with tools
-
-### Log
-
-* Built `tool_registry.py` with 8 tools: read_file, write_file, run_shell, git_run, grep_search, glob_search, list_dir, memory_read
-* Created `permissions.py` with per-tool prompt + session-tracked always-allow lists
-* Implemented `agent_loop.py` with ReAct cycle (stream → detect TOOL_CALL → permission → execute → repeat, max 10 iterations)
-* Reduced system prompt from 23,015 → 7,433 chars (68% reduction)
-* **Known Limitation:** OmniRoute strips tool capabilities—model can't call tools through it. Needs local/CLI-native model
-
----
-
-
-
-
-
-
-
-
-
-
-
-**Older sessions archived to SESSION_LOG_ARCHIVE.md**
+**Older sessions (07-27 and earlier) archived to `SESSION_LOG_ARCHIVE.md`**
