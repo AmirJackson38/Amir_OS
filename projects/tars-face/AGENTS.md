@@ -36,20 +36,23 @@ Communication: Event bus → WS bridge → WebSocket → TARS_EVENTS → DOM eve
 - Phase 8.3.5: Complete — documentation stabilization (this checkpoint)
 - Phase 8.4: Complete — observable spatial runtime base (event bus, ObservatoryDataLayer, developer observatory, world objects, collision, physics foundation, render profiles)
 - Phase 8.5: **Complete** — embodied interaction layer (input classifier, world sensor, world agent, physics event hooks, persistence v3, observatory telemetry)
-- **Next: Phase 8.6** — feature development (ball dynamics completion, richer gestures, LLM, Home Assistant, or modularization)
+- Phase 9.1: **Complete** — node deployment preparation (`0b86279`)
+- Phase 9.2: **Complete** — TARS deployed to Pi node (`tars_backend` :8080) `97636ab`
+- Phase 9.3: **Complete** — recovery validation (container/daemon/reboot/network-loss/persistence) `3124ec1`
+- **Next: Phase 9.4** — physical presence layer (display detection, touchscreen validation, kiosk boot, automatic TARS visual startup)
 
 ## Development Environment Reality
 
 | Aspect | Documented | Actual |
 |--------|-----------|--------|
-| Host | Raspberry Pi (TARS_PHASE_* docs) | **Windows** (current dev workstation) |
-| Deployment | Systemd service, kiosk mode | `node pi-server/server.js` from terminal |
+| Host | Raspberry Pi (TARS_PHASE_* docs) | **Deployed**: `tars_backend` container live on `tars` @ `192.168.0.102:8080` (Phase 9.2). Development still on Windows. |
+| Deployment | Systemd service, kiosk mode | **Docker** container `unless-stopped` (Phase 9.2). Kiosk/display = Phase 9.4, display not yet attached. |
 | Optiplex/TrueNAS/Plex monitoring | Planned (TARS_PHASE_8_3 docs) | **Not implemented** |
 | Home Assistant bridge | Designed | **Not implemented** |
 | SQLite persistence | Designed (Phase 8.4) | **Not implemented** (uses localStorage) |
 | Cognitive layer / LLM | Designed (Phase 8.5) | **Not implemented** |
 
-**Golden rule**: Do not pretend Pi deployment is active. Development is on Windows until explicitly moved.
+**Golden rule**: Pi deployment IS real (Phase 9.2 complete, Phase 9.3 recovery-validated). Do NOT claim the display/kiosk is active — that is Phase 9.4 and requires a physically attached screen. Development remains Windows-first; the node runs the deployed image.
 
 ## Golden Architecture Rules
 
@@ -58,6 +61,8 @@ Communication: Event bus → WS bridge → WebSocket → TARS_EVENTS → DOM eve
 3. **Monitors observe only** — No monitor writes to external systems. Read-only API calls.
 4. **Event bus is the backbone** — All services communicate through events. No direct service-to-service calls.
 5. **New integrations are adapters** — Each monitor is a standalone module registered in `server.js`. No hardcoded features.
+6. **Layers stay separated** — Frontend, backend (runtime server), cognition (LLM/consultant), and deployment (Docker/kiosk) must remain isolated so each can be changed independently. Keep the deployed node reproducible via git + image tags.
+7. **Runtime dependencies must be offline-capable** — No hard CDN/external requirement in the frontend (three.js is served locally). Everything shipped must degrade gracefully with no network.
 
 ## Files Requiring Caution
 

@@ -1,29 +1,29 @@
 ## Active Focus
 
-**Phase 7.4: TARS Observatory Layer** — Stop adding instincts. Build observability so we can answer *why* TARS does things.
+**Phase 9.4: TARS Physical Presence Layer** — Deploy the 7" touchscreen display: verify display detection, validate touch input, set up kiosk boot, and make TARS auto-launch visually on startup. Phase 9.3 (recovery validation) is complete.
 
 ---
 
 ## Active Projects
 
-1. **TARS Observatory** — Repair activity log, build Developer Observatory (F3 toggle), upgrade telemetry with full score breakdown, add timeline view, design as subscribable subsystem (browser/Pi/phone).
-2. **TARS World Engine** — Complete, receiving observability layer. Behavioral tuning on hold until we can see what's happening.
+1. **TARS (`projects/tars-face`)** — Fully implemented + deployed to Pi node (`tars_backend` @ `:8080`), recovery-validated. Next: physical display.
+2. **TSE-Production-Lab** — Homelab FastAPI + Postgres (unchanged).
+3. **Home Lab** — TrueNAS, TARS Pi, ER605, dual subnet.
 
 ---
 
 ## Next Actions
 
-1. Repair activity log: reliable starts, completions, moves, durations
-2. Build Developer Observatory panel (F3/Ctrl+Shift+D): live needs, fatigue, scores, intent, runner-up, countdowns
-3. Upgrade telemetry: log full score breakdown per decision
-4. Add chronological timeline view
-5. Design as subsystem — decouple from browser UI so Pi/phone can subscribe
+1. Attach 7" touchscreen to Pi, verify HDMI/DVI detection
+2. Validate touch input end-to-end
+3. Config kiosk/autostart → browser fullscreen to `http://127.0.0.1:8080`
+4. Verify TARS auto-starts visually without manual interaction
 
 ---
 
 ## Key Files
 
 - `projects/tars-face/tars_face_v1.html` — Single-file Three.js app
-- `skills/*/SKILL.md` — Progressive-load skill modules
-- `workflows/*.md` — Structured procedure definitions
-- `manifest.json` — Component registry
+- `projects/tars-face/docs/CURRENT_STATE.md` — full state + next steps
+- `projects/tars-face/docs/PHASE_9_3_RECOVERY_TEST_REPORT.md` — recovery proof
+- `memory/ACTIVE_PROJECT_v2.md` — project breakdown

@@ -1,6 +1,6 @@
 # Project Registry (Auto-Generated)
 
-**Last Updated:** 2026-07-29 20:41:27 UTC  
+**Last Updated:** 2026-08-04 02:20:00 UTC  
 **Status:** Active registry  
 **Purpose:** Consolidated inventory of all active, paused, and archived projects
 
@@ -10,6 +10,7 @@
 
 | Project | Location | Type | Status | Git | Purpose |
 |---------|----------|------|--------|-----|---------|
+| **tars-face** | `projects/tars-face/` | Three.js + Node runtime | Active — **deployed** (Phase 9.3 done) | ✅ | TARS face/autonomy/world engine. Running as `tars_backend` on Pi `tars` `:8080` (image `tars-backend:1.0.0`, `tars_net` bridge, `unless-stopped`). Next: Phase 9.4 physical display/kiosk. |
 | **my-agent** | `projects\my-agent/` | Python | Active | ❌ | Terminal AI client (v1.1.0). Python + Rich TUI. Talks to OmniRoute. |
 
 ---
@@ -34,7 +35,7 @@
 
 | Project | Location | Type | Action |
 |---------|----------|------|--------|
-| tars-face | `projects\tars-face/` | Three.js Visual Frontend | ⚠ Document in CURRENT_STATE_v2.md |
+| (none) | — | — | — |
 
 ---
 
@@ -45,6 +46,10 @@ Amir OS (Core System)
 ├── Supports My Agent (terminal client tool)
 ├── Manages Home Lab (infrastructure docs)
 └── Provides context for TSE-Production-Lab (T.A.R.S. backend)
+
+TARS Face (projects/tars-face)
+├── Runs as tars_backend on TARS Raspberry Pi (Phase 9.2 deployed)
+└── Uses Amir OS for continuity/memory
 
 TSE-Production-Lab (T.A.R.S.)
 ├── Runs on TARS Raspberry Pi (part of Home Lab)
@@ -71,10 +76,10 @@ When starting a new project:
 
 ## Project Statistics
 
-- **Total Projects:** 2 discovered, 1 known, 1 new
-- **Primary System:** Amir OS (v0.8.0)
+- **Total Projects:** 2 active (tars-face, my-agent), 2 known (TSE, Home Lab)
+- **Primary System:** Amir OS (v0.9.0)
 - **Distributed Infrastructure:** Home Lab
-- **Key Deployment:** TSE-Production-Lab / T.A.R.S.
+- **Key Deployment:** TARS Face → `tars_backend` on Pi `:8080` (Phase 9.2/9.3); TSE-Production-Lab / T.A.R.S.
 
 ---
 

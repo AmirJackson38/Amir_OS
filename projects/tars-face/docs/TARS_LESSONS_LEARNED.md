@@ -81,3 +81,27 @@
 - **Effect**: Metric cards showed empty values with no errors. The gap was invisible in normal debugging because no exception was thrown — just no matching element.
 - **Fix**: Update selector to `.tars-data-value` in all four locations.
 - **Rule**: DOM class names are contracts between CSS and JS. If a class is renamed in HTML/CSS templates, all JS selectors referencing it must be updated. Prefer single-source selectors or data attributes for JS hooks.
+
+## 14. Git History Is the Source of Truth
+- **Lesson**: The committed history (`git log`) is the canonical record of what actually shipped — which phases completed, which files changed, what order events happened. Memory/docs files drift and go stale; git does not.
+- **Rule**: Before trusting a doc's claim about phase state or deployment status, cross-check against `git log` and the deployment result reports. When docs and git disagree, git wins and the doc needs a sync.
+
+## 15. Phase Names Can Drift — Verify Before Assuming
+- **Lesson**: Phase numbering in docs drifted during the TARS arc (e.g., "Phase 8.5+ planned" vs actual `8.6`, "Next Phase 8.6" vs actual 9.x, and a separate TSE-Production-Lab with its own phase numbering). A "current phase" claim in one file often disagreed with another.
+- **Rule**: Confirm the true phase/milestone from git + result reports before building on it. Name drift causes wrong assumptions and wasted work. Docs should state their date and the commit they reflect.
+
+## 16. Audit Before Modifying
+- **Lesson**: Every successful phase started with an audit (Phase 8.3.4 audit, Phase 8.5 architecture audit, Phase 9.2 preflight/before-state, Phase 9.3 before-state records). Audits made changes safe by recording exact before-states.
+- **Rule**: Record before-state (containers, ports, commits, health) before any deployment/lifecycle action. An audit makes rollback trivial and gives recovery validation something concrete to compare against.
+
+## 17. Runtime Dependencies Must Remain Offline-Capable
+- **Lesson**: The single hard internet dependency (Three.js from CDN) was eliminated by serving `three.module.js` locally (Phase 9.1). Phase 9.3 proved the frontend keeps working with the container's egress fully dropped.
+- **Rule**: Every shipped dependency must work with zero network. The face, autonomy, world, physics, and persistence are all client-side + locally-served. Never reintroduce a CDN/hosted requirement.
+
+## 18. Frontend, Backend, Cognition, and Deployment Layers Stay Separated
+- **Lesson**: The frontend runs without the server; the backend (runtime server) runs independently in a container; cognition (LLM) is a not-yet-wired consultant; deployment (Docker/kiosk) is a separate isolated concern on the node. Separation let Phase 9.3 test each lifecycle event without touching autonomy or world logic.
+- **Rule**: No layer may reach into another. Deployment changes never rewrite autonomy/physics/persistence code; cognitive features never write primary event data. Extend each layer additively, replace nothing.
+
+## 19. Extend Existing Systems, Don't Replace Them
+- **Lesson**: Phase 9 added only add-only artifacts (Dockerfile, compose, .dockerignore, local module import) on top of the existing architecture; Phase 9.3 was test-only. Everything old kept working as the fallback (`node server.js` + browser remains valid).
+- **Rule**: Prefer extending established systems over parallel replacements. Rollback stays trivial when new work is additive. If a parallel system must exist, isolate and document it explicitly (as deployment layer does).

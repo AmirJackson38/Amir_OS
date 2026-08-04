@@ -1,7 +1,29 @@
 # Session Log (v2 — Flight Recorder, 2,500 chars max)
 
-**Last Updated:** July 29, 2026  
-**Character Budget:** 2,500 chars | **Current:** ~1,200 chars | **Status:** ✅ Within limit
+**Last Updated:** August 4, 2026  
+**Character Budget:** 2,500 chars | **Current:** ~2,100 chars | **Status:** ✅ Within limit
+
+---
+
+## Session 2026-08-04
+
+**Start Time:** 2026-08-04  
+**Status:** Completed  
+**Objective:** Phase 9.4 prep — memory synchronization + next-step planning
+
+### Handoff Entry
+
+**Current commit:** `3124ec1` (`master`) — TARS recovery validation report
+**Completed phases:** 1–8.5 (feature), 9.1 (deploy prep), 9.2 (Pi node deploy), 9.3 (recovery validation)
+**System state:** `tars_backend` container live on `tars` @ `192.168.0.102:8080`, image `tars-backend:1.0.0`, `tars_net` bridge, `unless-stopped`; 8 homelab containers unchanged; no display/kiosk yet
+**Remaining work:** Phase 9.4 physical presence (display detection, touchscreen validation, kiosk boot, auto TARS visual startup); then richer touch/world interaction, camera/sensors, deeper embodiment; LLM layer, SQLite persistence, modularization
+**Exact next action:** Attach 7" touchscreen to Pi → verify HDMI display detection → validate touch input → set up kiosk/autostart to `http://127.0.0.1:8080`
+
+### Log
+
+* Synchronized TARS memory: CURRENT_STATE, PHASE_HISTORY, AGENTS, ARCHITECTURE, TARS_LESSONS (all now reflect Phase 9.3 done / 9.4 next)
+* Recorded Phase 7–9 lessons (git-truth, phase drift, audit-first, offline-capable, extend-don't-replace)
+* Confirmed roadmap: Phase 9.4 = physical presence layer, then interaction/camera/embodiment
 
 ---
 

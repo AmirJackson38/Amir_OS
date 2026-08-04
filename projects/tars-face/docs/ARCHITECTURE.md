@@ -26,6 +26,12 @@ TARS Face is a browser-based 3D face/animation system with a Node.js runtime ser
 - WebSocket: Server pushes events to browser (health updates, alerts, docker/network data)
 - REST API: `/health`, `/api/events`, `/api/alerts` endpoints
 
+### 4. Deployment Layer (Phase 9+)
+- **Docker**: `tars_backend` container (image `tars-backend:1.0.0`, non-root `node` user, `/srv/tars`, `EXPOSE 8080`, healthcheck) on isolated `tars_net` bridge, `restart: unless-stopped`, published port `8080` only.
+- **Layered isolation**: Frontend (browser) → Backend (container :8080) → Cognition (LLM, separate, not wired) → Deployment (Docker/kiosk). Recovery-gated so container restart / daemon restart / reboot / network loss all self-heal (Phase 9.3).
+- **Offline-capable**: Three.js served locally from `/three.module.js`; zero CDN dependency.
+- See `docs/PHASE_9_2_DEPLOYMENT_RESULT.md`, `docs/PHASE_9_3_RECOVERY_TEST_REPORT.md`, `docs/PI_NODE_AUDIT.md`, `docs/CURRENT_SERVICE_MAP.md`.
+
 ## Data Pipeline
 ```
 health-monitor.js (tick every 10s)
@@ -154,6 +160,13 @@ class SomeMonitor {
 | `docs/TARS_LESSONS_LEARNED.md` | Bug postmortems and engineering lessons |
 | `docs/DECISIONS.md` | Architecture decision records |
 | `config/tars-config.json` | Runtime configuration |
+| `docs/PHASE_9_1_TARS_NODE_DEPLOYMENT_PLAN.md` | Phase 9.1 deployment preparation plan (implemented) |
+| `docs/PHASE_9_2_DEPLOYMENT_RESULT.md` | Phase 9.2 node deployment result (success) |
+| `docs/PHASE_9_3_RECOVERY_TEST_REPORT.md` | Phase 9.3 recovery validation report (all pass) |
+| `docs/PI_NODE_AUDIT.md` | Live Pi node introspection |
+| `docs/CURRENT_SERVICE_MAP.md` | Current service inventory on node |
+| `docs/PHASE_9_DEPLOYMENT_BLUEPRINT.md` | High-level deployment blueprint |
+| `docs/DEPLOYMENT_RUNBOOK.md` | Preflight/redeploy/rollback runbook |
 
 ### FORWARD-LOOKING (designed but not implemented)
 

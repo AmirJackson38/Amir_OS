@@ -127,3 +127,29 @@
 - SQLite event log + persistent alert/service history
 - LLM cognitive layer (Brain + Chat), Home Assistant bridge
 - Raspberry Pi deployment (kiosk, systemd, physical display)
+
+## Phase 9.1 — TARS Node Deployment Preparation (committed `0b86279`)
+- **Artifacts created + validated on Windows**: `Dockerfile` (node:20-alpine, non-root `node` user, `/srv/tars`, `EXPOSE 8080`, healthcheck), `docker-compose.yml` (service `tars-backend`, image `tars-backend:1.0.0`, `restart: unless-stopped`, isolated `tars_net` bridge, port `8080:8080` only), `.dockerignore` (excludes scratch tests + node_modules)
+- **Frontend import repointed**: `tars_face_v1.html:418` `import * as THREE from "/three.module.js"` (local r161) instead of CDN — removes the single hard internet dependency; local `three.module.js` tracked (1,280,747 bytes)
+- **Docs**: `DEPLOYMENT_RUNBOOK.md`, `PHASE_9_1_TARS_NODE_DEPLOYMENT_PLAN.md`, `PHASE_9_DEPLOYMENT_BLUEPRINT.md`, `PI_NODE_AUDIT.md` (live Pi introspection), `CURRENT_SERVICE_MAP.md`
+- Validated: /health 200, page 200, three.module.js 200, 0 CDN refs, test_observatory 59/59
+
+## Phase 9.2 — TARS Node Deployment (committed `97636ab`)
+- **Deployed**: sparse clone of `projects/tars-face` only to `/home/admin/tars-face`; `docker compose up -d` → `tars_backend` `Up (healthy)` on `:8080`, isolated `tars_net`, `unless-stopped`, non-root `node` user
+- **Coexistence**: all 7 pre-existing homelab containers (worldmonitor, TSE, postgres, duckdns, etc.) unchanged before==after; TARS occupies only `:8080`
+- **Node facts**: Pi 4, Debian 13 trixie, aarch64, Docker 29.6.1, Compose v5.3.1; dual-homed eth0 192.168.0.102 + wlan0 10.0.0.231; headless (no display/X11/Chromium)
+- Runbook doc fixes committed separately (`6687c4e`): rollback ordering (rm -rf before cd), "Pi's" typo
+- **Report**: `docs/PHASE_9_2_DEPLOYMENT_RESULT.md`
+
+## Phase 9.3 — Recovery Validation (committed `3124ec1`)
+- **Test-only phase** (no runtime/Docker/arch changes, no display/kiosk work)
+- **Test 1** `docker restart tars_backend`: ✅ healthy, /health ok, page 200, module 200, 0 CDN refs, no errors, others untouched
+- **Test 2** `systemctl restart docker`: ✅ all 8 containers auto-recovered, TARS healthy (transient http=000 was a startup race, settled to 200)
+- **Test 3** `sudo reboot`: ✅ SSH recovered, Docker active, all 8 containers auto-started, TARS healthy, 8080 LISTENING
+- **Test 4** persistence across reboot: ✅ image ID `3a32657d09e5`, container ID, `WorldPersistence: v3`, baked config all unchanged; node-side persistence intact (client state is browser localStorage)
+- **Test 5** network loss (iptables egress DROP on container): ✅ frontend/module 200 during drop, /health ok, monitors kept publishing (328→345), autonomy client-side (287 refs), 0 CDN refs; rule removed cleanly; internet restored
+- **Report**: `docs/PHASE_9_3_RECOVERY_TEST_REPORT.md`
+
+## Phase 9.4 — Planned (next milestone)
+- Physical presence layer: display detection (attach 7" touchscreen, verify HDMI detection), touchscreen validation, kiosk boot, automatic TARS visual startup on boot
+- After: improve touch/world interaction (grab/knock/roll), camera/sensors when appropriate, deeper embodiment

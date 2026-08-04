@@ -1,10 +1,26 @@
 # TARS Face — Current State
 
 **Date**: 2026-08-04
-**Version**: v7.5 + Phase 8.3.4 stabilization + Phase 8.4 Observable Spatial Runtime Base + Phase 8.5 Embodied Interaction Layer + Phase 9.1 Deployment Preparation
+**Version**: v7.5 + Phase 8.3.4 stabilization + Phase 8.4 Observable Spatial Runtime Base + Phase 8.5 Embodied Interaction Layer + Phase 9.1 Deployment Preparation + Phase 9.2 Node Deployment + Phase 9.3 Recovery Validation
 
 ## Completed
-All behavior delivered and verified (see sections below): Three.js face with expressions/gestures/eye tracking, need-driven autonomy engine with scoring, world state persistence, runtime server (WebSocket + REST), health/asset/docker/network/alert monitoring, Creator Console (7 sections / 22 live actions), in-process event bus, and the Phase 8.4 observable spatial runtime base.
+All behavior described below is delivered and verified. TARS frontend, backend, autonomy, world engine, and persistence are now **deployed and running on the Raspberry Pi node** (`tars_backend` on `:8080`) and have passed power-loss, Docker-restart, network-loss, and persistence recovery validation (Phase 9.3). Phase 9.4 next = physical presence layer (display, touchscreen, kiosk). See `docs/PHASE_9_3_RECOVERY_TEST_REPORT.md` and `docs/PHASE_9_2_DEPLOYMENT_RESULT.md`.
+
+## Newly Integrated (Phase 9.3 — Recovery Validation)
+- **Test-only phase** (no runtime/Docker/arch changes): validated `tars_backend` survives real hardware lifecycle events on the node.
+- **Test 1 — container restart** (`docker restart tars_backend`): ✅ back `running`/`healthy` (`unless-stopped`); `/health ok`; frontend 200; module 200; 0 CDN refs; no log errors; other 7 containers untouched.
+- **Test 2 — Docker daemon restart** (`systemctl restart docker`): ✅ all 8 containers auto-recovered; TARS healthy; frontend 200.
+- **Test 3 — Pi reboot** (`sudo reboot`): ✅ Docker active; all 8 containers auto-started; TARS `running`/`healthy`; frontend 200; 8080 LISTENING.
+- **Test 4 — persistence across reboot**: ✅ image `tars-backend:1.0.0` (`3a32657d09e5`), container ID, `WorldPersistence: v3`, and baked config unchanged; node-side persistence intact.
+- **Test 5 — network loss** (iptables egress DROP on container): ✅ frontend/module served 200 during drop; `/health ok`; monitors kept publishing (328→345 events); autonomy confirmed client-side (287 refs); 0 CDN refs; rule removed cleanly; internet restored.
+- **Result**: TARS self-recovers from container restart, daemon restart, full reboot, and network loss with zero intervention.
+
+## Newly Integrated (Phase 9.2 — Node Deployment)
+- **Deployed**: `tars_backend` container live on Pi `tars` (`192.168.0.102`), port `8080`, isolated `tars_net` bridge, `restart: unless-stopped`, image `tars-backend:1.0.0` (arm64).
+- **Sparse deployment**: only `projects/tars-face` subtree cloned to `/home/admin/tars-face` — full Amir_OS NOT deployed.
+- **Coexistence verified**: worldmonitor (:3000), TSE FastAPI (:8000), Postgres (:5432), Ollama (:11434), DuckDNS all unchanged/healthy before==after. TARS occupies only `:8080`.
+- **In-container Docker monitor self-disabled** by design (no `/var/run/docker.sock` mount) — host-side observability unaffected.
+- **Result report**: `docs/PHASE_9_2_DEPLOYMENT_RESULT.md`; commit `97636ab`.
 
 ## Newly Integrated (Phase 9.1 — Deployment Preparation)
 - **Containerized backend**: `Dockerfile` (non-root `node` user, `node:20-alpine`, `/srv/tars`, `EXPOSE 8080`) + `docker-compose.yml` (service `tars-backend`, image `tars-backend:1.0.0`, `restart: unless-stopped`, isolated `tars_net` bridge, healthcheck on `/health`, port `8080:8080` only)
@@ -73,20 +89,22 @@ All 10 event types (`health.cpu`, `.memory`, `.disk`, `.uptime`, `system.heartbe
 
 | Aspect | Current State | Notes |
 |--------|--------------|-------|
-| Development host | **Windows** | All development, testing, and server runtime |
-| Node.js server | **Working** | `node pi-server/server.js` from terminal |
+| Development host | **Windows** | All development and feature testing on Windows first |
+| Node.js server | **Working** | `node pi-server/server.js` from terminal (dev fallback still valid) |
 | Browser frontend | **Working** | Opens at `http://localhost:8080` |
 | WebSocket event flow | **Working** | Server→browser event pipeline verified |
 | Autonomy engine | **Working** | Full autonomy in browser, no server dependency |
-| Raspberry Pi deployment | **Prepared (artifacts)** | Docker image + compose ready; **not yet deployed to node** (Phase 9.2) |
-| Pi kiosk mode | **Not started** | No Chromium kiosk config, no `--kiosk` flags (later phase, display not attached) |
-| systemd service | **Not started** | No service file created |
-| Physical display testing | **Not started** | Touch targets not verified on 7" display |
-| Optiplex/TrueNAS/Plex monitoring | **Not implemented** | Monitors not yet built (future Phase 8.3+) |
+| Raspberry Pi deployment | **✅ DEPLOYED (Phase 9.2)** | `tars_backend` container live on `tars` @ `192.168.0.102:8080`, image `tars-backend:1.0.0`, `tars_net` bridge, `unless-stopped` |
+| Recovery validation | **✅ PASSED (Phase 9.3)** | container restart / daemon restart / Pi reboot / network loss / persistence v3 all self-recovered |
+| Pi kiosk mode | **Not started** | No Chromium kiosk config, no `--kiosk` flags (Phase 9.4 — display currently not attached) |
+| systemd service | **Not started** | No service file created (Docker `unless-stopped` covers restart policy today) |
+| Physical display testing | **Not started** | Touch targets not verified on 7" display (Phase 9.4 — hardware-gated) |
+| Display/touchscreen attached | **No** | 7" Hosyond display documented but not physically attached as of Phase 9.3 |
+| Optiplex/TrueNAS/Plex monitoring | **Not implemented** | Monitors not yet built (future) |
 | Home Assistant bridge | **Not implemented** | No ha-bridge created |
-| Deployment documentation | **Not started** | No install guide, no dependency list |
+| Deployment documentation | **✅ Complete** | `DEPLOYMENT_RUNBOOK.md`, `PHASE_9_1_*_PLAN.md`, `PHASE_9_2_DEPLOYMENT_RESULT.md`, `PHASE_9_3_RECOVERY_TEST_REPORT.md`, `PI_NODE_AUDIT.md`, `CURRENT_SERVICE_MAP.md` |
 
-**Golden rule**: Do not imply Pi deployment is complete. All Phase 8.4 features should be developed and tested on Windows first.
+**Golden rule**: Pi deployment IS now real (Phase 9.2 complete, Phase 9.3 validated). Display/kiosk remains unstarted until a screen is attached (Phase 9.4).
 
 ## Persistence Boundaries
 
@@ -115,7 +133,7 @@ localStorage (browser)           Server memory              Future (Phase 8.5+)
 └── objects (Phase 8.5: dynamic transforms + sleep)
 ```
 
-### Future Persistence (Phase 8.5+)
+### Future Persistence (Phase 9+)
 
 | Feature | Storage | Purpose |
 |---------|---------|---------|
@@ -136,6 +154,7 @@ localStorage (browser)           Server memory              Future (Phase 8.5+)
 - **Single-file frontend**: `tars_face_v1.html` ~9040 lines
 
 ## Not Yet Complete
+- **Physical presence (Phase 9.4 — next)**: display detection, touchscreen validation, kiosk boot, automatic TARS visual startup. Display not yet attached.
 - **Full ball dynamics**: interaction impulses + collision/sleep/wake events work, but rolling, contact resolution, friction, and compound shapes remain incomplete
 - **Richer object interaction**: tap/flick impulse works; grab/knock/roll gestures, multi-tier collision response (COLLISION_TIERS), capsule-capsule, compound shapes incomplete
 - **Advanced collision response**: multi-tier (COLLISION_TIERS) response, capsule-capsule, and compound shapes incomplete
@@ -144,7 +163,6 @@ localStorage (browser)           Server memory              Future (Phase 8.5+)
 - **LLM connection**: chat is placeholder, Brain tab shows "Cognitive layer offline"
 - **Home Assistant bridge**: not started
 - **Network monitors for Optiplex/TrueNAS/Plex**: not implemented (ICMP ping only for 3 hosts)
-- **Raspberry Pi deployment**: no Pi hardware, no kiosk/systemd/service config
 - **Frontend modularization**: single file still ~9040 lines
 - **Automated test suite**: `test_observatory.js` regression (Phase 7.4.4 + Phase 8.5 world-event tests) run via Node directly
 
@@ -170,13 +188,17 @@ All findings categorized:
 - Two click listeners on `#tars-overlay-body` could be merged (non-critical)
 - Phase 8.5: LLM integration, Home Assistant, alert notifications, modularization
 
-## Next Steps (Phase 8.5+)
-1. Complete ball dynamics (rolling, contact resolution, friction) and richer gestures (grab/knock/roll)
-2. Connect LLM for cognitive layer (Brain tab + Chat)
-3. Home Assistant / IoT integration (Home tab)
-4. Weather, news, calendar feeds (Observatory expansion)
-5. Alert notification system (push/toast)
-6. SQLite event log + persistent alert/service history
-7. Frontend modularization (split HTML into components)
-8. Automated test suite for server monitors
-9. Raspberry Pi deployment (kiosk, systemd, physical display)
+## Next Steps (Phase 9.4 — Physical Presence Layer)
+1. **Display detection** — attach 7" touchscreen, verify HDMI/DVI output + `xrandr`/`vcgencmd` detection
+2. **Touchscreen validation** — touch input calibration, pointer events end-to-end
+3. **Kiosk boot** — autostart browser/Chromium in kiosk mode (or lightweight display server), auto-open `http://127.0.0.1:8080`
+4. **Automatic TARS visual startup** — TARS face appears on boot without manual interaction
+5. Then: improve touch/world interaction (grab/knock/roll, richer gestures), camera/sensors when appropriate, deeper embodiment features
+
+### After Phase 9.4
+- Ball dynamics completion + richer gestures
+- LLM cognitive layer (Brain tab + Chat)
+- Home Assistant / IoT integration (Home tab)
+- SQLite event log + persistent alert/service history
+- Frontend modularization (split HTML into components)
+- Automated test suite for server monitors

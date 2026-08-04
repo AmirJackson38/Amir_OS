@@ -1,30 +1,35 @@
 ## Current Priority
 
-**TARS World Engine** — Phase 6 Stabilization (Activity Pacing + Log Usability) complete. Final Persistence Fix complete: activityEndsAt and locationRecency now survive reloads. Mid-activity state fully preserved across sessions. Ready for Phase 7. `http://localhost:8080/tars_face_v1.html`
+**TARS (`projects/tars-face`)** — Phase 9.3 complete: frontend + backend (autonomy, world, physics, persistence, monitoring) deployed to the Pi node (`tars_backend` on `:8080`) and recovery-validated (container restart / daemon restart / Pi reboot / network loss / persistence). Next: **Phase 9.4 — physical presence layer**.
 
 ---
 
 ## Project Breakdown
 
+### 1. TARS Face (`projects/tars-face`)
+- **Phases 1–8.5 ✅** — face, autonomy engine, world state, persistence, runtime server, observability, embodied interaction layer
+- **Phase 9.1 ✅** — deployment artifacts (Dockerfile, compose, .dockerignore, local Three.js)
+- **Phase 9.2 ✅** — deployed `tars_backend` on `tars` Pi `:8080` (isolated `tars_net`)
+- **Phase 9.3 ✅** — recovery validated via test-only phase
+- **Next: Phase 9.4** — display detection, touchscreen validation, kiosk boot, auto TARS startup (display not yet attached)
 
-### 1. TARS World Engine
-- **Phases 1-5 ✅** — World state, dual windows, weather, preferences, activity log, autonomous scheduler, persistence, priority/interruption system
-- **Phase 6 ✅** — LLM integration boundary, world events, activity registry expansion
-- **Phase 6 Stabilization ✅** — Activity durations (min/max per activity), lifecycle gating, recency penalty, scoring bias fix (location key mapping, need-weighted weather), smart auto-scroll, debug API
-- **Phase 6 Final Fix ✅** — activityEndsAt and locationRecency persisted; reloads preserve remaining activity duration; autonomy does not override restored mid-activity state
+### 2. Home Lab
+TrueNAS (`192.168.0.100`), TARS Pi (`192.168.0.102`, `tars_backend` :8080), ER605 router, dual-subnet (`10.0.0.0/24` WAN + `192.168.0.0/24` LAN). VNC to iMac (`10.0.0.190`).
 
-### 3. Home Lab
-TrueNAS (`192.168.0.100`), TARS Pi, ER605 router, dual-subnet (`10.0.0.0/24` WAN + `192.168.0.0/24` LAN). VNC to iMac (`10.0.0.190`).
+### 3. TSE-Production-Lab
+FastAPI + PostgreSQL homelab standalone (`Workspace/TSE-Production-Lab/`), container `tse_fastapi_backend` :8000 — unchanged by TARS deployment.
 
 ---
 
 ## Next Actions
 
-1. Phase 7: Environmental events, ambient life & chat UI — needs-feedback loop integration (activities affect needs)
+1. Phase 9.4: attach 7" display → verify detection → touch calibration → kiosk autostart → TARS auto-launch on boot
+2. After: richer touch/world interaction (grab/knock/roll), camera/sensors when appropriate, deeper embodiment
 
 ---
 
 ## Key Files
 
-- `projects/tars-face/tars_face_v1.html` — Single-file Three.js app (~5000 lines)
+- `projects/tars-face/tars_face_v1.html` — Single-file Three.js app
+- `projects/tars-face/docs/` — CURRENT_STATE, PHASE_HISTORY, PHASE_9_1/9_2/9_3 reports
 - `memory/*_v2.md` — Consolidated memory (canonical)
