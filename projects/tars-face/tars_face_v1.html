@@ -757,6 +757,7 @@ const TARS_PHYSICS = {
             const p = obj.physics;
             if (!p || !p.enabled || p.sleeping) continue;
             if (p.type === "kinematic") continue;
+            if (p.grabbed) continue;
             this.applyGravity(obj, step);
             this.moveObject(obj, step);
             this.resolveCollisions(obj);
@@ -941,6 +942,59 @@ const TARS_PHYSICS = {
                 strength
             });
         }
+    },
+
+    // Phase 9.5: grab / drag / launch — user holds the object (long-press) and moves it
+    grab(objectId, worldPos) {
+        const obj = typeof objectId === "string" ? this.objects.get(objectId) : objectId;
+        if (!obj || !obj.physics || !obj.physics.enabled) return false;
+        this.wake(obj);
+        obj.physics.grabbed = true;
+        obj.physics.velocity.set(0, 0, 0);
+        if (worldPos) {
+            obj.mesh.position.copy(worldPos);
+            if (typeof this._onGrab === "function") this._onGrab(obj, worldPos);
+        }
+        return true;
+    },
+
+    // Move a grabbed object to a target world position (finger tracking).
+    dragTo(objectId, worldPos) {
+        const obj = typeof objectId === "string" ? this.objects.get(objectId) : objectId;
+        if (!obj || !obj.physics || !obj.physics.grabbed) return;
+        obj.mesh.position.copy(worldPos);
+        obj.physics.velocity.set(0, 0, 0);
+    },
+
+    // Release a grabbed object with an explicit launch velocity (units/sec).
+    release(objectId, velocity) {
+        const obj = typeof objectId === "string" ? this.objects.get(objectId) : objectId;
+        if (!obj || !obj.physics) return;
+        obj.physics.grabbed = false;
+        if (velocity) obj.physics.velocity.copy(velocity);
+        this.wake(obj);
+        this._emitPhysics("world.physics.impulse", {
+            objectId: obj.id,
+            position: { x: +obj.mesh.position.x.toFixed(3), y: +obj.mesh.position.y.toFixed(3), z: +obj.mesh.position.z.toFixed(3) },
+            velocity: { x: +obj.physics.velocity.x.toFixed(3), y: +obj.physics.velocity.y.toFixed(3), z: +obj.physics.velocity.z.toFixed(3) },
+            strength: velocity ? velocity.length() : 0
+        });
+    },
+
+    // Phase 9.5: tap → small upward pop (bounce) so the ball hops in place.
+    bounce(objectId, strength) {
+        const obj = typeof objectId === "string" ? this.objects.get(objectId) : objectId;
+        if (!obj || !obj.physics || !obj.physics.enabled) return;
+        this.wake(obj);
+        obj.physics.velocity.y += strength;
+        obj.physics.velocity.x += (Math.random() - 0.5) * strength * 0.3;
+        obj.physics.velocity.z += (Math.random() - 0.5) * strength * 0.3;
+        this._emitPhysics("world.physics.impulse", {
+            objectId: obj.id,
+            position: { x: +obj.mesh.position.x.toFixed(3), y: +obj.mesh.position.y.toFixed(3), z: +obj.mesh.position.z.toFixed(3) },
+            velocity: { x: +obj.physics.velocity.x.toFixed(3), y: +obj.physics.velocity.y.toFixed(3), z: +obj.physics.velocity.z.toFixed(3) },
+            strength
+        });
     },
 
     // Phase 8.5: apply a directional impulse (used by the world sensor for flick/drag)
@@ -3302,8 +3356,11 @@ const TARS_WORLD_SENSOR = {
             if (phys.physics && phys.physics.enabled) {
                 if (kind === "flick" && velocityWorld) {
                     TARS_PHYSICS.applyImpulse(objectId, velocityWorld, 0.6 + impulse * 2.4);
+                } else if (kind === "tap") {
+                    // Phase 9.5: tap makes the object hop/bounce in place.
+                    TARS_PHYSICS.bounce(objectId, 1.2 + impulse * 1.6);
                 } else {
-                    // tap/drag/touch: push from the pick point away from user
+                    // drag/touch: push from the pick point away from user
                     const fromPos = spec.point || spec.fromPos || new THREE.Vector3(0, 0, 3);
                     TARS_PHYSICS.interact(objectId, fromPos, 0.4 + impulse * 2.0);
                 }
@@ -3336,10 +3393,15 @@ window.TARS_WORLD_SENSOR = TARS_WORLD_SENSOR;
 const TARS_INPUT_CLASSIFIER = {
     _enabled: false,
     _pointers: new Map(), // pointerId -> gesture accumulator
+    _raycaster: null,
 
     init(canvas) {
         if (!canvas) return;
         this._enabled = true;
+        // Chromium intercepts touch gestures for panning unless touch-action is none,
+        // which fires pointercancel and aborts every gesture. Required on the Pi kiosk.
+        canvas.style.touchAction = "none";
+        canvas.style.touchCallout = "none";
         canvas.addEventListener("pointerdown", (e) => this._onDown(e));
         canvas.addEventListener("pointermove", (e) => this._onMove(e));
         canvas.addEventListener("pointerup", (e) => this._onUp(e));
@@ -3358,13 +3420,26 @@ const TARS_INPUT_CLASSIFIER = {
         return false;
     },
 
+    // Phase 9.5: whether this physics object can be grabbed and dragged (ball yes, TARS no)
+    _grabbable(objectId) {
+        if (!objectId || !window.TARS_PHYSICS || !TARS_PHYSICS.objects.has(objectId)) return false;
+        const obj = TARS_PHYSICS.objects.get(objectId);
+        if (!obj.physics || !obj.physics.enabled) return false;
+        if (obj.physics.type === "kinematic") return false;
+        return !!(obj.interaction && (obj.interaction.canPush || obj.interaction.canPickup));
+    },
+
     _onDown(e) {
         if (!this._enabled || this._uiBlocking()) return;
+        const pickup = (window.TARS_WORLD_SENSOR && TARS_WORLD_SENSOR.pick(e.clientX, e.clientY)) || null;
         this._pointers.set(e.pointerId, {
             x: e.clientX, y: e.clientY,
             t: Date.now(),
             lastX: e.clientX, lastY: e.clientY,
-            moved: false
+            moved: false,
+            pickup,
+            grabbing: false,
+            dragSamples: []   // { x, y, t } screen-space samples while dragging
         });
     },
 
@@ -3374,6 +3449,84 @@ const TARS_INPUT_CLASSIFIER = {
         p.lastX = e.clientX;
         p.lastY = e.clientY;
         p.moved = true;
+
+        // Phase 9.5: long-press (>=300ms, little movement) on a grabbable object grabs it.
+        if (!p.grabbing && p.pickup && p.pickup.objectId && this._grabbable(p.pickup.objectId)) {
+            const dx = e.clientX - p.x;
+            const dy = e.clientY - p.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (Date.now() - p.t > 300 && dist < 20) {
+                p.grabbing = true;
+                TARS_PHYSICS.grab(p.pickup.objectId);
+                if (typeof emitTARSEvent === "function") {
+                    emitTARSEvent("world.interaction", {
+                        objectId: p.pickup.objectId,
+                        kind: "grab",
+                        impulse: 0,
+                        position: p.pickup.point ? { x: +p.pickup.point.x.toFixed(3), y: +p.pickup.point.y.toFixed(3), z: +p.pickup.point.z.toFixed(3) } : null,
+                        velocityWorld: null,
+                        applied: true
+                    }, "tars.sensor");
+                }
+            }
+        }
+
+        if (p.grabbing) {
+            const world = this._dragPoint(p, e.clientX, e.clientY);
+            if (world) {
+                TARS_PHYSICS.dragTo(p.pickup.objectId, world);
+                p.dragSamples.push({ x: e.clientX, y: e.clientY, t: Date.now() });
+                if (p.dragSamples.length > 12) p.dragSamples.shift();
+            }
+        }
+    },
+
+    // Project a screen point onto the horizontal plane at the grabbed object's height,
+    // so the object tracks the finger at its own depth rather than at the camera plane.
+    _dragPoint(p, clientX, clientY) {
+        if (!camera || !p || !p.pickup) return null;
+        const obj = TARS_PHYSICS.objects.get(p.pickup.objectId);
+        if (!obj || !obj.mesh) return null;
+        const y = obj.mesh.position.y;
+        const ndc = new THREE.Vector2(
+            (clientX / window.innerWidth) * 2 - 1,
+            -(clientY / window.innerHeight) * 2 + 1
+        );
+        if (!this._raycaster) this._raycaster = new THREE.Raycaster();
+        this._raycaster.setFromCamera(ndc, camera);
+        const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -y);
+        const hit = new THREE.Vector3();
+        if (this._raycaster.ray.intersectPlane(plane, hit)) {
+            // Clamp inside room bounds, above the floor.
+            hit.x = THREE.MathUtils.clamp(hit.x, ROOM_BOUNDS.xMin + 0.4, ROOM_BOUNDS.xMax - 0.4);
+            hit.z = THREE.MathUtils.clamp(hit.z, ROOM_BOUNDS.zMin + 0.4, ROOM_BOUNDS.zMax - 0.4);
+            hit.y = Math.max(hit.y, ROOM_BOUNDS.yMin + 0.2);
+            return hit;
+        }
+        return null;
+    },
+
+    // Compute release velocity from the recent drag samples (world-space approx via
+    // screen delta scaled by distance to the object), clamped to a max launch speed.
+    _launchVelocity(p) {
+        const obj = TARS_PHYSICS.objects.get(p.pickup.objectId);
+        if (!obj || !obj.mesh || p.dragSamples.length < 2) return null;
+        const s = p.dragSamples;
+        const a = s[0], b = s[s.length - 1];
+        const dt = (b.t - a.t) / 1000;
+        if (dt <= 0.001) return null;
+        const sx = b.x - a.x, sy = b.y - a.y;
+        const distToObj = obj.mesh.position.distanceTo(camera.position) || 1;
+        const halfHeight = Math.tan(camera.fov * Math.PI / 360) * distToObj;
+        const halfWidth = halfHeight * camera.aspect;
+        const wx = (sx / window.innerWidth) * 2 * halfWidth / dt;
+        const wy = (-sy / window.innerHeight) * 2 * halfHeight / dt;
+        const v = new THREE.Vector3(wx, wy, 0);
+        v.applyQuaternion(camera.quaternion);
+        v.y = Math.max(v.y, 0.3);
+        const maxSpeed = 7;
+        if (v.length() > maxSpeed) v.multiplyScalar(maxSpeed / v.length());
+        return v;
     },
 
     _onUp(e) {
@@ -3381,6 +3534,23 @@ const TARS_INPUT_CLASSIFIER = {
         if (!p) return;
         this._pointers.delete(e.pointerId);
         if (this._uiBlocking()) return;
+
+        // Phase 9.5: grab release → launch the object with drag velocity.
+        if (p.grabbing && p.pickup && p.pickup.objectId) {
+            const vel = this._launchVelocity(p);
+            TARS_PHYSICS.release(p.pickup.objectId, vel);
+            if (typeof emitTARSEvent === "function") {
+                emitTARSEvent("world.interaction", {
+                    objectId: p.pickup.objectId,
+                    kind: "launch",
+                    impulse: vel ? Math.min(1, vel.length() / 7) : 0.2,
+                    position: null,
+                    velocityWorld: vel ? { x: +vel.x.toFixed(3), y: +vel.y.toFixed(3), z: +vel.z.toFixed(3) } : null,
+                    applied: true
+                }, "tars.sensor");
+            }
+            return;
+        }
 
         const duration = Date.now() - p.t;
         const dx = e.clientX - p.x;
@@ -3393,6 +3563,9 @@ const TARS_INPUT_CLASSIFIER = {
         else if (duration < 500 && dist >= 16) kind = "flick";
         else if (dist >= 16) kind = "drag";
         else kind = "touch";
+
+        // Pick at the DOWN point so flicks that start on the ball but end off it still hit.
+        const pickup = p.pickup || null;
 
         // Map screen swipe to world-space velocity at the pick point.
         // Project both start and end NDC points into world space at pick depth.
@@ -3421,8 +3594,6 @@ const TARS_INPUT_CLASSIFIER = {
             velocityWorld = new THREE.Vector3().subVectors(endWorld, startWorld).normalize().multiplyScalar(1.5);
         }
 
-        const pickup = (window.TARS_WORLD_SENSOR && TARS_WORLD_SENSOR.pick(e.clientX, e.clientY)) || null;
-
         const impulse = Math.min(1, dist / 200 + duration / 2000);
 
         TARS_WORLD_SENSOR.interactFromTouch({
@@ -3435,6 +3606,10 @@ const TARS_INPUT_CLASSIFIER = {
     },
 
     _onCancel(e) {
+        const p = this._pointers.get(e.pointerId);
+        if (p && p.grabbing && p.pickup && p.pickup.objectId) {
+            TARS_PHYSICS.release(p.pickup.objectId, null);
+        }
         this._pointers.delete(e.pointerId);
     }
 };
@@ -7027,24 +7202,30 @@ function animate() {
     // 7c. BALL INTERACTION
     if (TARS_PHYSICS.objects.has("ball")) {
         const ballObj = TARS_PHYSICS.objects.get("ball");
-        const ballDist = tarsEntityGroup.position.distanceTo(ballObj.mesh.position);
 
-        // Push ball when TARS is close
-        if (ballDist < 2.0 && !ballObj.physics.sleeping) {
-            TARS_PHYSICS.interact("ball", tarsEntityGroup.position, 2.5 * dt * 60);
-        }
+        // Phase 9.5: TARS leaves the ball alone while the user is grabbing it.
+        if (ballObj.physics && ballObj.physics.grabbed) {
+            currentState.focus = "user";
+            if (window.TARS && window.TARS.lookAt) window.TARS.lookAt("user", "watch_play");
+        } else {
+            const ballDist = tarsEntityGroup.position.distanceTo(ballObj.mesh.position);
 
-        // Specific behavior when play_with_ball activity is active
-        if (worldState.tars.activity === "play_with_ball") {
-            if (ballDist > 2.5 && ballObj.mesh.position.y < 1.5) {
-                currentState.targetPos.copy(ballObj.mesh.position);
-                currentState.targetPos.y = 2.3;
-            } else if (ballDist <= 2.5) {
-                currentState.targetPos.copy(ballObj.mesh.position);
-                currentState.targetPos.y = Math.max(ballObj.mesh.position.y + 0.4, 0.5);
+            // Push ball when TARS is close
+            if (ballDist < 2.0 && !ballObj.physics.sleeping) {
+                TARS_PHYSICS.interact("ball", tarsEntityGroup.position, 2.5 * dt * 60);
             }
-            if (ballObj.physics.sleeping && ballDist < 2.0) {
-                TARS_PHYSICS.wake("ball");
+
+            // Specific behavior when play_with_ball activity is active
+            if (worldState.tars.activity === "play_with_ball") {
+                if (ballDist > 2.5 && ballObj.mesh.position.y < 1.5) {
+                    currentState.targetPos.copy(ballObj.mesh.position);
+                    currentState.targetPos.y = 2.3;
+                } else if (ballDist <= 2.5) {
+                    currentState.targetPos.copy(ballObj.mesh.position);
+                    currentState.targetPos.y = Math.max(ballObj.mesh.position.y + 0.4, 0.5);
+                }
+                if (ballObj.physics.sleeping && ballDist < 2.0) {
+                    TARS_PHYSICS.wake("ball");
                 const dir = new THREE.Vector3(
                     (Math.random() - 0.5) * 3,
                     0.3 + Math.random() * 0.4,
@@ -7054,6 +7235,7 @@ function animate() {
             }
             currentState.gazeTarget = "ball";
         }
+    }
     }
 
     // 8. T.A.R.S. EMBODIMENT PROCEDURAL SHADER & MESH ANIMATION
