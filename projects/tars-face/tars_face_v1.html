@@ -21,7 +21,7 @@
 
     #hud {
         position: fixed;
-        top: 20px;
+        top: 36px;
         left: 24px;
         z-index: 10;
         color: rgba(210, 235, 255, 0.75);
@@ -112,8 +112,34 @@
         display: flex; align-items: center; justify-content: center;
         transition: all 0.2s;
         -webkit-tap-highlight-color: transparent;
+        position: relative;
+        overflow: visible;
     }
-    .tars-tab-btn:hover, .tars-tab-btn.active { background: rgba(30,60,90,0.9); border-color: #5fd0ff; color: #fff; box-shadow: 0 0 12px rgba(95,208,255,0.3); }
+    .tars-tab-btn::before {
+        content: "";
+        position: absolute;
+        inset: -2px;
+        border-radius: 12px;
+        border: 1px solid transparent;
+        opacity: 0;
+        transition: opacity 0.2s, border-color 0.2s;
+        pointer-events: none;
+    }
+    .tars-tab-btn:hover, .tars-tab-btn.active { 
+        background: rgba(30,60,90,0.9); 
+        border-color: #5fd0ff; 
+        color: #fff; 
+        box-shadow: 0 0 12px rgba(95,208,255,0.3); 
+    }
+    .tars-tab-btn.active::before {
+        opacity: 1;
+        border-color: #5fd0ff;
+        animation: tars-tab-pulse 2s ease-in-out infinite;
+    }
+    @keyframes tars-tab-pulse {
+        0%, 100% { opacity: 0.4; transform: scale(1); }
+        50% { opacity: 0.8; transform: scale(1.02); }
+    }
 
     #tars-overlay {
         position: fixed; right: 80px; top: 44px; bottom: 16px; z-index: 35;
@@ -204,6 +230,13 @@
     .tars-creator-actions { display: flex; flex-wrap: wrap; gap: 6px; }
     .tars-creator-actions .btn { min-height: 38px; font-size: 10px; padding: 6px 10px; flex: 1 0 auto; min-width: 70px; }
     .tars-creator-actions .btn-sm { min-height: 30px; font-size: 9px; padding: 4px 8px; flex: 0 0 auto; }
+    .tars-creator-actions .btn:hover, .tars-creator-actions .btn-sm:hover {
+        box-shadow: 0 0 8px rgba(95, 208, 255, 0.25);
+        transform: translateY(-1px);
+    }
+    .tars-creator-actions .btn:active, .tars-creator-actions .btn-sm:active {
+        transform: translateY(0) scale(0.98);
+    }
 
     /* Collapsible sections */
     .tars-collapse-section { border: 1px solid rgba(80,180,255,0.1); border-radius: 6px; margin-bottom: 10px; overflow: hidden; }
@@ -1282,8 +1315,8 @@ function lbuildingWindowTex() {
     }, 128, 256);
 }
 
-// --- Parallax Bridge Layers ---
-const lbridgeLayers = [];
+// --- Parallax Skyline Layers ---
+const lskylineLayers = [];
 
 // Layer 1: Distant hills/mountains (furthest)
 const lhillsGeo = new THREE.PlaneGeometry(50, 12);
@@ -1312,176 +1345,51 @@ const lhillsMat = new THREE.MeshBasicMaterial({ map: lhillsTex, transparent: tru
 const lhillsMesh = new THREE.Mesh(lhillsGeo, lhillsMat);
 // Rotate to face the window (along -X), positioned further out
 lhillsMesh.rotation.y = Math.PI / 2;
-lhillsMesh.position.set(-18, 4, 0);  // x=-18 (further out), y=4, z=0 (centered on wall)
+lhillsMesh.position.set(-18, 4, 0);
 lexterior.add(lhillsMesh);
-lbridgeLayers.push({ mesh: lhillsMesh, depth: -18, speed: 0.005 });
+lskylineLayers.push({ mesh: lhillsMesh, depth: -18, speed: 0.005 });
 
-// Layer 2: Bridge structure (mid-distance)
-const lbridgeGroup = new THREE.Group();
-// Positioned at x=-8 (between hills at -18 and water at -2), centered on wall (z=0)
-lbridgeGroup.position.set(-8, 0, 0);
-lexterior.add(lbridgeGroup);
-lbridgeLayers.push({ mesh: lbridgeGroup, depth: -8, speed: 0.02 });
-
-// Bridge towers (two main towers) - along Z axis (along the wall)
-for (let t = -1; t <= 1; t += 2) {
-    const towerGeo = new THREE.BoxGeometry(1.2, 14, 1.2);
-    const towerMat = new THREE.MeshStandardMaterial({ color: 0x2a2f3a, roughness: 0.8, metalness: 0.2 });
-    const tower = new THREE.Mesh(towerGeo, towerMat);
-    tower.position.set(0, 7, t * 8);  // x=0 (at bridge), y=7, z=±8 (along wall)
-    tower.castShadow = true;
-    lbridgeGroup.add(tower);
-    
-    // Tower top detail
-    const topGeo = new THREE.BoxGeometry(1.6, 1.5, 1.6);
-    const top = new THREE.Mesh(topGeo, towerMat);
-    top.position.set(0, 14.7, t * 8);
-    lbridgeGroup.add(top);
+// Distant city skyline buildings (replacing bridge/water/cars)
+const lskylineBuildings = [];
+for (let i = 0; i < 20; i++) {
+    const bw = 2 + Math.random() * 3;
+    const bh = 8 + Math.random() * 18;
+    const bd = 2 + Math.random() * 3;
+    const bz = -20 + Math.random() * 40;
+    const tex = lbuildingWindowTex();
+    const buildingMat = new THREE.MeshStandardMaterial({
+        map: tex, color: 0x1a2530, roughness: 0.85,
+        emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.4
+    });
+    const buildingMesh = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), buildingMat);
+    buildingMesh.position.set(-16 - Math.random() * 6, bh / 2 - 0.1, bz);
+    buildingMesh.rotation.y = Math.PI / 2;
+    lexterior.add(buildingMesh);
+    lskylineBuildings.push(buildingMat);
 }
 
-// Bridge deck - along Z axis (spanning the wall)
-const deckGeo = new THREE.BoxGeometry(1.2, 0.6, 22);  // thickness=1.2, height=0.6, length=22
-const deckMat = new THREE.MeshStandardMaterial({ color: 0x1a1f2a, roughness: 0.9 });
-const deck = new THREE.Mesh(deckGeo, deckMat);
-deck.position.set(0, 1.3, 0);
-deck.receiveShadow = true;
-lbridgeGroup.add(deck);
-
-// Suspension cables (visual lines) - along Z axis
-for (let side = -1; side <= 1; side += 2) {
-    for (let i = 0; i < 12; i++) {
-        const cableGeo = new THREE.CylinderGeometry(0.04, 0.04, 16, 4);
-        const cableMat = new THREE.MeshBasicMaterial({ color: 0x2a2f3a, transparent: true, opacity: 0.6 });
-        const cable = new THREE.Mesh(cableGeo, cableMat);
-        const z = -10 + i * 1.8;
-        cable.position.set(side * 3, 8, z);  // x=±3 (sides), y=8 z along bridge
-        cable.rotation.x = Math.PI / 2;
-        cable.rotation.z = Math.atan2(14 - 1.3, 8) * side * 0.5;
-        lbridgeGroup.add(cable);
-    }
-}
-
-// Bridge lights on deck
-const bridgeLights = [];
-for (let i = 0; i < 10; i++) {
-    const lightGeo = new THREE.SphereGeometry(0.12, 8, 8);
-    const lightMat = new THREE.MeshBasicMaterial({ color: 0xffdd88, transparent: true, opacity: 0 });
-    const light = new THREE.Mesh(lightGeo, lightMat);
-    light.position.set(0, 1.8, -9 + i * 2);
-    lbridgeGroup.add(light);
-    bridgeLights.push(light);
-}
-
-// Layer 3: Foreground water/river (closest) - along Z axis
-const lwaterGeo = new THREE.PlaneGeometry(16, 8);
-const lwaterMat = new THREE.MeshPhysicalMaterial({
-    color: 0x051020,
-    metalness: 0.9,
-    roughness: 0.1,
-    transmission: 0.3,
-    transparent: true,
-    opacity: 0.6,
-    side: THREE.DoubleSide
-});
-const lwaterMesh = new THREE.Mesh(lwaterGeo, lwaterMat);
-lwaterMesh.rotation.x = -Math.PI / 2;
-lwaterMesh.position.set(-5, 0.15, -2);
-lexterior.add(lwaterMesh);
-lbridgeLayers.push({ mesh: lwaterMesh, depth: -2, speed: 0.05 });
-
-// Water reflection effect - animated normal map via vertex displacement in shader would be better, using simple animation
-const lwaterDistortion = { time: 0 };
-
-// --- Buildings on far riverbanks ---
-const lfarBuildings = [];
-const lbuildings = [];
-for (let i = 0; i < 12; i++) {
+// Window-side foreground buildings (parallax layer)
+const lfgBuildings = [];
+for (let i = 0; i < 8; i++) {
     const bw = 1.5 + Math.random() * 2;
-    const bh = 4 + Math.random() * 10;
+    const bh = 5 + Math.random() * 10;
     const bd = 1.5 + Math.random() * 2;
-    const side = Math.random() > 0.5 ? -1 : 1;
-    const bz = side * (12 + Math.random() * 8);
+    const bz = -12 + i * 2.5 + (Math.random() - 0.5) * 0.8;
     const tex = lbuildingWindowTex();
     const buildingMat = new THREE.MeshStandardMaterial({
-        map: tex, color: 0x2a3a4c, roughness: 0.9,
-        emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.6
+        map: tex, color: 0x223040, roughness: 0.9,
+        emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.5
     });
     const buildingMesh = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), buildingMat);
-    buildingMesh.position.set(-4 - Math.random() * 6, bh / 2 - 0.1, bz);
+    buildingMesh.position.set(-6 - Math.random() * 3, bh / 2 - 0.1, bz);
     buildingMesh.rotation.y = Math.PI / 2;
     lexterior.add(buildingMesh);
-    lfarBuildings.push(buildingMat);
-}
-
-// Window-side buildings (closer, for day/night cycle)
-for (let i = 0; i < 6; i++) {
-    const bw = 1.2 + Math.random() * 1.5;
-    const bh = 3 + Math.random() * 7;
-    const bd = 1.2 + Math.random() * 1.5;
-    const bz = -6 + i * 1.4 + (Math.random() - 0.5) * 0.5;
-    const tex = lbuildingWindowTex();
-    const buildingMat = new THREE.MeshStandardMaterial({
-        map: tex, color: 0x2a3a4c, roughness: 0.9,
-        emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.6
-    });
-    const buildingMesh = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), buildingMat);
-    buildingMesh.position.set(-4 - Math.random() * 2, bh / 2 - 0.1, bz);
-    buildingMesh.rotation.y = Math.PI / 2;
-    lexterior.add(buildingMesh);
-    lbuildings.push(buildingMat);
-}
-
-    // --- Cars on bridge (animated) ---
-const lcars = [];
-const lcarLights = [];
-for (let i = 0; i < 6; i++) {
-    const carGroup = new THREE.Group();
-    const carGeo = new THREE.BoxGeometry(1.6, 0.6, 3.2);
-    const carMat = new THREE.MeshStandardMaterial({ 
-        color: new THREE.Color().setHSL(Math.random(), 0.5, 0.3), 
-        roughness: 0.4, metalness: 0.6 
-    });
-    const carBody = new THREE.Mesh(carGeo, carMat);
-    carBody.position.y = 1.9;
-    carGroup.add(carBody);
-    
-    // Headlights
-    const headlightGeo = new THREE.SphereGeometry(0.08, 8, 8);
-    const headlightMat = new THREE.MeshBasicMaterial({ 
-        color: 0xffffee, transparent: true, opacity: 1 
-    });
-    const leftLight = new THREE.Mesh(headlightGeo, headlightMat.clone());
-    leftLight.position.set(-0.5, 1.9, 1.7);
-    carGroup.add(leftLight);
-    
-    const rightLight = new THREE.Mesh(headlightGeo, headlightMat.clone());
-    rightLight.position.set(0.5, 1.9, 1.7);
-    carGroup.add(rightLight);
-    
-    // Taillights
-    const tailMat = new THREE.MeshBasicMaterial({ color: 0xff2222, transparent: true, opacity: 1 });
-    const leftTail = new THREE.Mesh(headlightGeo, tailMat.clone());
-    leftTail.position.set(-0.5, 1.9, -1.7);
-    carGroup.add(leftTail);
-    
-    const rightTail = new THREE.Mesh(headlightGeo, tailMat.clone());
-    rightTail.position.set(0.5, 1.9, -1.7);
-    carGroup.add(rightTail);
-    
-    // Position on bridge deck (two lanes each direction) - along Z axis
-    const lane = (i % 4) < 2 ? -1.5 : 1.5;
-    const startZ = -9 + (i % 4) * 5 + Math.random() * 2;
-    carGroup.position.set(0, 0, startZ);  // x=0 (at bridge), y=0, z=position along bridge
-    carGroup.userData = { speed: 0.08 + Math.random() * 0.06, lane: lane, offset: startZ };
-    
-    lbridgeGroup.add(carGroup);
-    lcars.push(carGroup);
-    lcarLights.push({ left: leftLight, right: rightLight, leftTail: leftTail, rightTail: rightTail });
+    lfgBuildings.push({ mesh: buildingMesh, depth: -7, speed: 0.03 });
+    lskylineLayers.push({ mesh: buildingMesh, depth: -7, speed: 0.03 });
 }
 
 // Left window rain
 const lrainGroup = new THREE.Group();
-// Position just outside the window along X axis
 lrainGroup.position.set(LEFT_WALL_X - 0.6, 0, 0);
 scene.add(lrainGroup);
 
@@ -1658,10 +1566,7 @@ function updateDayNight() {
         lights.rightTail.material.opacity = intensity * 0.8;
     });
 
-    // Bridge lights: visible at night, subtle pulse
-    bridgeLights.forEach((bl, i) => {
-        bl.material.opacity = dayFactor < 0.4 ? (0.3 + Math.sin(Date.now() * 0.003 + i * 0.8) * 0.15) : 0;
-    });
+    // Bridge lights removed - replaced with skyline
 
     return dayFactor;
 }
@@ -3499,12 +3404,32 @@ const TARS_INPUT_CLASSIFIER = {
         else if (dist >= 16) kind = "drag";
         else kind = "touch";
 
-        // Map screen swipe to an approximate world-space velocity (camera-fixed facing).
-        const velocityWorld = new THREE.Vector3(
-            dx / Math.max(1, window.innerWidth),
-            -dy / Math.max(1, window.innerHeight),
-            -0.05
-        ).multiplyScalar(2.0);
+        // Map screen swipe to world-space velocity at the pick point.
+        // Project both start and end NDC points into world space at pick depth.
+        let velocityWorld = null;
+        if (kind === "flick" && pickup && pickup.point && pickup.distance) {
+            const ndcStart = new THREE.Vector2(
+                (p.x / window.innerWidth) * 2 - 1,
+                -(p.y / window.innerHeight) * 2 + 1
+            );
+            const ndcEnd = new THREE.Vector2(
+                (e.clientX / window.innerWidth) * 2 - 1,
+                -(e.clientY / window.innerHeight) * 2 + 1
+            );
+            const halfHeight = Math.tan(camera.fov * Math.PI / 360) * pickup.distance;
+            const halfWidth = halfHeight * camera.aspect;
+            const startWorld = new THREE.Vector3(
+                ndcStart.x * halfWidth,
+                ndcStart.y * halfHeight,
+                -pickup.distance
+            ).applyMatrix4(camera.matrixWorld);
+            const endWorld = new THREE.Vector3(
+                ndcEnd.x * halfWidth,
+                ndcEnd.y * halfHeight,
+                -pickup.distance
+            ).applyMatrix4(camera.matrixWorld);
+            velocityWorld = new THREE.Vector3().subVectors(endWorld, startWorld).normalize().multiplyScalar(1.5);
+        }
 
         const pickup = (window.TARS_WORLD_SENSOR && TARS_WORLD_SENSOR.pick(e.clientX, e.clientY)) || null;
 
@@ -3544,6 +3469,7 @@ const TARS_WORLD_AGENT = {
         this._subs.push(subscribeTARSEvent("world.interaction", (evt) => this._onWorldInteraction(evt)));
         this._subs.push(subscribeTARSEvent("world.physics.collision", (evt) => this._onCollision(evt)));
         this._subs.push(subscribeTARSEvent("world.physics.impulse", (evt) => this._onImpulse(evt)));
+        this._subs.push(subscribeTARSEvent("world.event", (evt) => this._onWorldEvent(evt)));
     },
 
     _canRespond() {
@@ -3603,6 +3529,101 @@ const TARS_WORLD_AGENT = {
     _onImpulse(evt) {
         // Impulses are passive observability; the interaction event carries intent.
         return;
+    },
+
+    // Generic world event handler (bird, lightning, plane, etc.)
+    _onWorldEvent(evt) {
+        const p = evt.payload || {};
+        const importance = p.importance || 0.5;
+        const source = p.source || "unknown";
+        const category = p.category || "unknown";
+        const position = p.position || { x: 0, y: 3, z: -5 };
+        
+        // Respect cooldown and control mode
+        if (!this._canRespond()) {
+            this._defer(evt);
+            return;
+        }
+        
+        // Decision factors
+        const needs = window.worldState ? worldState.tars.needs : {};
+        const curiosity = needs.curiosity ?? 0.5;
+        const fatigue = window.worldState && worldState.tars.activityFatigue 
+            ? (worldState.tars.activityFatigue[worldState.tars.activity] || 0)
+            : 0;
+        const currentActivity = window.worldState ? worldState.tars.activity : "idle";
+        
+        // Base response probability
+        const baseProb = curiosity * importance * (1 - fatigue * 0.5);
+        
+        // Category-specific interest
+        let categoryMod = 1.0;
+        if (category === "weather" && source === "lightning") categoryMod = 1.5;
+        if (category === "animal") categoryMod = 1.3;
+        if (category === "vehicle") categoryMod = 0.8;
+        if (category === "impact") categoryMod = 1.2;
+        
+        const finalProb = Math.min(1, baseProb * categoryMod);
+        
+        if (Math.random() > finalProb) {
+            // Ignore - but still log for observatory
+            if (typeof emitTARSEvent === "function") {
+                emitTARSEvent("world.salience", { 
+                    source, category, importance, decision: "ignore", curiosity, fatigue 
+                }, "tars.agent");
+            }
+            return;
+        }
+        
+        // Decide action
+        let action = "investigate";
+        if (importance > 0.7 && curiosity > 0.6) action = "join_play"; // strong interest
+        if (fatigue > 0.7) action = "ignore"; // too tired
+        
+        this._lastResponseMs = Date.now();
+        
+        // Execute response
+        if (action === "investigate" && window.TARS) {
+            // Look toward event position - find nearest gaze target
+            const target = this._findNearestGazeTarget(position);
+            if (window.TARS.lookAt) window.TARS.lookAt(target, "world_event_investigate");
+            if (typeof setTARSActivity === "function") {
+                setTARSActivity("weather_observation", target, "world_event", { 
+                    trigger: "world_event", source: source, category: category 
+                });
+            }
+        } else if (action === "join_play" && typeof setTARSActivity === "function") {
+            setTARSActivity("play_with_ball", "ball", "world_event_play", { 
+                trigger: "world_event", source: source 
+            });
+        }
+        
+        // Emit response telemetry
+        if (typeof emitTARSEvent === "function") {
+            emitTARSEvent("world.salience", { 
+                source, category, importance, decision: action, curiosity, fatigue 
+            }, "tars.agent");
+        }
+    },
+    
+    // Find nearest named gaze target to a world position
+    _findNearestGazeTarget(position) {
+        const targets = {
+            "window_left": new THREE.Vector3(-7.5, 4.2, 0),
+            "window_right": new THREE.Vector3(4.5, 3.5, -5.2),
+            "user": new THREE.Vector3(0, 2.7, 0),
+            "desk": new THREE.Vector3(1.7, 2.3, -2.2),
+            "rack-a": new THREE.Vector3(-4.7, 2.5, -4),
+            "rack-b": new THREE.Vector3(-4.7, 2.5, -1),
+            "ball": new THREE.Vector3(3, 0.5, 1.5)
+        };
+        let nearest = "user";
+        let minDist = Infinity;
+        for (const [name, pos] of Object.entries(targets)) {
+            const d = pos.distanceTo(new THREE.Vector3(position.x, position.y, position.z));
+            if (d < minDist) { minDist = d; nearest = name; }
+        }
+        return nearest;
     },
 
     _decideResponse(p, { objectId, kind, salience }) {
@@ -4314,6 +4335,63 @@ const weatherVisualEngine = {
         if (config.wind) {
             this.applyWind(config.wind.intensity);
         }
+        
+        // Emit generic world.event for weather conditions
+        this.emitWorldEvent(config);
+    },
+    
+    // Generic world event emission for outside events
+    emitWorldEvent(config) {
+        if (typeof emitTARSEvent !== "function") return;
+        const now = Date.now();
+        
+        // Rain event
+        if (config.rain) {
+            if (!this._lastRainEvent || now - this._lastRainEvent > 10000) {
+                this._lastRainEvent = now;
+                emitTARSEvent("world.event", {
+                    category: "weather",
+                    source: config.rain.intensity === "heavy" ? "heavy_rain" : "rain",
+                    position: { x: 0, y: 5, z: -5 },
+                    importance: config.rain.intensity === "heavy" ? 0.7 : 0.4,
+                    duration: 5000,
+                    confidence: 0.9,
+                    metadata: { intensity: config.rain.intensity }
+                }, "tars.environment");
+            }
+        }
+        
+        // Lightning event (high importance)
+        if (config.lightning) {
+            if (!this._lastLightningEvent || now - this._lastLightningEvent > 8000) {
+                this._lastLightningEvent = now;
+                emitTARSEvent("world.event", {
+                    category: "weather",
+                    source: "lightning",
+                    position: { x: 0, y: 6, z: -5 },
+                    importance: 0.9,
+                    duration: 100,
+                    confidence: 1.0,
+                    metadata: { flash: true }
+                }, "tars.environment");
+            }
+        }
+        
+        // Wind event
+        if (config.wind && config.wind.intensity !== "light") {
+            if (!this._lastWindEvent || now - this._lastWindEvent > 30000) {
+                this._lastWindEvent = now;
+                emitTARSEvent("world.event", {
+                    category: "weather",
+                    source: "wind",
+                    position: { x: -5, y: 3, z: 0 },
+                    importance: 0.3,
+                    duration: 30000,
+                    confidence: 0.7,
+                    metadata: { intensity: config.wind.intensity }
+                }, "tars.environment");
+            }
+        }
     },
     
     lightningInterval: null,
@@ -4347,6 +4425,152 @@ const weatherVisualEngine = {
 
 // Initialize weather visual engine
 weatherVisualEngine.updateFromWeatherState();
+
+// ============================================================
+// WINDOW BACKGROUND PROVIDER — swappable window scenery
+// ============================================================
+class WindowBackgroundProvider {
+    constructor(name) { this.name = name; this.mesh = null; }
+    init(scene, camera, renderProfile) {}
+    update(time, dt, weather, timeOfDay) {}
+    dispose() { if (this.mesh && this.mesh.parent) this.mesh.parent.remove(this.mesh); }
+}
+
+const WindowBackgroundRegistry = {
+    _providers: new Map(),
+    _active: null,
+    
+    register(provider) {
+        this._providers.set(provider.name, provider);
+    },
+    
+    setActive(name, scene, camera, renderProfile) {
+        if (this._active) this._active.dispose();
+        const p = this._providers.get(name);
+        if (p) {
+            this._active = p;
+            p.init(scene, camera, renderProfile);
+        }
+    },
+    
+    update(time, dt, weather, timeOfDay) {
+        if (this._active) this._active.update(time, dt, weather, timeOfDay);
+    },
+    
+    getActive() { return this._active; }
+};
+
+// Current provider: Procedural Skyline
+class ProceduralSkylineProvider extends WindowBackgroundProvider {
+    constructor() { super("procedural_skyline"); }
+    
+    init(scene, camera, renderProfile) {
+        // The skyline is already built in the main initialization (lexterior, exterior)
+        // This provider just manages the existing meshes
+        this.mesh = new THREE.Group();
+        this.mesh.name = "WindowSkyline";
+        // Move existing lexterior and exterior into this group
+        if (window.lexterior) this.mesh.add(window.lexterior);
+        if (window.exterior) this.mesh.add(window.exterior);
+        scene.add(this.mesh);
+    }
+    
+    update(time, dt, weather, timeOfDay) {
+        // Parallax handled in animate loop via lskylineLayers
+        // Day/night handled by updateDayNight
+        // Weather handled by weatherVisualEngine
+    }
+    
+    dispose() {
+        if (this.mesh) {
+            if (window.lexterior) this.mesh.remove(window.lexterior);
+            if (window.exterior) this.mesh.remove(window.exterior);
+            if (this.mesh.parent) this.mesh.parent.remove(this.mesh);
+        }
+    }
+}
+
+// Register default provider
+WindowBackgroundRegistry.register(new ProceduralSkylineProvider());
+WindowBackgroundRegistry.setActive("procedural_skyline", scene, camera, TARS_RENDER);
+
+// ============================================================
+// VIEWPORT ENVIRONMENTAL EFFECTS — rain droplets on "camera"
+// ============================================================
+const ViewportEffects = {
+    canvas: null,
+    ctx: null,
+    droplets: [],
+    maxDroplets: 80,
+    active: false,
+    
+    init() {
+        this.canvas = document.createElement("canvas");
+        this.canvas.id = "viewport-effects";
+        this.canvas.style.cssText = "position:fixed;inset:0;z-index:5;pointer-events:none;";
+        document.body.appendChild(this.canvas);
+        this.ctx = this.canvas.getContext("2d");
+        this.resize();
+        window.addEventListener("resize", () => this.resize());
+    },
+    
+    resize() {
+        if (this.canvas) {
+            this.canvas.width = window.innerWidth;
+            this.canvas.height = window.innerHeight;
+        }
+    },
+    
+    setWeather(condition, intensity) {
+        if (!["rain", "heavy_rain", "thunderstorm"].includes(condition)) {
+            this.droplets = [];
+            this.active = false;
+            return;
+        }
+        this.active = true;
+        const count = condition === "heavy_rain" ? this.maxDroplets : Math.floor(this.maxDroplets * 0.6);
+        while (this.droplets.length < count) this.spawnDroplet();
+    },
+    
+    spawnDroplet() {
+        if (!this.canvas) return;
+        this.droplets.push({
+            x: Math.random() * this.canvas.width,
+            y: -20,
+            r: 1 + Math.random() * 2,
+            speed: 2 + Math.random() * 4,
+            windDrift: 0
+        });
+    },
+    
+    update(dt) {
+        if (!this.ctx || !this.active || this.droplets.length === 0) return;
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.ctx.fillStyle = "rgba(159, 212, 239, 0.55)";
+        
+        const wind = (window.weatherVisualEngine && weatherVisualEngine.windStrength) || 0;
+        
+        for (let i = this.droplets.length - 1; i >= 0; i--) {
+            const d = this.droplets[i];
+            d.y += d.speed * dt * 60;
+            d.x += wind * 0.8 * dt * 60;
+            this.ctx.beginPath();
+            this.ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+            this.ctx.fill();
+            if (d.y > this.canvas.height + 20 || d.x < -20 || d.x > this.canvas.width + 20) {
+                this.droplets.splice(i, 1);
+            }
+        }
+        // Respawn to maintain count
+        const targetCount = this.maxDroplets * 0.8;
+        while (this.droplets.length < targetCount && this.droplets.length < this.maxDroplets) {
+            this.spawnDroplet();
+        }
+    }
+};
+
+// Initialize viewport effects
+ViewportEffects.init();
 
 // Initialize or restore TARS state
 worldState.environment.timeOfDay = new Date().getHours() + new Date().getMinutes() / 60;
@@ -4784,6 +5008,40 @@ const fxParticleMat = new THREE.PointsMaterial({
 });
 const tarsFXSystem = new THREE.Points(fxParticleGeo, fxParticleMat);
 tarsEntityGroup.add(tarsFXSystem);
+
+    // Register TARS as interactive world object (for tap/flick on face/body)
+    TARS_WORLD_OBJECTS.register({
+        id: "tars",
+        name: "TARS",
+        category: "entity",
+        presence: "interactive",
+        collisionTier: COLLISION_TIERS.INTERACTIVE,
+        transform: { position: tarsEntityGroup.position },
+        bounds: { type: "sphere", radius: 0.8 },
+        collision: { enabled: true, static: false, margin: 0.1 },
+        interaction: { enabled: true, canPush: false, canObserve: true, actions: ["tap", "observe"] },
+        state: { active: true, visible: true, condition: 1.0, lastInteraction: 0 },
+        metadata: { zone: null, tags: ["entity", "tars", "interactive"] }
+    });
+
+    // Register TARS in PHYSICS as kinematic (moves via autonomy, not physics forces)
+    TARS_PHYSICS.register({
+        id: "tars",
+        mesh: tarsCoreMesh,
+        physics: {
+            enabled: true,
+            type: "kinematic",
+            shape: "sphere",
+            radius: 0.8,
+            mass: 0,
+            velocity: new THREE.Vector3(0, 0, 0),
+            restitution: 0.3,
+            friction: 0.5,
+            sleeping: false,
+            sleepTimer: 0
+        },
+        interaction: { canPush: false, canPickup: false, canObserve: true }
+    });
 
 // FX state
 let fxState = { type: "none", timer: 0, color: new THREE.Color(0x5fd0ff) };
@@ -6517,7 +6775,17 @@ function animate() {
     if (weatherCheckAccum > 2) {
         weatherCheckAccum = 0;
         weatherVisualEngine.updateFromWeatherState();
+        ViewportEffects.setWeather(
+            worldState.environment.weather?.condition || "clear",
+            worldState.environment.weather?.wind?.intensity || "light"
+        );
     }
+
+    // Window background provider update
+    WindowBackgroundRegistry.update(time, dt, worldState.environment.weather, worldState.environment.timeOfDay);
+
+    // Viewport environmental effects (rain droplets on "camera")
+    ViewportEffects.update(dt);
 
     // 2b. Autonomous Needs & Decision Making
     updateNeeds(dt);
@@ -6554,9 +6822,13 @@ function animate() {
 
     // 5. Rain & Dust
     // Right window rain
+    const windStrength = (window.weatherVisualEngine && weatherVisualEngine.windStrength) || 0;
+    const windDriftX = windStrength * 0.015 * dt * 60;  // horizontal drift per frame
+    
     const positions = rain.geometry.attributes.position.array;
     for (let i = 0; i < rainCount; i++) {
         positions[i * 3 + 1] -= rainSpeeds[i];
+        positions[i * 3] += windDriftX;  // wind drift
         if (positions[i * 3 + 1] < winBottom - 1.5) {
             positions[i * 3 + 1] = winTop + 1.5;
             positions[i * 3] = winLeft + Math.random() * WIN_W;
@@ -6568,6 +6840,7 @@ function animate() {
     const lpositions = lrain.geometry.attributes.position.array;
     for (let i = 0; i < lrainCount; i++) {
         lpositions[i * 3 + 1] -= lrainSpeeds[i];
+        lpositions[i * 3] += windDriftX;  // wind drift
         if (lpositions[i * 3 + 1] < lwinBottom - 1.5) {
             lpositions[i * 3 + 1] = lwinTop + 1.5;
             lpositions[i * 3] = lwinLeft + Math.random() * 6;
@@ -7049,38 +7322,13 @@ function animate() {
         }
     }
 
-    // Left window bridge: animate cars on bridge
-    lcars.forEach((car, i) => {
-        const ud = car.userData;
-        car.position.z += ud.speed;
-        // Loop cars on bridge
-        if (car.position.z > 11) {
-            car.position.z = -11;
-            // Randomize speed slightly each loop
-            ud.speed = 0.08 + Math.random() * 0.06;
-        }
-        // Headlight beam animation (subtle)
-        if (lcarLights[i]) {
-            const beamScale = 0.5 + Math.sin(time * 10 + i) * 0.1;
-            lcarLights[i].left.scale.setScalar(beamScale);
-            lcarLights[i].right.scale.setScalar(beamScale);
-        }
-    });
-
-    // Left window bridge: parallax layers follow camera slightly
-    lbridgeLayers.forEach(layer => {
-        // Camera moves in room coordinates; bridge is outside at x=-11
-        // Parallax along the wall (Z) and depth (X)
+    // Left window skyline: parallax layers follow camera slightly
+    lskylineLayers.forEach(layer => {
         const parallaxZ = camera.position.z * layer.speed;
-        const parallaxX = (camera.position.x + 8) * layer.speed * 0.5; // relative to wall
+        const parallaxX = (camera.position.x + 8) * layer.speed * 0.5;
         layer.mesh.position.z += (parallaxZ - layer.mesh.position.z) * 0.01;
         layer.mesh.position.x += (parallaxX - layer.mesh.position.x) * 0.005;
     });
-
-    // Water surface subtle animation
-    lwaterDistortion.time += dt;
-    lwaterMesh.position.y = 0.15 + Math.sin(lwaterDistortion.time * 1.5) * 0.02;
-    lwaterMesh.rotation.z = Math.sin(lwaterDistortion.time * 0.7) * 0.005;
 
     if (typeof TARS_DEBUG !== 'undefined' && TARS_DEBUG.update) TARS_DEBUG.update(time, dt);
     renderer.render(scene, camera);
@@ -8085,20 +8333,6 @@ const TARS_UI = {
         for (const p of timePresets) {
             envHtml += `<span class="tars-env-pill" data-action="set-time" data-preset="${p}">${p.toUpperCase()}</span>`;
         }
-        envHtml += `</div></div><div style="margin-bottom:6px">
-            <div style="font-size:9px;color:rgba(210,235,255,0.35);margin-bottom:3px">Temperature: <span id="env-temp">${env.temperature || 22}</span>°C</div>
-            <div class="tars-env-group">
-                <span class="tars-env-pill" data-action="set-temp" data-delta="-5">−5°</span>
-                <span class="tars-env-pill" data-action="set-temp" data-delta="-1">−1°</span>
-                <span class="tars-env-pill" data-action="set-temp" data-delta="1">+1°</span>
-                <span class="tars-env-pill" data-action="set-temp" data-delta="5">+5°</span>
-            </div></div><div>
-            <div style="font-size:9px;color:rgba(210,235,255,0.35);margin-bottom:3px">Wind Intensity</div>
-            <div class="tars-env-group">`;
-        const windLevels = ["calm","light","moderate","strong","gale"];
-        for (const w of windLevels) {
-            envHtml += `<span class="tars-env-pill" data-action="set-wind" data-intensity="${w}">${w.toUpperCase()}</span>`;
-        }
         envHtml += `</div></div>`;
 
         // Render profile
@@ -8199,7 +8433,7 @@ const TARS_UI = {
             cs("movement", "Movement", moveHtml, moveTargets.length + targets.length) +
             cs("needs", "Needs", `<div class="tars-inject-group">${needHtml}</div>
                 <div style="margin-top:6px"><button class="btn btn-sm" data-action="reset-state" style="font-size:9px">🔄 Reset All to 50%</button></div>`, needNames.length) +
-            cs("environment", "Environment", envHtml, weatherConditions.length + timePresets.length + windLevels.length) +
+            cs("environment", "Environment", envHtml, weatherConditions.length + timePresets.length) +
             cs("rendering", "Rendering", renderHtml, profiles.length) +
             cs("debug", "Debug", debugHtml, debugFeatures.length) +
             cs("developer-tools", "Developer Tools",
@@ -8270,10 +8504,6 @@ const TARS_UI = {
             const valEl = document.querySelector(`[data-need-val="${n}"]`);
             if (valEl) valEl.textContent = ((needs[n] || 0.5) * 100).toFixed(0) + "%";
         }
-
-        // Environment
-        const envEl = document.getElementById("env-temp");
-        if (envEl) envEl.textContent = worldState.environment.temperature || 22;
 
         // Telemetry
         const telemetryEl = document.getElementById("creator-telemetry");
@@ -8738,14 +8968,6 @@ function initObservatoryUI() {
                 TARS_setTimeOfDay(e.target.dataset.preset);
                 setFb(`Time: ${e.target.dataset.preset}`, "#5fd0ff");
                 break;
-            case "set-temp":
-                TARS_setTemperature(parseFloat(e.target.dataset.delta));
-                setFb(`Temperature adjusted`, "#5fd0ff");
-                break;
-            case "set-wind":
-                TARS_setWind(e.target.dataset.intensity);
-                setFb(`Wind: ${e.target.dataset.intensity}`, "#5fd0ff");
-                break;
 
             // Rendering
             case "set-profile":
@@ -8865,21 +9087,6 @@ function TARS_setTimeOfDay(preset) {
     const hour = times[preset] || 12;
     worldState.environment.timeOfDay = hour;
     if (typeof updateDayNight === "function") updateDayNight();
-}
-
-function TARS_setTemperature(delta) {
-    const cur = worldState.environment.temperature || 22;
-    worldState.environment.temperature = Math.max(-10, Math.min(50, cur + delta));
-    const el = document.getElementById("env-temp");
-    if (el) el.textContent = worldState.environment.temperature;
-}
-
-function TARS_setWind(intensity) {
-    const speedMap = { calm: 0, light: 5, moderate: 15, strong: 30, gale: 55 };
-    worldState.environment.weather.wind = { intensity, direction: 270, speed: speedMap[intensity] || 15 };
-    if (window.weatherVisualEngine && weatherVisualEngine.applyWind) {
-        weatherVisualEngine.applyWind(intensity);
-    }
 }
 
 function TARS_setRenderProfile(profile) {
