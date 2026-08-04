@@ -1266,6 +1266,56 @@ const lstars = new THREE.Points(lstarGeometry, new THREE.PointsMaterial({
 }));
 lexterior.add(lstars);
 
+// ============================================================
+// WINDOW ENVIRONMENT PROVIDER (Phase 9.5)
+// ============================================================
+const WINDOW_ENVIRONMENT = {
+    left: "assets/window_left.png",
+    rear: "assets/window_rear.png"
+};
+
+class WindowEnvironmentProvider {
+    constructor() {
+        this.textureLoader = new THREE.TextureLoader();
+    }
+    
+    initWindow(side, configPath, group, fallbackFn, position, rotation) {
+        if (!configPath) {
+            fallbackFn();
+            return;
+        }
+        
+        this.textureLoader.load(
+            configPath,
+            (texture) => {
+                texture.colorSpace = THREE.SRGBColorSpace;
+                const aspect = texture.image.width / texture.image.height;
+                const height = 40; // Generous overscan
+                const width = height * aspect;
+                // Use MeshStandardMaterial or MeshBasicMaterial. Basic ensures it's always visible without lights, but fog still applies.
+                const mat = new THREE.MeshBasicMaterial({ 
+                    map: texture, 
+                    fog: true, 
+                    transparent: true 
+                });
+                const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, height), mat);
+                
+                mesh.position.copy(position);
+                if (rotation) mesh.rotation.copy(rotation);
+                
+                group.add(mesh);
+                console.log(`[WindowEnvironmentProvider] Loaded ${side} background`);
+            },
+            undefined,
+            (err) => {
+                console.warn(`[WindowEnvironmentProvider] Failed to load ${side} background, using fallback.`, err);
+                fallbackFn();
+            }
+        );
+    }
+}
+const windowEnvProvider = new WindowEnvironmentProvider();
+
 // Left window building window texture function
 function lbuildingWindowTex() {
     return canvasTexture((ctx, w, h) => {
@@ -1284,200 +1334,186 @@ function lbuildingWindowTex() {
 
 // --- Parallax Bridge Layers ---
 const lbridgeLayers = [];
-
-// Layer 1: Distant hills/mountains (furthest)
-const lhillsGeo = new THREE.PlaneGeometry(50, 12);
-const lhillsTex = canvasTexture((ctx, w, h) => {
-    const grad = ctx.createLinearGradient(0, 0, 0, h);
-    grad.addColorStop(0, "#0a121a");
-    grad.addColorStop(0.5, "#0f1a2a");
-    grad.addColorStop(1, "#142335");
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, w, h);
-    // Distant mountain silhouettes
-    ctx.fillStyle = "#0d1826";
-    for (let i = 0; i < 8; i++) {
-        const mx = (Math.random() - 0.5) * w * 0.9;
-        const mw = 40 + Math.random() * 80;
-        const mh = 20 + Math.random() * 40;
-        ctx.beginPath();
-        ctx.moveTo(mx, h);
-        ctx.lineTo(mx - mw/2, h - mh);
-        ctx.lineTo(mx + mw/2, h - mh);
-        ctx.closePath();
-        ctx.fill();
-    }
-}, 256, 128);
-const lhillsMat = new THREE.MeshBasicMaterial({ map: lhillsTex, transparent: true, opacity: 0.7, fog: false });
-const lhillsMesh = new THREE.Mesh(lhillsGeo, lhillsMat);
-// Rotate to face the window (along -X), positioned further out
-lhillsMesh.rotation.y = Math.PI / 2;
-lhillsMesh.position.set(-18, 4, 0);  // x=-18 (further out), y=4, z=0 (centered on wall)
-lexterior.add(lhillsMesh);
-lbridgeLayers.push({ mesh: lhillsMesh, depth: -18, speed: 0.005 });
-
-// Layer 2: Bridge structure (mid-distance)
-const lbridgeGroup = new THREE.Group();
-// Positioned at x=-8 (between hills at -18 and water at -2), centered on wall (z=0)
-lbridgeGroup.position.set(-8, 0, 0);
-lexterior.add(lbridgeGroup);
-lbridgeLayers.push({ mesh: lbridgeGroup, depth: -8, speed: 0.02 });
-
-// Bridge towers (two main towers) - along Z axis (along the wall)
-for (let t = -1; t <= 1; t += 2) {
-    const towerGeo = new THREE.BoxGeometry(1.2, 14, 1.2);
-    const towerMat = new THREE.MeshStandardMaterial({ color: 0x2a2f3a, roughness: 0.8, metalness: 0.2 });
-    const tower = new THREE.Mesh(towerGeo, towerMat);
-    tower.position.set(0, 7, t * 8);  // x=0 (at bridge), y=7, z=±8 (along wall)
-    tower.castShadow = true;
-    lbridgeGroup.add(tower);
-    
-    // Tower top detail
-    const topGeo = new THREE.BoxGeometry(1.6, 1.5, 1.6);
-    const top = new THREE.Mesh(topGeo, towerMat);
-    top.position.set(0, 14.7, t * 8);
-    lbridgeGroup.add(top);
-}
-
-// Bridge deck - along Z axis (spanning the wall)
-const deckGeo = new THREE.BoxGeometry(1.2, 0.6, 22);  // thickness=1.2, height=0.6, length=22
-const deckMat = new THREE.MeshStandardMaterial({ color: 0x1a1f2a, roughness: 0.9 });
-const deck = new THREE.Mesh(deckGeo, deckMat);
-deck.position.set(0, 1.3, 0);
-deck.receiveShadow = true;
-lbridgeGroup.add(deck);
-
-// Suspension cables (visual lines) - along Z axis
-for (let side = -1; side <= 1; side += 2) {
-    for (let i = 0; i < 12; i++) {
-        const cableGeo = new THREE.CylinderGeometry(0.04, 0.04, 16, 4);
-        const cableMat = new THREE.MeshBasicMaterial({ color: 0x2a2f3a, transparent: true, opacity: 0.6 });
-        const cable = new THREE.Mesh(cableGeo, cableMat);
-        const z = -10 + i * 1.8;
-        cable.position.set(side * 3, 8, z);  // x=±3 (sides), y=8 z along bridge
-        cable.rotation.x = Math.PI / 2;
-        cable.rotation.z = Math.atan2(14 - 1.3, 8) * side * 0.5;
-        lbridgeGroup.add(cable);
-    }
-}
-
-// Bridge lights on deck
-const bridgeLights = [];
-for (let i = 0; i < 10; i++) {
-    const lightGeo = new THREE.SphereGeometry(0.12, 8, 8);
-    const lightMat = new THREE.MeshBasicMaterial({ color: 0xffdd88, transparent: true, opacity: 0 });
-    const light = new THREE.Mesh(lightGeo, lightMat);
-    light.position.set(0, 1.8, -9 + i * 2);
-    lbridgeGroup.add(light);
-    bridgeLights.push(light);
-}
-
-// Layer 3: Foreground water/river (closest) - along Z axis
-const lwaterGeo = new THREE.PlaneGeometry(16, 8);
-const lwaterMat = new THREE.MeshPhysicalMaterial({
-    color: 0x051020,
-    metalness: 0.9,
-    roughness: 0.1,
-    transmission: 0.3,
-    transparent: true,
-    opacity: 0.6,
-    side: THREE.DoubleSide
-});
-const lwaterMesh = new THREE.Mesh(lwaterGeo, lwaterMat);
-lwaterMesh.rotation.x = -Math.PI / 2;
-lwaterMesh.position.set(-5, 0.15, -2);
-lexterior.add(lwaterMesh);
-lbridgeLayers.push({ mesh: lwaterMesh, depth: -2, speed: 0.05 });
-
-// Water reflection effect - animated normal map via vertex displacement in shader would be better, using simple animation
-const lwaterDistortion = { time: 0 };
-
-// --- Buildings on far riverbanks ---
 const lfarBuildings = [];
 const lbuildings = [];
-for (let i = 0; i < 12; i++) {
-    const bw = 1.5 + Math.random() * 2;
-    const bh = 4 + Math.random() * 10;
-    const bd = 1.5 + Math.random() * 2;
-    const side = Math.random() > 0.5 ? -1 : 1;
-    const bz = side * (12 + Math.random() * 8);
-    const tex = lbuildingWindowTex();
-    const buildingMat = new THREE.MeshStandardMaterial({
-        map: tex, color: 0x2a3a4c, roughness: 0.9,
-        emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.6
-    });
-    const buildingMesh = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), buildingMat);
-    buildingMesh.position.set(-4 - Math.random() * 6, bh / 2 - 0.1, bz);
-    buildingMesh.rotation.y = Math.PI / 2;
-    lexterior.add(buildingMesh);
-    lfarBuildings.push(buildingMat);
-}
-
-// Window-side buildings (closer, for day/night cycle)
-for (let i = 0; i < 6; i++) {
-    const bw = 1.2 + Math.random() * 1.5;
-    const bh = 3 + Math.random() * 7;
-    const bd = 1.2 + Math.random() * 1.5;
-    const bz = -6 + i * 1.4 + (Math.random() - 0.5) * 0.5;
-    const tex = lbuildingWindowTex();
-    const buildingMat = new THREE.MeshStandardMaterial({
-        map: tex, color: 0x2a3a4c, roughness: 0.9,
-        emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.6
-    });
-    const buildingMesh = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), buildingMat);
-    buildingMesh.position.set(-4 - Math.random() * 2, bh / 2 - 0.1, bz);
-    buildingMesh.rotation.y = Math.PI / 2;
-    lexterior.add(buildingMesh);
-    lbuildings.push(buildingMat);
-}
-
-    // --- Cars on bridge (animated) ---
 const lcars = [];
 const lcarLights = [];
-for (let i = 0; i < 6; i++) {
-    const carGroup = new THREE.Group();
-    const carGeo = new THREE.BoxGeometry(1.6, 0.6, 3.2);
-    const carMat = new THREE.MeshStandardMaterial({ 
-        color: new THREE.Color().setHSL(Math.random(), 0.5, 0.3), 
-        roughness: 0.4, metalness: 0.6 
+
+function buildLeftProceduralFallback() {
+    // Layer 1: Distant hills/mountains (furthest)
+    const lhillsGeo = new THREE.PlaneGeometry(50, 12);
+    const lhillsTex = canvasTexture((ctx, w, h) => {
+        const grad = ctx.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, "#0a121a");
+        grad.addColorStop(0.5, "#0f1a2a");
+        grad.addColorStop(1, "#142335");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = "#0d1826";
+        for (let i = 0; i < 8; i++) {
+            const mx = (Math.random() - 0.5) * w * 0.9;
+            const mw = 40 + Math.random() * 80;
+            const mh = 20 + Math.random() * 40;
+            ctx.beginPath();
+            ctx.moveTo(mx, h);
+            ctx.lineTo(mx - mw/2, h - mh);
+            ctx.lineTo(mx + mw/2, h - mh);
+            ctx.closePath();
+            ctx.fill();
+        }
+    }, 256, 128);
+    const lhillsMat = new THREE.MeshBasicMaterial({ map: lhillsTex, transparent: true, opacity: 0.7, fog: false });
+    const lhillsMesh = new THREE.Mesh(lhillsGeo, lhillsMat);
+    lhillsMesh.rotation.y = Math.PI / 2;
+    lhillsMesh.position.set(-18, 4, 0);
+    lexterior.add(lhillsMesh);
+    lbridgeLayers.push({ mesh: lhillsMesh, depth: -18, speed: 0.005 });
+
+    // Layer 2: Bridge structure (mid-distance)
+    const lbridgeGroup = new THREE.Group();
+    lbridgeGroup.position.set(-8, 0, 0);
+    lexterior.add(lbridgeGroup);
+    lbridgeLayers.push({ mesh: lbridgeGroup, depth: -8, speed: 0.02 });
+
+    for (let t = -1; t <= 1; t += 2) {
+        const towerGeo = new THREE.BoxGeometry(1.2, 14, 1.2);
+        const towerMat = new THREE.MeshStandardMaterial({ color: 0x2a2f3a, roughness: 0.8, metalness: 0.2 });
+        const tower = new THREE.Mesh(towerGeo, towerMat);
+        tower.position.set(0, 7, t * 8);
+        tower.castShadow = true;
+        lbridgeGroup.add(tower);
+        
+        const topGeo = new THREE.BoxGeometry(1.6, 1.5, 1.6);
+        const top = new THREE.Mesh(topGeo, towerMat);
+        top.position.set(0, 14.7, t * 8);
+        lbridgeGroup.add(top);
+    }
+
+    const deckGeo = new THREE.BoxGeometry(1.2, 0.6, 22);
+    const deckMat = new THREE.MeshStandardMaterial({ color: 0x1a1f2a, roughness: 0.9 });
+    const deck = new THREE.Mesh(deckGeo, deckMat);
+    deck.position.set(0, 1.3, 0);
+    deck.receiveShadow = true;
+    lbridgeGroup.add(deck);
+
+    for (let side = -1; side <= 1; side += 2) {
+        for (let i = 0; i < 12; i++) {
+            const cableGeo = new THREE.CylinderGeometry(0.04, 0.04, 16, 4);
+            const cableMat = new THREE.MeshBasicMaterial({ color: 0x2a2f3a, transparent: true, opacity: 0.6 });
+            const cable = new THREE.Mesh(cableGeo, cableMat);
+            const z = -10 + i * 1.8;
+            cable.position.set(side * 3, 8, z);
+            cable.rotation.x = Math.PI / 2;
+            cable.rotation.z = Math.atan2(14 - 1.3, 8) * side * 0.5;
+            lbridgeGroup.add(cable);
+        }
+    }
+
+    const bridgeLights = [];
+    for (let i = 0; i < 10; i++) {
+        const lightGeo = new THREE.SphereGeometry(0.12, 8, 8);
+        const lightMat = new THREE.MeshBasicMaterial({ color: 0xffdd88, transparent: true, opacity: 0 });
+        const light = new THREE.Mesh(lightGeo, lightMat);
+        light.position.set(0, 1.8, -9 + i * 2);
+        lbridgeGroup.add(light);
+        bridgeLights.push(light);
+    }
+
+    const lwaterGeo = new THREE.PlaneGeometry(16, 8);
+    const lwaterMat = new THREE.MeshPhysicalMaterial({
+        color: 0x051020, metalness: 0.9, roughness: 0.1, transmission: 0.3,
+        transparent: true, opacity: 0.6, side: THREE.DoubleSide
     });
-    const carBody = new THREE.Mesh(carGeo, carMat);
-    carBody.position.y = 1.9;
-    carGroup.add(carBody);
-    
-    // Headlights
-    const headlightGeo = new THREE.SphereGeometry(0.08, 8, 8);
-    const headlightMat = new THREE.MeshBasicMaterial({ 
-        color: 0xffffee, transparent: true, opacity: 1 
-    });
-    const leftLight = new THREE.Mesh(headlightGeo, headlightMat.clone());
-    leftLight.position.set(-0.5, 1.9, 1.7);
-    carGroup.add(leftLight);
-    
-    const rightLight = new THREE.Mesh(headlightGeo, headlightMat.clone());
-    rightLight.position.set(0.5, 1.9, 1.7);
-    carGroup.add(rightLight);
-    
-    // Taillights
-    const tailMat = new THREE.MeshBasicMaterial({ color: 0xff2222, transparent: true, opacity: 1 });
-    const leftTail = new THREE.Mesh(headlightGeo, tailMat.clone());
-    leftTail.position.set(-0.5, 1.9, -1.7);
-    carGroup.add(leftTail);
-    
-    const rightTail = new THREE.Mesh(headlightGeo, tailMat.clone());
-    rightTail.position.set(0.5, 1.9, -1.7);
-    carGroup.add(rightTail);
-    
-    // Position on bridge deck (two lanes each direction) - along Z axis
-    const lane = (i % 4) < 2 ? -1.5 : 1.5;
-    const startZ = -9 + (i % 4) * 5 + Math.random() * 2;
-    carGroup.position.set(0, 0, startZ);  // x=0 (at bridge), y=0, z=position along bridge
-    carGroup.userData = { speed: 0.08 + Math.random() * 0.06, lane: lane, offset: startZ };
-    
-    lbridgeGroup.add(carGroup);
-    lcars.push(carGroup);
-    lcarLights.push({ left: leftLight, right: rightLight, leftTail: leftTail, rightTail: rightTail });
+    const lwaterMesh = new THREE.Mesh(lwaterGeo, lwaterMat);
+    lwaterMesh.rotation.x = -Math.PI / 2;
+    lwaterMesh.position.set(-5, 0.15, -2);
+    lexterior.add(lwaterMesh);
+    lbridgeLayers.push({ mesh: lwaterMesh, depth: -2, speed: 0.05 });
+
+    for (let i = 0; i < 12; i++) {
+        const bw = 1.5 + Math.random() * 2;
+        const bh = 4 + Math.random() * 10;
+        const bd = 1.5 + Math.random() * 2;
+        const side = Math.random() > 0.5 ? -1 : 1;
+        const bz = side * (12 + Math.random() * 8);
+        const tex = lbuildingWindowTex();
+        const buildingMat = new THREE.MeshStandardMaterial({
+            map: tex, color: 0x2a3a4c, roughness: 0.9,
+            emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.6
+        });
+        const buildingMesh = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), buildingMat);
+        buildingMesh.position.set(-4 - Math.random() * 6, bh / 2 - 0.1, bz);
+        buildingMesh.rotation.y = Math.PI / 2;
+        lexterior.add(buildingMesh);
+        lfarBuildings.push(buildingMat);
+    }
+
+    for (let i = 0; i < 6; i++) {
+        const bw = 1.2 + Math.random() * 1.5;
+        const bh = 3 + Math.random() * 7;
+        const bd = 1.2 + Math.random() * 1.5;
+        const bz = -6 + i * 1.4 + (Math.random() - 0.5) * 0.5;
+        const tex = lbuildingWindowTex();
+        const buildingMat = new THREE.MeshStandardMaterial({
+            map: tex, color: 0x2a3a4c, roughness: 0.9,
+            emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.6
+        });
+        const buildingMesh = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), buildingMat);
+        buildingMesh.position.set(-4 - Math.random() * 2, bh / 2 - 0.1, bz);
+        buildingMesh.rotation.y = Math.PI / 2;
+        lexterior.add(buildingMesh);
+        lbuildings.push(buildingMat);
+    }
+
+    for (let i = 0; i < 6; i++) {
+        const carGroup = new THREE.Group();
+        const carGeo = new THREE.BoxGeometry(1.6, 0.6, 3.2);
+        const carMat = new THREE.MeshStandardMaterial({ 
+            color: new THREE.Color().setHSL(Math.random(), 0.5, 0.3), roughness: 0.4, metalness: 0.6 
+        });
+        const carBody = new THREE.Mesh(carGeo, carMat);
+        carBody.position.y = 1.9;
+        carGroup.add(carBody);
+        
+        const headlightGeo = new THREE.SphereGeometry(0.08, 8, 8);
+        const headlightMat = new THREE.MeshBasicMaterial({ color: 0xffffee, transparent: true, opacity: 1 });
+        const leftLight = new THREE.Mesh(headlightGeo, headlightMat.clone());
+        leftLight.position.set(-0.5, 1.9, 1.7);
+        carGroup.add(leftLight);
+        
+        const rightLight = new THREE.Mesh(headlightGeo, headlightMat.clone());
+        rightLight.position.set(0.5, 1.9, 1.7);
+        carGroup.add(rightLight);
+        
+        const tailMat = new THREE.MeshBasicMaterial({ color: 0xff2222, transparent: true, opacity: 1 });
+        const leftTail = new THREE.Mesh(headlightGeo, tailMat.clone());
+        leftTail.position.set(-0.5, 1.9, -1.7);
+        carGroup.add(leftTail);
+        
+        const rightTail = new THREE.Mesh(headlightGeo, tailMat.clone());
+        rightTail.position.set(0.5, 1.9, -1.7);
+        carGroup.add(rightTail);
+        
+        const lane = (i % 4) < 2 ? -1.5 : 1.5;
+        const startZ = -9 + (i % 4) * 5 + Math.random() * 2;
+        carGroup.position.set(0, 0, startZ);
+        carGroup.userData = { speed: 0.08 + Math.random() * 0.06, lane: lane, offset: startZ };
+        
+        lbridgeGroup.add(carGroup);
+        lcars.push(carGroup);
+        lcarLights.push({ left: leftLight, right: rightLight, leftTail: leftTail, rightTail: rightTail });
+    }
 }
+
+// Initialize left background (image or fallback)
+windowEnvProvider.initWindow(
+    'left',
+    WINDOW_ENVIRONMENT.left,
+    lexterior,
+    buildLeftProceduralFallback,
+    new THREE.Vector3(-10.5, 5, 0), // Positioned between window and sky
+    new THREE.Euler(0, Math.PI / 2, 0)
+);
 
 // Left window rain
 const lrainGroup = new THREE.Group();
@@ -1553,21 +1589,34 @@ function buildingWindowTex() {
 }
 
 const buildings = [];
-for (let i = 0; i < 9; i++) {
-    const bw = 1.2 + Math.random() * 1.6;
-    const bh = 3 + Math.random() * 7;
-    const bd = 1.2 + Math.random() * 1.6;
-    const bx = -3 + i * 1.3 + (Math.random() - 0.5) * 0.6;
-    const tex = buildingWindowTex();
-    const buildingMat = new THREE.MeshStandardMaterial({
-        map: tex, color: 0x2a3a4c, roughness: 0.9,
-        emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.6
-    });
-    const buildingMesh = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), buildingMat);
-    buildingMesh.position.set(bx, bh / 2 - 0.1, -Math.random() * 4);
-    exterior.add(buildingMesh);
-    buildings.push(buildingMat);
+
+function buildRearProceduralFallback() {
+    for (let i = 0; i < 9; i++) {
+        const bw = 1.2 + Math.random() * 1.6;
+        const bh = 3 + Math.random() * 7;
+        const bd = 1.2 + Math.random() * 1.6;
+        const bx = -3 + i * 1.3 + (Math.random() - 0.5) * 0.6;
+        const tex = buildingWindowTex();
+        const buildingMat = new THREE.MeshStandardMaterial({
+            map: tex, color: 0x2a3a4c, roughness: 0.9,
+            emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.6
+        });
+        const buildingMesh = new THREE.Mesh(new THREE.BoxGeometry(bw, bh, bd), buildingMat);
+        buildingMesh.position.set(bx, bh / 2 - 0.1, -Math.random() * 4);
+        exterior.add(buildingMesh);
+        buildings.push(buildingMat);
+    }
 }
+
+// Initialize rear background (image or fallback)
+windowEnvProvider.initWindow(
+    'rear',
+    WINDOW_ENVIRONMENT.rear,
+    exterior,
+    buildRearProceduralFallback,
+    new THREE.Vector3(0, 5, -8.5), // Positioned behind rain but in front of celestial
+    null
+);
 
 const rainGroup = new THREE.Group();
 rainGroup.position.set(0, 0, WALL_Z - 0.6);
