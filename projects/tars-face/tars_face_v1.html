@@ -1553,20 +1553,8 @@ function updateDayNight() {
     lstars.material.opacity = (1 - dayFactor) * 0.85;
 
     buildings.forEach(mat => { mat.emissiveIntensity = 0.15 + (1 - dayFactor) * 0.75; });
-    lbuildings.forEach(mat => { mat.emissiveIntensity = 0.15 + (1 - dayFactor) * 0.75; });
-    lfarBuildings.forEach(mat => { mat.emissiveIntensity = 0.1 + (1 - dayFactor) * 0.6; });
-
-    // Car headlights/taillights intensity based on time of day
-    lcarLights.forEach((lights, i) => {
-        const isNight = dayFactor < 0.4;
-        const intensity = isNight ? 1.0 : 0.1;
-        lights.left.material.opacity = intensity;
-        lights.right.material.opacity = intensity;
-        lights.leftTail.material.opacity = intensity * 0.8;
-        lights.rightTail.material.opacity = intensity * 0.8;
-    });
-
-    // Bridge lights removed - replaced with skyline
+    lskylineBuildings.forEach(mat => { mat.emissiveIntensity = 0.15 + (1 - dayFactor) * 0.75; });
+    lfgBuildings.forEach(b => { b.mesh.material.emissiveIntensity = 0.1 + (1 - dayFactor) * 0.6; });
 
     return dayFactor;
 }
