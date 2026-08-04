@@ -126,7 +126,7 @@
 - Richer gestures (grab/knock/roll), compound collision shapes
 - SQLite event log + persistent alert/service history
 - LLM cognitive layer (Brain + Chat), Home Assistant bridge
-- Raspberry Pi deployment (kiosk, systemd, physical display)
+- Raspberry Pi deployment (kiosk, systemd, physical display) → **completed in Phase 9.2–9.4**
 
 ## Phase 9.1 — TARS Node Deployment Preparation (committed `0b86279`)
 - **Artifacts created + validated on Windows**: `Dockerfile` (node:20-alpine, non-root `node` user, `/srv/tars`, `EXPOSE 8080`, healthcheck), `docker-compose.yml` (service `tars-backend`, image `tars-backend:1.0.0`, `restart: unless-stopped`, isolated `tars_net` bridge, port `8080:8080` only), `.dockerignore` (excludes scratch tests + node_modules)
@@ -150,6 +150,12 @@
 - **Test 5** network loss (iptables egress DROP on container): ✅ frontend/module 200 during drop, /health ok, monitors kept publishing (328→345), autonomy client-side (287 refs), 0 CDN refs; rule removed cleanly; internet restored
 - **Report**: `docs/PHASE_9_3_RECOVERY_TEST_REPORT.md`
 
-## Phase 9.4 — Planned (next milestone)
-- Physical presence layer: display detection (attach 7" touchscreen, verify HDMI detection), touchscreen validation, kiosk boot, automatic TARS visual startup on boot
-- After: improve touch/world interaction (grab/knock/roll), camera/sensors when appropriate, deeper embodiment
+## Phase 9.4 — Physical Presence Layer (committed) — **MILESTONE: "TARS Physical Presence Achieved"**
+- **Appliance boot**: `graphical.target` → `tars-kiosk.service` → `labwc` (Wayland) → Chromium kiosk on `http://127.0.0.1:8080/`; no login prompt, no keyboard
+- **Display**: 800x480 DSI touchscreen (`card1-DSI-1`), `vc4-kms-v3d`, hardware GLES3.1 (V3D)
+- **Touch**: `edt_ft5x06` mapped 1:1 (0–799 × 0–479), no calibration; taps/drag/long-press validated end-to-end
+- **Stack**: `chromium` 150, `labwc` 0.9.8 (minimal compositor — no desktop env), `seatd` 0.9.1; dedicated `kiosk` user (uid 996)
+- **Files**: `/etc/tars-kiosk/kiosk-session.sh`, `/etc/systemd/system/tars-kiosk.service` (`Restart=always`), `/etc/tmpfiles.d/tars-kiosk.conf`
+- **Failure recovery validated**: reboot, hard reset, backend/Docker restart, Chromium crash, network unplug/restore
+- **Existing services untouched**: 8 homelab containers + SSH healthy
+- Docs: `PHASE_9_4_IMPLEMENTATION_REPORT.md` + render evidence PNGs

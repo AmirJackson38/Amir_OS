@@ -1,10 +1,10 @@
 # TARS Face — Current State
 
 **Date**: 2026-08-04
-**Version**: v7.5 + Phase 8.3.4 stabilization + Phase 8.4 Observable Spatial Runtime Base + Phase 8.5 Embodied Interaction Layer + Phase 9.1 Deployment Preparation + Phase 9.2 Node Deployment + Phase 9.3 Recovery Validation
+**Version**: v7.5 + Phase 8.3.4 stabilization + Phase 8.4 Observable Spatial Runtime Base + Phase 8.5 Embodied Interaction Layer + Phase 9.1 Deployment Preparation + Phase 9.2 Node Deployment + Phase 9.3 Recovery Validation + Phase 9.4 Physical Presence
 
 ## Completed
-All behavior described below is delivered and verified. TARS frontend, backend, autonomy, world engine, and persistence are now **deployed and running on the Raspberry Pi node** (`tars_backend` on `:8080`) and have passed power-loss, Docker-restart, network-loss, and persistence recovery validation (Phase 9.3). Phase 9.4 next = physical presence layer (display, touchscreen, kiosk). See `docs/PHASE_9_3_RECOVERY_TEST_REPORT.md` and `docs/PHASE_9_2_DEPLOYMENT_RESULT.md`.
+All behavior described below is delivered and verified. TARS frontend, backend, autonomy, world engine, and persistence are now **deployed and running on the Raspberry Pi node** (`tars_backend` on `:8080`) and have passed power-loss, Docker-restart, network-loss, and persistence recovery validation (Phase 9.3). Phase 9.4 (physical presence layer — display, touchscreen, kiosk) is complete: the Pi boots directly into the TARS frontend on an 800x480 DSI touchscreen. See `docs/PHASE_9_4_IMPLEMENTATION_REPORT.md`, `docs/PHASE_9_3_RECOVERY_TEST_REPORT.md` and `docs/PHASE_9_2_DEPLOYMENT_RESULT.md`.
 
 ## Newly Integrated (Phase 9.3 — Recovery Validation)
 - **Test-only phase** (no runtime/Docker/arch changes): validated `tars_backend` survives real hardware lifecycle events on the node.
@@ -28,6 +28,21 @@ All behavior described below is delivered and verified. TARS frontend, backend, 
 - **Local frontend serving**: `tars_face_v1.html:418` now imports Three.js from `/three.module.js` (local, served by backend) **instead of the CDN** — removes the single hard internet dependency (golden rule #1)
 - **Backend health endpoint**: `/health` already present at `pi-server/server.js:50` (verified, no change needed)
 - **Submission**: `projects/tars-face/docs/PHASE_9_1_TARS_NODE_DEPLOYMENT_PLAN.md`, `docs/PHASE_9_DEPLOYMENT_BLUEPRINT.md`, `docs/PI_NODE_AUDIT.md`, `docs/CURRENT_SERVICE_MAP.md`
+
+## Newly Integrated (Phase 9.2–9.3 — Deployment on Raspberry Pi)
+- **Live node**: TARS backend containerized and deployed on the Raspberry Pi 4 node (`tars`, hostname resolves at `tars.local`), serving the frontend on port `8080`
+- **Docker compose**: `tars-node` project — `tars-backend:1.0.0` container on isolated `tars_net` bridge, `restart: unless-stopped`, healthcheck on `/health`, published port `8080` only
+- **Recovery verified (Phase 9.3)**: backend/frontend recovery validated against the live node
+
+## Newly Integrated (Phase 9.4 — Physical Presence Layer) — **MILESTONE: "TARS Physical Presence Achieved"**
+- **Kiosk appliance boot**: Raspberry Pi boots to `graphical.target` → `tars-kiosk.service` (systemd) → `labwc` (Wayland compositor) → Chromium kiosk on `http://127.0.0.1:8080/` — no login prompt, no keyboard, fully automatic
+- **Display**: Hosyond 800x480 DSI touchscreen detected as `card1-DSI-1`; DRM/KMS via `vc4-kms-v3d`; hardware GLES3.1 (V3D) rendering
+- **Touch**: `edt_ft5x06` touchscreen (event4) mapped 1:1 to the panel (abs range 0–799 × 0–479); no calibration required; taps/drag/long-press validated end-to-end through the browser
+- **Stack**: `chromium` 150, `labwc` 0.9.8 (minimal compositor, no desktop environment), `seatd` 0.9.1 (unprivileged seat access); dedicated `kiosk` system user (uid 996, `video`/`input`/`render` groups)
+- **Files**: `/etc/tars-kiosk/kiosk-session.sh` (backend-wait + hardened kiosk flags), `/etc/systemd/system/tars-kiosk.service` (`Restart=always`, `StartLimitIntervalSec=0`, journald logging), `/etc/tmpfiles.d/tars-kiosk.conf` (XDG_RUNTIME_DIR provisioning)
+- **Failure recovery validated**: reboot, hard reset (power-loss simulation), backend/Docker restart, Chromium crash, and network unplug/restore all return automatically to the TARS frontend
+- **Existing services untouched**: all 8 homelab containers (worldmonitor, TSE, postgres, redis, duckdns) healthy throughout; SSH unchanged
+- **Report**: `docs/PHASE_9_4_IMPLEMENTATION_REPORT.md` (+ render evidence PNGs in `docs/`)
 
 ## Newly Integrated (Phase 8.5 — Embodied Interaction Layer)
 - **Input classifier**: `TARS_INPUT_CLASSIFIER` — canvas-only pointer listeners (down/move/up/cancel) that classify gestures (tap / flick / drag / touch) and route only world-space interaction. Fully isolated from UI: suspends itself while `#tars-overlay` or `#tars-chat` is open, emits `world.interaction` events, and never handles chat/panel DOM events.
@@ -89,22 +104,20 @@ All 10 event types (`health.cpu`, `.memory`, `.disk`, `.uptime`, `system.heartbe
 
 | Aspect | Current State | Notes |
 |--------|--------------|-------|
-| Development host | **Windows** | All development and feature testing on Windows first |
-| Node.js server | **Working** | `node pi-server/server.js` from terminal (dev fallback still valid) |
-| Browser frontend | **Working** | Opens at `http://localhost:8080` |
+| Development host | **Windows + Raspberry Pi node** | Windows workstation for editing; repo maintained on the Pi at `/home/admin/tars-face` |
+| Node.js server | **Working (containerized)** | `tars_backend` Docker container (image `tars-backend:1.0.0`) |
+| Browser frontend | **Working** | Opens at `http://localhost:8080` on the node |
 | WebSocket event flow | **Working** | Server→browser event pipeline verified |
 | Autonomy engine | **Working** | Full autonomy in browser, no server dependency |
-| Raspberry Pi deployment | **✅ DEPLOYED (Phase 9.2)** | `tars_backend` container live on `tars` @ `192.168.0.102:8080`, image `tars-backend:1.0.0`, `tars_net` bridge, `unless-stopped` |
-| Recovery validation | **✅ PASSED (Phase 9.3)** | container restart / daemon restart / Pi reboot / network loss / persistence v3 all self-recovered |
-| Pi kiosk mode | **Not started** | No Chromium kiosk config, no `--kiosk` flags (Phase 9.4 — display currently not attached) |
-| systemd service | **Not started** | No service file created (Docker `unless-stopped` covers restart policy today) |
-| Physical display testing | **Not started** | Touch targets not verified on 7" display (Phase 9.4 — hardware-gated) |
-| Display/touchscreen attached | **No** | 7" Hosyond display documented but not physically attached as of Phase 9.3 |
-| Optiplex/TrueNAS/Plex monitoring | **Not implemented** | Monitors not yet built (future) |
+| Raspberry Pi deployment | **Live** | Containerized backend running on the node (Phase 9.2) |
+| Pi kiosk mode | **Active** | Chromium + labwc kiosk boots automatically on 800x480 DSI touchscreen (Phase 9.4) |
+| systemd service | **Active** | `tars-kiosk.service` on `graphical.target`; auto-restart + recovery validated |
+| Physical display testing | **Validated** | Touch targets verified on 7" display (taps/drag/long-press, no calibration) |
+| Optiplex/TrueNAS/Plex monitoring | **Not implemented** | Monitors not yet built (future Phase 8.3+) |
 | Home Assistant bridge | **Not implemented** | No ha-bridge created |
-| Deployment documentation | **✅ Complete** | `DEPLOYMENT_RUNBOOK.md`, `PHASE_9_1_*_PLAN.md`, `PHASE_9_2_DEPLOYMENT_RESULT.md`, `PHASE_9_3_RECOVERY_TEST_REPORT.md`, `PI_NODE_AUDIT.md`, `CURRENT_SERVICE_MAP.md` |
+| Deployment documentation | **Complete** | PHASE_9_4_IMPLEMENTATION_REPORT.md + runbook + service map |
 
-**Golden rule**: Pi deployment IS now real (Phase 9.2 complete, Phase 9.3 validated). Display/kiosk remains unstarted until a screen is attached (Phase 9.4).
+**Golden rule**: The Raspberry Pi node is the primary runtime. Development edits are tested and committed in this repo, then the Docker image is rebuilt and redeployed to the node. Never claim a feature is live on the node unless it has been verified there.
 
 ## Persistence Boundaries
 
@@ -154,7 +167,6 @@ localStorage (browser)           Server memory              Future (Phase 8.5+)
 - **Single-file frontend**: `tars_face_v1.html` ~9040 lines
 
 ## Not Yet Complete
-- **Physical presence (Phase 9.4 — next)**: display detection, touchscreen validation, kiosk boot, automatic TARS visual startup. Display not yet attached.
 - **Full ball dynamics**: interaction impulses + collision/sleep/wake events work, but rolling, contact resolution, friction, and compound shapes remain incomplete
 - **Richer object interaction**: tap/flick impulse works; grab/knock/roll gestures, multi-tier collision response (COLLISION_TIERS), capsule-capsule, compound shapes incomplete
 - **Advanced collision response**: multi-tier (COLLISION_TIERS) response, capsule-capsule, and compound shapes incomplete
@@ -163,6 +175,8 @@ localStorage (browser)           Server memory              Future (Phase 8.5+)
 - **LLM connection**: chat is placeholder, Brain tab shows "Cognitive layer offline"
 - **Home Assistant bridge**: not started
 - **Network monitors for Optiplex/TrueNAS/Plex**: not implemented (ICMP ping only for 3 hosts)
+- **Raspberry Pi deployment**: **Complete** (Phase 9.2–9.4) — kiosk appliance live on the node
+- **Ambient sensing (Phase 9.5)**: camera / microphone / sensor awareness not yet started
 - **Frontend modularization**: single file still ~9040 lines
 - **Automated test suite**: `test_observatory.js` regression (Phase 7.4.4 + Phase 8.5 world-event tests) run via Node directly
 
@@ -188,17 +202,15 @@ All findings categorized:
 - Two click listeners on `#tars-overlay-body` could be merged (non-critical)
 - Phase 8.5: LLM integration, Home Assistant, alert notifications, modularization
 
-## Next Steps (Phase 9.4 — Physical Presence Layer)
-1. **Display detection** — attach 7" touchscreen, verify HDMI/DVI output + `xrandr`/`vcgencmd` detection
-2. **Touchscreen validation** — touch input calibration, pointer events end-to-end
-3. **Kiosk boot** — autostart browser/Chromium in kiosk mode (or lightweight display server), auto-open `http://127.0.0.1:8080`
-4. **Automatic TARS visual startup** — TARS face appears on boot without manual interaction
-5. Then: improve touch/world interaction (grab/knock/roll, richer gestures), camera/sensors when appropriate, deeper embodiment features
-
-### After Phase 9.4
-- Ball dynamics completion + richer gestures
-- LLM cognitive layer (Brain tab + Chat)
-- Home Assistant / IoT integration (Home tab)
-- SQLite event log + persistent alert/service history
-- Frontend modularization (split HTML into components)
-- Automated test suite for server monitors
+## Next Steps (Phase 9.5 — Embodied Presence Polish)
+Phase 9.4 plan items (display detection, touchscreen validation, kiosk boot, automatic TARS visual startup) are now **complete**. Remaining:
+1. Touch awareness — "Amir tapped me", "Amir poked the ball", interaction detection fed into behavior
+2. Object play loop — ball physics, throw/flick, TARS decides join / watch / ignore
+3. Persistent physical identity — remember screen/device identity ("I am running on TARS hardware")
+4. Ambient awareness — camera, microphone, sensors
+5. Offline assistant behavior — local models, voice, perception
+6. Complete ball dynamics (rolling, contact resolution, friction) and richer gestures (grab/knock/roll)
+7. Connect LLM for cognitive layer (Brain tab + Chat)
+8. Home Assistant / IoT integration (Home tab)
+9. SQLite event log + persistent alert/service history
+10. Automated test suite for server monitors

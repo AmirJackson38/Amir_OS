@@ -6,6 +6,8 @@
 
 TARS is a browser-based 3D face/animation system (Three.js) with a Node.js runtime server. The face runs in the browser with autonomous behavior, needs, and fatigue. The server provides health monitoring, infrastructure awareness, and alerting.
 
+**Physical presence (Phase 9.4)**: TARS is now deployed as an appliance — a Raspberry Pi 4 with an attached 800x480 DSI touchscreen that boots directly into the TARS frontend in a Chromium kiosk (no login, no keyboard, auto-recovering). The repository is maintained on the Pi at `/home/admin/tars-face`.
+
 ## Architecture Summary
 
 ```
@@ -39,20 +41,24 @@ Communication: Event bus → WS bridge → WebSocket → TARS_EVENTS → DOM eve
 - Phase 9.1: **Complete** — node deployment preparation (`0b86279`)
 - Phase 9.2: **Complete** — TARS deployed to Pi node (`tars_backend` :8080) `97636ab`
 - Phase 9.3: **Complete** — recovery validation (container/daemon/reboot/network-loss/persistence) `3124ec1`
-- **Next: Phase 9.4** — physical presence layer (display detection, touchscreen validation, kiosk boot, automatic TARS visual startup)
+- Phase 9.4: **Complete** — physical presence layer (kiosk appliance: Chromium + labwc on DSI touchscreen, systemd service, touch validated, failure recovery validated)
+- **Next: Phase 9.5** — embodied presence polish (touch awareness, object play loop, ambient sensors)
 
 ## Development Environment Reality
 
 | Aspect | Documented | Actual |
 |--------|-----------|--------|
-| Host | Raspberry Pi (TARS_PHASE_* docs) | **Deployed**: `tars_backend` container live on `tars` @ `192.168.0.102:8080` (Phase 9.2). Development still on Windows. |
-| Deployment | Systemd service, kiosk mode | **Docker** container `unless-stopped` (Phase 9.2). Kiosk/display = Phase 9.4, display not yet attached. |
+| Host | Raspberry Pi (TARS_PHASE_* docs) | **Raspberry Pi 4 (tars node)** — the live appliance; Windows workstation remains for convenience editing |
+| Deployment | Systemd service, kiosk mode | **Active** — `tars-kiosk.service` (labwc + Chromium kiosk) on `graphical.target` |
+| Frontend serving | `node pi-server/server.js` | **Containerized** — `tars_backend` (image `tars-backend:1.0.0`) on Docker, port 8080 |
+| Kiosk display | Planned | **Active** — 800x480 DSI touchscreen boots straight to TARS |
+| Touch input | Planned | **Active** — `edt_ft5x06` touchscreen validated (taps/drag/long-press) |
 | Optiplex/TrueNAS/Plex monitoring | Planned (TARS_PHASE_8_3 docs) | **Not implemented** |
 | Home Assistant bridge | Designed | **Not implemented** |
 | SQLite persistence | Designed (Phase 8.4) | **Not implemented** (uses localStorage) |
 | Cognitive layer / LLM | Designed (Phase 8.5) | **Not implemented** |
 
-**Golden rule**: Pi deployment IS real (Phase 9.2 complete, Phase 9.3 recovery-validated). Do NOT claim the display/kiosk is active — that is Phase 9.4 and requires a physically attached screen. Development remains Windows-first; the node runs the deployed image.
+**Golden rule**: The Raspberry Pi node is the primary runtime. Development edits are tested and committed in this repo, then the Docker image is rebuilt and redeployed to the node. Never claim a feature is live on the node unless it has been verified there.
 
 ## Golden Architecture Rules
 
