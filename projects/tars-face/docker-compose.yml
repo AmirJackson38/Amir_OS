@@ -1,0 +1,31 @@
+# TARS Node — docker compose (Phase 9.1)
+# Deploys only the TARS face runtime backend on an isolated network.
+# Ports published: 8080 only. Does not touch existing homelab services.
+
+name: tars-node
+
+services:
+  tars-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: tars-backend:1.0.0
+    container_name: tars_backend
+    restart: unless-stopped
+    networks:
+      - tars_net
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    # No volumes: config is baked into the image (read-only). State lives in
+    # browser localStorage, not on the Pi filesystem.
+
+networks:
+  tars_net:
+    driver: bridge
+    name: tars_net

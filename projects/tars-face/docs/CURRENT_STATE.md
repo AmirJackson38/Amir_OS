@@ -1,10 +1,17 @@
 # TARS Face — Current State
 
-**Date**: 2026-08-03
-**Version**: v7.5 + Phase 8.3.4 stabilization + Phase 8.4 Observable Spatial Runtime Base + Phase 8.5 Embodied Interaction Layer
+**Date**: 2026-08-04
+**Version**: v7.5 + Phase 8.3.4 stabilization + Phase 8.4 Observable Spatial Runtime Base + Phase 8.5 Embodied Interaction Layer + Phase 9.1 Deployment Preparation
 
 ## Completed
 All behavior delivered and verified (see sections below): Three.js face with expressions/gestures/eye tracking, need-driven autonomy engine with scoring, world state persistence, runtime server (WebSocket + REST), health/asset/docker/network/alert monitoring, Creator Console (7 sections / 22 live actions), in-process event bus, and the Phase 8.4 observable spatial runtime base.
+
+## Newly Integrated (Phase 9.1 — Deployment Preparation)
+- **Containerized backend**: `Dockerfile` (non-root `node` user, `node:20-alpine`, `/srv/tars`, `EXPOSE 8080`) + `docker-compose.yml` (service `tars-backend`, image `tars-backend:1.0.0`, `restart: unless-stopped`, isolated `tars_net` bridge, healthcheck on `/health`, port `8080:8080` only)
+- **Build hygiene**: `.dockerignore` excludes scratch HTML test files, docs, and `node_modules` from the image
+- **Local frontend serving**: `tars_face_v1.html:418` now imports Three.js from `/three.module.js` (local, served by backend) **instead of the CDN** — removes the single hard internet dependency (golden rule #1)
+- **Backend health endpoint**: `/health` already present at `pi-server/server.js:50` (verified, no change needed)
+- **Submission**: `projects/tars-face/docs/PHASE_9_1_TARS_NODE_DEPLOYMENT_PLAN.md`, `docs/PHASE_9_DEPLOYMENT_BLUEPRINT.md`, `docs/PI_NODE_AUDIT.md`, `docs/CURRENT_SERVICE_MAP.md`
 
 ## Newly Integrated (Phase 8.5 — Embodied Interaction Layer)
 - **Input classifier**: `TARS_INPUT_CLASSIFIER` — canvas-only pointer listeners (down/move/up/cancel) that classify gestures (tap / flick / drag / touch) and route only world-space interaction. Fully isolated from UI: suspends itself while `#tars-overlay` or `#tars-chat` is open, emits `world.interaction` events, and never handles chat/panel DOM events.
@@ -71,8 +78,8 @@ All 10 event types (`health.cpu`, `.memory`, `.disk`, `.uptime`, `system.heartbe
 | Browser frontend | **Working** | Opens at `http://localhost:8080` |
 | WebSocket event flow | **Working** | Server→browser event pipeline verified |
 | Autonomy engine | **Working** | Full autonomy in browser, no server dependency |
-| Raspberry Pi deployment | **Not started** | No Pi hardware configured, no SSH setup |
-| Pi kiosk mode | **Not started** | No Chromium kiosk config, no `--kiosk` flags |
+| Raspberry Pi deployment | **Prepared (artifacts)** | Docker image + compose ready; **not yet deployed to node** (Phase 9.2) |
+| Pi kiosk mode | **Not started** | No Chromium kiosk config, no `--kiosk` flags (later phase, display not attached) |
 | systemd service | **Not started** | No service file created |
 | Physical display testing | **Not started** | Touch targets not verified on 7" display |
 | Optiplex/TrueNAS/Plex monitoring | **Not implemented** | Monitors not yet built (future Phase 8.3+) |

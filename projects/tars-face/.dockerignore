@@ -1,0 +1,29 @@
+# TARS Node — .dockerignore (Phase 9.1)
+# Limits the build context to only what the container image needs.
+# Keeps scratch files, docs, and local node_modules out of the image.
+
+# Local dependencies / runtime artifacts
+node_modules/
+npm-debug.log*
+pi-server/node_modules/
+
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# Docs & plans (not needed at runtime)
+docs/
+*.md
+
+# Scratch / debug test files — must never be baked into the image
+test*.html
+minimal_test.html
+simple_test.html
+tars_debug.html
+
+# CI / editor
+Dockerfile
+.dockerignore
+.vscode/
+.idea/
