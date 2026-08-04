@@ -88,15 +88,32 @@ docker compose logs -f --tail=50
 
 ## 5. Rollback (TARS only, homelab untouched)
 
+### L2 — stop TARS backend, keep image for diagnostics
+
 ```bash
-# L2 — stop TARS backend, keep image for diagnostics
+cd /home/admin/tars-face/projects/tars-face
 docker compose stop tars-backend
+```
 
-# L3 — full TARS removal
+### L3 — full TARS removal
+
+```bash
+cd /home/admin/tars-face/projects/tars-face
 docker compose down                  # removes container + tars_net network
-rm -rf /home/admin/tars-face        # remove deployment (PIs change not touched)
 
-# Fallback to pre-Phase-9 manual runtime (nvm node, workstation-style)
+# Return to the parent directory BEFORE removing the deployment
+cd /home/admin
+
+# Remove the deployment (Pi's other services are not touched)
+rm -rf /home/admin/tars-face
+```
+
+> After L3 the repo is gone, so the manual-node fallback below only applies if the deployment directory still exists (i.e. you did L2 or partial teardown only).
+
+### Fallback — pre-Phase-9 manual runtime (nvm node, workstation-style)
+
+```bash
+# Only valid while /home/admin/tars-face still exists (do NOT run after `rm -rf` above)
 cd /home/admin/tars-face/projects/tars-face/pi-server
 export NVM_DIR=/home/admin/.nvm && . "$NVM_DIR/nvm.sh" && node server.js
 ```
