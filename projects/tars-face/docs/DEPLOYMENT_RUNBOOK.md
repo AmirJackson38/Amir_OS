@@ -1,7 +1,7 @@
 # TARS Node — Deployment Runbook
 
 **Phase**: 9.1 (artifacts ready) → **9.2 execution** (manual, on the Pi node `tars`)
-**Device**: `admin@192.168.0.102` (Pi 4, Debian 13, Docker `restart: unless-stopped` model)
+**Device**: `admin@tars.local` (Pi 4, Debian 13, Docker `restart: unless-stopped` model)
 **Scope**: Deploy ONLY the `projects/tars-face` subtree. No CI/CD, no auto-update.
 
 ---

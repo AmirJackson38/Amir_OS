@@ -16,7 +16,7 @@ All behavior described below is delivered and verified. TARS frontend, backend, 
 - **Result**: TARS self-recovers from container restart, daemon restart, full reboot, and network loss with zero intervention.
 
 ## Newly Integrated (Phase 9.2 — Node Deployment)
-- **Deployed**: `tars_backend` container live on Pi `tars` (`192.168.0.102`), port `8080`, isolated `tars_net` bridge, `restart: unless-stopped`, image `tars-backend:1.0.0` (arm64).
+- **Deployed**: `tars_backend` container live on Pi `tars` (`tars.local`), port `8080`, isolated `tars_net` bridge, `restart: unless-stopped`, image `tars-backend:1.0.0` (arm64).
 - **Sparse deployment**: only `projects/tars-face` subtree cloned to `/home/admin/tars-face` — full Amir_OS NOT deployed.
 - **Coexistence verified**: worldmonitor (:3000), TSE FastAPI (:8000), Postgres (:5432), Ollama (:11434), DuckDNS all unchanged/healthy before==after. TARS occupies only `:8080`.
 - **In-container Docker monitor self-disabled** by design (no `/var/run/docker.sock` mount) — host-side observability unaffected.
@@ -94,7 +94,7 @@ All 10 event types (`health.cpu`, `.memory`, `.disk`, `.uptime`, `system.heartbe
 | Browser frontend | **Working** | Opens at `http://localhost:8080` |
 | WebSocket event flow | **Working** | Server→browser event pipeline verified |
 | Autonomy engine | **Working** | Full autonomy in browser, no server dependency |
-| Raspberry Pi deployment | **✅ DEPLOYED (Phase 9.2)** | `tars_backend` container live on `tars` @ `192.168.0.102:8080`, image `tars-backend:1.0.0`, `tars_net` bridge, `unless-stopped` |
+| Raspberry Pi deployment | **✅ DEPLOYED (Phase 9.2)** | `tars_backend` container live on `tars` @ `tars.local:8080`, image `tars-backend:1.0.0`, `tars_net` bridge, `unless-stopped` |
 | Recovery validation | **✅ PASSED (Phase 9.3)** | container restart / daemon restart / Pi reboot / network loss / persistence v3 all self-recovered |
 | Pi kiosk mode | **Not started** | No Chromium kiosk config, no `--kiosk` flags (Phase 9.4 — display currently not attached) |
 | systemd service | **Not started** | No service file created (Docker `unless-stopped` covers restart policy today) |

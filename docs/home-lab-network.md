@@ -271,12 +271,31 @@ TP-Link Omada ER605 v2 (10.0.0.170 WAN / 192.168.0.1 LAN)
 
 2. **DHCP Reservation Implementation:**
    * Configure static DHCP reservations on TP-Link Omada ER605 v2:
-     * TrueNAS Server → `192.168.0.100`
-     * TARS Raspberry Pi → `192.168.0.102`
-     * Admin Workstation → `192.168.0.101`
+     * TrueNAS Server → `192.168.0.100` (MAC based)
+     * TARS Raspberry Pi → MAC based reservation
+     * Admin Workstation → MAC based reservation
 
 3. **Identification of Unmapped Devices:**
    * Inspect DHCP lease table on Xfinity Gateway for MAC addresses `9C:FC:E8:30:18:3A` (Intel `10.0.0.112`) and `70:09:71:8A:F5:4C` (Samsung `10.0.0.19`).
 
 4. **Master Architecture Map Sync:**
    * Update Draw.io visual diagrams to reflect verified subnets and device categories.
+
+---
+
+# 8. TARS Networking & Deployment Reliability
+
+A networking weakness was exposed when relying on assumed IP addresses (like `192.168.0.102`) for TARS deployment. The Raspberry Pi's network interfaces (Ethernet and WiFi) present different MAC addresses and receive different DHCP leases, which breaks hardcoded IP assumptions.
+
+### Deployment Truths & Rules
+* **Primary SSH Method:** `ssh admin@tars.local`
+* **Do NOT assume:** `192.168.0.102` (or any static IP until explicitly reserved on the ER605 router).
+* **DHCP Leases:** IP addresses may change dynamically when interfaces switch (e.g., Ethernet to WiFi) or leases expire.
+* **DuckDNS Scope:** DuckDNS (`amirshomelab.duckdns.org`) strictly manages external WAN access and does **not** manage local LAN discovery.
+
+### Future Network Migration Plan
+To improve homelab reliability, the network must evolve in phases:
+
+* **Phase 1 (Current):** Rely strictly on mDNS hostname discovery (`tars.local`) for SSH and deployment, bypassing dynamic DHCP IP issues.
+* **Phase 2 (Recommended ER605 Setup):** Create router DHCP reservations based on MAC address for critical infrastructure (TARS Pi, Home Assistant Pi, TrueNAS server).
+* **Phase 3 (Production):** Complete static IP assignments for all critical homelab servers. *Avoid manually configuring static IPs on the end devices themselves until the final network layout is completed.*
