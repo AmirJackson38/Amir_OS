@@ -224,6 +224,30 @@
     .tars-inject-btn.minus { color: #f87171; border-color: rgba(248,113,113,0.2); }
     .tars-inject-val { font-size: 10px; color: rgba(210,235,255,0.35); width: 20px; text-align: center; }
 
+    /* Debug toggles */
+    .tars-debug-toggle { display: flex; align-items: center; gap: 8px; padding: 3px 0; cursor: pointer; user-select: none; }
+    .tars-debug-toggle input[type="checkbox"] { appearance: none; width: 30px; height: 16px; border-radius: 8px; background: rgba(80,180,255,0.08); border: 1px solid rgba(80,180,255,0.15); cursor: pointer; position: relative; transition: all 0.2s; flex-shrink: 0; }
+    .tars-debug-toggle input[type="checkbox"]:checked { background: rgba(95,208,255,0.25); border-color: #5fd0ff; box-shadow: 0 0 6px rgba(95,208,255,0.2); }
+    .tars-debug-toggle input[type="checkbox"]::after { content: ''; position: absolute; width: 12px; height: 12px; border-radius: 50%; top: 1px; left: 1px; background: rgba(210,235,255,0.25); transition: all 0.2s; }
+    .tars-debug-toggle input[type="checkbox"]:checked::after { left: 15px; background: #5fd0ff; box-shadow: 0 0 4px rgba(95,208,255,0.4); }
+    .tars-debug-toggle label { font-size: 10px; color: rgba(210,235,255,0.6); cursor: pointer; }
+
+    /* Environment control pills */
+    .tars-env-group { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; }
+    .tars-env-pill { font-size: 9px; padding: 4px 10px; border: 1px solid rgba(80,180,255,0.12); border-radius: 12px; background: rgba(80,180,255,0.04); color: rgba(210,235,255,0.5); cursor: pointer; transition: all 0.2s; }
+    .tars-env-pill:hover { background: rgba(80,180,255,0.1); border-color: rgba(95,208,255,0.3); color: #d2ebff; }
+    .tars-env-pill:active { background: rgba(95,208,255,0.15); transform: scale(0.95); }
+
+    /* Render profile radio group */
+    .tars-profile-group { display: flex; gap: 4px; margin: 4px 0; }
+    .tars-profile-opt { font-size: 9px; padding: 6px 14px; border: 1px solid rgba(80,180,255,0.12); border-radius: 6px; background: rgba(80,180,255,0.04); color: rgba(210,235,255,0.4); cursor: pointer; transition: all 0.2s; }
+    .tars-profile-opt:hover { background: rgba(80,180,255,0.1); color: #d2ebff; }
+    .tars-profile-opt.active { background: rgba(95,208,255,0.15); border-color: #5fd0ff; color: #5fd0ff; box-shadow: 0 0 8px rgba(95,208,255,0.15); }
+
+    /* Developer tool tab buttons */
+    .tars-dev-tools { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tars-dev-tools .btn { min-height: 36px; font-size: 10px; padding: 6px 12px; flex: 1 0 auto; min-width: 80px; }
+
     /* Telemetry + Memory (unchanged) */
     .tars-console { background: rgba(0,0,0,0.3); border-radius: 6px; border: 1px solid rgba(80,180,255,0.08); padding: 6px; max-height: 180px; overflow-y: auto; font-size: 9px; font-family: monospace; }
     .tars-console::-webkit-scrollbar { width: 3px; }
@@ -334,6 +358,7 @@
 <body>
 
 <div id="scene"></div>
+<div id="ball-debug" style="position:fixed;bottom:4px;left:4px;color:rgba(95,208,255,0.6);font:9px monospace;z-index:9999;pointer-events:none;text-shadow:0 0 4px rgba(0,0,0,0.8);">ball: waiting...</div>
 
 <div id="hud">
     <div class="title">T.A.R.S. // WORLD</div>
@@ -363,7 +388,9 @@
     <button class="tars-tab-btn" data-tab="infra" title="Infrastructure">◈</button>
     <button class="tars-tab-btn" data-tab="observatory" title="Observatory">📊</button>
     <button class="tars-tab-btn" data-tab="brain" title="Cognitive State">🧠</button>
+    <button class="tars-tab-btn" data-tab="journal" title="Journal">📜</button>
     <button class="tars-tab-btn" data-tab="system" title="System">⚙</button>
+    <button class="tars-tab-btn" data-tab="settings" title="Creator Console">🎛</button>
 </div>
 
 <div id="tars-overlay">
@@ -391,20 +418,455 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js";
 
 // ============================================================
+// RENDER QUALITY PROFILES
+// ============================================================
+// Central quality configuration. All render/geometry/particle values
+// are defined here. DESKTOP_HIGH preserves current behavior exactly.
+// PI_BALANCED reduces visual fidelity for Raspberry Pi 4/5.
+// Override via: ?profile=PI_BALANCED or localStorage.TARS_RENDER_PROFILE
+// ============================================================
+
+const TARS_RENDER_PROFILES = {
+    DESKTOP_HIGH: {
+        particles: { starCount: 100, lstarCount: 150, rainCount: 200, dustCount: 60, birdCount: 8, orbParticleCount: 30, fxParticleCount: 120 },
+        shadows: true,
+        shadowMapSize: 1024,
+        canvas: { faceWidth: 256, faceHeight: 256, monitorWidth: 512, monitorHeight: 320, monitorRefreshMultiplier: 1.0, statusScreenRefreshRate: 0.3 },
+        geometry: { bodyDetail: 3, shellDetail: 1, vertexDeformEveryNFrames: 1 },
+        renderer: { antialias: true, pixelRatio: 1.0, fogDensity: 0.035 },
+        lighting: { disableLights: [] }
+    },
+    PI_BALANCED: {
+        particles: { starCount: 40, lstarCount: 60, rainCount: 100, dustCount: 30, birdCount: 3, orbParticleCount: 12, fxParticleCount: 40 },
+        shadows: false,
+        shadowMapSize: 256,
+        canvas: { faceWidth: 128, faceHeight: 128, monitorWidth: 256, monitorHeight: 160, monitorRefreshMultiplier: 2.5, statusScreenRefreshRate: 0.6 },
+        geometry: { bodyDetail: 2, shellDetail: 0, vertexDeformEveryNFrames: 3 },
+        renderer: { antialias: false, pixelRatio: 0.75, fogDensity: 0.03 },
+        lighting: { disableLights: ["serverLight"] }
+    }
+};
+
+function detectRenderProfile() {
+    const fromParams = new URLSearchParams(window.location.search).get("profile");
+    if (fromParams && TARS_RENDER_PROFILES[fromParams]) return fromParams;
+    const fromStorage = localStorage.getItem("TARS_RENDER_PROFILE");
+    if (fromStorage && TARS_RENDER_PROFILES[fromStorage]) return fromStorage;
+    return "DESKTOP_HIGH";
+}
+
+const TARS_PROFILE_KEY = detectRenderProfile();
+const TARS_RENDER = TARS_RENDER_PROFILES[TARS_PROFILE_KEY];
+let deformFrameCounter = 0;
+
+// ============================================================
+// COLLISION TIERS
+// ============================================================
+// Formalized collision layers for scalable performance.
+// Tier 1 — World Shell (permanent, always collide)
+// Tier 2 — Furniture (static object collision)
+// Tier 3 — Interactive (dynamic props, ball, toys)
+// Tier 4 — Decorative (visual only, no collision unless enabled)
+// ============================================================
+
+const COLLISION_TIERS = {
+    WORLD_SHELL: 1,
+    FURNITURE: 2,
+    INTERACTIVE: 3,
+    DECORATIVE: 4
+};
+
+const TIER_COLORS = {
+    1: 0x4488ff,
+    2: 0xff8844,
+    3: 0x44ff44,
+    4: 0x888888
+};
+
+const TIER_NAMES = {
+    1: "World Shell",
+    2: "Furniture",
+    3: "Interactive",
+    4: "Decorative"
+};
+
+// ============================================================
+// TARS WORLD OBJECT REGISTRY
+// ============================================================
+// Central registry for all spatial objects.
+// Presence levels: visual | spatial | collision | interactive | physics
+// ============================================================
+
+const TARS_WORLD_OBJECTS = {
+    _registry: new Map(),
+
+    _zones: {
+        workstation: { center: new THREE.Vector3(1.7, 0, -2.2), radius: 2.5 },
+        server_area: { center: new THREE.Vector3(-5.6, 0, -4.6), radius: 2.5 },
+        observation: { center: new THREE.Vector3(2.5, 0, -6), radius: 3.0 },
+        relaxation: { center: new THREE.Vector3(-2.0, 0, 0), radius: 2.5 }
+    },
+
+    register(spec) {
+        if (spec.collision && spec.collision.enabled) {
+            if (spec.bounds.type === "plane") {
+                spec.collision._effectiveRadius = 0;
+            } else {
+                const leg = spec.collision._legacyRadius;
+                if (leg !== undefined) {
+                    spec.collision._effectiveRadius = leg + 0.5;
+                } else if (spec.bounds.type === "sphere") {
+                    spec.collision._effectiveRadius = spec.bounds.radius + 0.5;
+                } else if (spec.bounds.type === "box") {
+                    const h = spec.bounds.halfExtents;
+                    spec.collision._effectiveRadius = Math.max(h.x, h.z) + 0.5;
+                } else {
+                    spec.collision._effectiveRadius = 1.0;
+                }
+            }
+        }
+        if (spec.collisionTier === undefined) spec.collisionTier = COLLISION_TIERS.DECORATIVE;
+        if (spec.interactionRadius === undefined) spec.interactionRadius = 0;
+        const interaction = spec.interaction || (spec.interaction = {});
+        if (interaction.enabled === undefined) interaction.enabled = false;
+        const interactionFlags = ["canPickup","canPush","canObserve","canRest","canTurnOn","canPlay","canToggle","canSit"];
+        for (const f of interactionFlags) {
+            if (interaction[f] === undefined) interaction[f] = false;
+        }
+        if (!interaction.actions) interaction.actions = [];
+        const futureFlags = ["canBeMoved","canBePickedUp","canBePushed","canBeObserved","canBeRemembered","canSleep"];
+        for (const f of futureFlags) {
+            if (spec[f] === undefined) spec[f] = false;
+        }
+        if (!spec.futureTags) spec.futureTags = {};
+        spec._registeredAt = Date.now();
+        this._registry.set(spec.id, spec);
+        return spec;
+    },
+
+    get(id) { return this._registry.get(id) || null; },
+
+    getAll() { return Array.from(this._registry.values()); },
+
+    getByCategory(cat) { return this.getAll().filter(o => o.category === cat); },
+
+    getByPresence(level) { return this.getAll().filter(o => o.presence === level); },
+
+    getByTier(tier) { return this.getAll().filter(o => o.collisionTier === tier); },
+
+    getCollisionObjects() { return this.getAll().filter(o => o.collision && o.collision.enabled); },
+
+    getCollisionObjectsByTier(tier) { return this.getCollisionObjects().filter(o => o.collisionTier === tier); },
+
+    getInteractiveObjects() { return this.getAll().filter(o => o.interaction && o.interaction.enabled); },
+
+    getByInteraction(flag) { return this.getAll().filter(o => o.interaction && o.interaction[flag]); },
+
+    getZone(name) { return this._zones[name] || null; },
+
+    getZoneForPosition(pos) {
+        for (const [name, zone] of Object.entries(this._zones)) {
+            const dx = pos.x - zone.center.x;
+            const dz = pos.z - zone.center.z;
+            if (dx * dx + dz * dz < zone.radius * zone.radius) return name;
+        }
+        return null;
+    },
+
+    queryNearby(position, radius) {
+        const r2 = radius * radius;
+        return this.getAll().filter(o => {
+            if (!o.transform || !o.transform.position) return false;
+            const dx = position.x - o.transform.position.x;
+            const dz = position.z - o.transform.position.z;
+            return dx * dx + dz * dz < r2;
+        });
+    }
+};
+
+// ============================================================
+// TARS COLLISION SERVICE
+// ============================================================
+// Spatial query and collision detection layer.
+// Pure math — no external physics libraries.
+// ============================================================
+
+const TARS_COLLISION = {
+    pointInBox(point, center, half) {
+        const dx = Math.abs(point.x - center.x);
+        const dy = Math.abs(point.y - center.y);
+        const dz = Math.abs(point.z - center.z);
+        return dx <= half.x && dy <= half.y && dz <= half.z;
+    },
+
+    pointDistanceToBox(point, center, half) {
+        const dx = Math.abs(point.x - center.x) - half.x;
+        const dy = Math.abs(point.y - center.y) - half.y;
+        const dz = Math.abs(point.z - center.z) - half.z;
+        return Math.sqrt(Math.max(dx, 0) ** 2 + Math.max(dy, 0) ** 2 + Math.max(dz, 0) ** 2);
+    },
+
+    pointDistanceToCapsule(point, center, radius, height) {
+        const halfH = height * 0.5;
+        const cy = Math.max(-halfH, Math.min(halfH, point.y - center.y));
+        const dx = point.x - center.x;
+        const dz = point.z - center.z;
+        return Math.sqrt(dx * dx + (point.y - center.y - cy) ** 2 + dz * dz) - radius;
+    },
+
+    pointDistanceToPlane(point, normal, constant) {
+        return point.dot(normal) - constant;
+    },
+
+    sphereIntersectsBox(center, radius, boxCenter, boxHalf) {
+        const closestX = Math.max(boxCenter.x - boxHalf.x, Math.min(center.x, boxCenter.x + boxHalf.x));
+        const closestY = Math.max(boxCenter.y - boxHalf.y, Math.min(center.y, boxCenter.y + boxHalf.y));
+        const closestZ = Math.max(boxCenter.z - boxHalf.z, Math.min(center.z, boxCenter.z + boxHalf.z));
+        const dx = center.x - closestX;
+        const dy = center.y - closestY;
+        const dz = center.z - closestZ;
+        return dx * dx + dy * dy + dz * dz < radius * radius;
+    },
+
+    sphereIntersectsCapsule(center, radius, capsuleCenter, capsuleRadius, capsuleHeight) {
+        const halfH = capsuleHeight * 0.5;
+        const cy = Math.max(-halfH, Math.min(halfH, center.y - capsuleCenter.y));
+        const dx = center.x - capsuleCenter.x;
+        const dz = center.z - capsuleCenter.z;
+        const dist = Math.sqrt(dx * dx + (center.y - capsuleCenter.y - cy) ** 2 + dz * dz);
+        return dist < radius + capsuleRadius;
+    },
+
+    sphereIntersectsPlane(center, radius, normal, constant) {
+        return this.pointDistanceToPlane(center, normal, constant) < radius;
+    },
+
+    getNearestObstacle(position, margin) {
+        let nearest = null;
+        let nearestDist = Infinity;
+        for (const obs of TARS_WORLD_OBJECTS.getCollisionObjects()) {
+            const obsPos = obs.transform.position;
+            const dx = position.x - obsPos.x;
+            const dz = position.z - obsPos.z;
+            const dist = Math.sqrt(dx * dx + dz * dz);
+            if (dist < nearestDist) {
+                nearestDist = dist;
+                nearest = obs;
+            }
+        }
+        return nearest;
+    },
+
+    getAvoidanceVector(position, targetPos, dt) {
+        const avoidStrength = 0.8;
+        const lookAhead = 1.5;
+        const avoidanceVec = new THREE.Vector3(0, 0, 0);
+
+        for (const obs of TARS_WORLD_OBJECTS.getCollisionObjects()) {
+            if (obs.bounds.type === "plane") {
+                const d = this.pointDistanceToPlane(position, obs.bounds.normal, obs.bounds.constant);
+                if (d < lookAhead && d > -lookAhead * 0.5) {
+                    const force = Math.max(0, (lookAhead - d) / lookAhead);
+                    avoidanceVec.addScaledVector(obs.bounds.normal, force * avoidStrength);
+                }
+                continue;
+            }
+
+            const obsPos = obs.transform.position;
+            const toObs = new THREE.Vector3().subVectors(position, new THREE.Vector3(obsPos.x, position.y, obsPos.z));
+            const dist = toObs.length();
+            const radius = obs.collision._effectiveRadius || 1.0;
+
+            if (dist < radius + lookAhead) {
+                const force = (radius + lookAhead - dist) / (radius + lookAhead);
+                if (dist > 0.001) {
+                    toObs.normalize();
+                    avoidanceVec.addScaledVector(toObs, force * avoidStrength);
+                } else {
+                    avoidanceVec.add(new THREE.Vector3(
+                        (Math.random() - 0.5) * force * avoidStrength, 0,
+                        (Math.random() - 0.5) * force * avoidStrength
+                    ));
+                }
+            }
+        }
+
+        return avoidanceVec;
+    }
+};
+
+// ============================================================
+// TARS PHYSICS SERVICE
+// ============================================================
+// Lightweight physics for dynamic objects (ball, toys, etc.).
+// No external libraries — pure custom math.
+// ============================================================
+
+const TARS_PHYSICS = {
+    objects: new Map(),
+    gravity: new THREE.Vector3(0, -9.8, 0),
+    _vec3: new THREE.Vector3(),
+    _vec3b: new THREE.Vector3(),
+
+    register(spec) {
+        this.objects.set(spec.id, spec);
+    },
+
+    update(dt) {
+        const step = Math.min(dt, 0.033);
+        for (const [, obj] of this.objects) {
+            const p = obj.physics;
+            if (!p || !p.enabled || p.sleeping) continue;
+            this.applyGravity(obj, step);
+            this.moveObject(obj, step);
+            this.resolveCollisions(obj);
+            this.sleepCheck(obj, step);
+        }
+    },
+
+    applyGravity(obj, dt) {
+        const p = obj.physics;
+        p.velocity.y += this.gravity.y * dt;
+        const maxV = 8;
+        const lenSq = p.velocity.lengthSq();
+        if (lenSq > maxV * maxV) p.velocity.multiplyScalar(maxV / Math.sqrt(lenSq));
+    },
+
+    moveObject(obj, dt) {
+        const p = obj.physics;
+        const pos = obj.mesh.position;
+        pos.x += p.velocity.x * dt;
+        pos.y += p.velocity.y * dt;
+        pos.z += p.velocity.z * dt;
+    },
+
+    resolveCollisions(obj) {
+        const p = obj.physics;
+        const pos = obj.mesh.position;
+        const r = p.radius;
+        if (r <= 0) return;
+
+        for (const obs of TARS_WORLD_OBJECTS.getCollisionObjects()) {
+            if (obs.id === obj.id) continue;
+            if (obs.collisionTier === COLLISION_TIERS.DECORATIVE) continue;
+
+            if (obs.bounds.type === "plane") {
+                const d = TARS_COLLISION.pointDistanceToPlane(pos, obs.bounds.normal, obs.bounds.constant);
+                if (d < r) {
+                    pos.addScaledVector(obs.bounds.normal, r - d);
+                    const vn = p.velocity.dot(obs.bounds.normal);
+                    if (vn < 0) {
+                        p.velocity.addScaledVector(obs.bounds.normal, -vn * (1 + p.restitution));
+                        const tangent = this._vec3.copy(p.velocity).addScaledVector(obs.bounds.normal, -vn);
+                        p.velocity.addScaledVector(tangent, -p.friction);
+                    }
+                }
+                continue;
+            }
+
+            if (obs.bounds.type === "box") {
+                const oc = obs.transform.position;
+                const h = obs.bounds.halfExtents;
+                const closest = this._vec3.set(
+                    Math.max(oc.x - h.x, Math.min(pos.x, oc.x + h.x)),
+                    Math.max(oc.y - h.y, Math.min(pos.y, oc.y + h.y)),
+                    Math.max(oc.z - h.z, Math.min(pos.z, oc.z + h.z))
+                );
+                const dx = pos.x - closest.x;
+                const dy = pos.y - closest.y;
+                const dz = pos.z - closest.z;
+                const distSq = dx * dx + dy * dy + dz * dz;
+                if (distSq < r * r && distSq > 0.0001) {
+                    const dist = Math.sqrt(distSq);
+                    const normal = this._vec3b.set(dx / dist, dy / dist, dz / dist);
+                    pos.addScaledVector(normal, r - dist);
+                    const vn = p.velocity.dot(normal);
+                    if (vn < 0) {
+                        p.velocity.addScaledVector(normal, -vn * (1 + p.restitution));
+                        const tangent = this._vec3.copy(p.velocity).addScaledVector(normal, -vn);
+                        p.velocity.addScaledVector(tangent, -p.friction);
+                    }
+                }
+                continue;
+            }
+
+            if (obs.bounds.type === "capsule") {
+                const oc = obs.transform.position;
+                const cr = obs.bounds.radius;
+                const halfH = obs.bounds.height * 0.5;
+                const cy = Math.max(-halfH, Math.min(halfH, pos.y - oc.y));
+                const closest = this._vec3.set(oc.x, oc.y + cy, oc.z);
+                const dx = pos.x - closest.x;
+                const dy = pos.y - closest.y;
+                const dz = pos.z - closest.z;
+                const distSq = dx * dx + dy * dy + dz * dz;
+                const combinedR = r + cr;
+                if (distSq < combinedR * combinedR && distSq > 0.0001) {
+                    const dist = Math.sqrt(distSq);
+                    const normal = this._vec3b.set(dx / dist, dy / dist, dz / dist);
+                    pos.addScaledVector(normal, combinedR - dist);
+                    const vn = p.velocity.dot(normal);
+                    if (vn < 0) {
+                        p.velocity.addScaledVector(normal, -vn * (1 + p.restitution));
+                        const tangent = this._vec3.copy(p.velocity).addScaledVector(normal, -vn);
+                        p.velocity.addScaledVector(tangent, -p.friction);
+                    }
+                }
+                continue;
+            }
+        }
+    },
+
+    sleepCheck(obj, dt) {
+        const p = obj.physics;
+        if (Math.abs(p.velocity.y) < 0.01 && Math.abs(p.velocity.x) < 0.005 && Math.abs(p.velocity.z) < 0.005) {
+            p.sleepTimer += dt;
+            if (p.sleepTimer > 2.0) {
+                p.sleeping = true;
+                p.velocity.set(0, 0, 0);
+            }
+        } else {
+            p.sleepTimer = 0;
+        }
+    },
+
+    wake(obj) {
+        if (typeof obj === "string") obj = this.objects.get(obj);
+        if (!obj || !obj.physics) return;
+        obj.physics.sleeping = false;
+        obj.physics.sleepTimer = 0;
+    },
+
+    interact(ballId, fromPos, strength) {
+        const obj = typeof ballId === "string" ? this.objects.get(ballId) : ballId;
+        if (!obj || !obj.physics || !obj.physics.enabled) return;
+        this.wake(obj);
+        const dir = this._vec3.copy(obj.mesh.position).sub(fromPos);
+        const dist = dir.length();
+        if (dist < 2.5 && dist > 0.01) {
+            dir.normalize();
+            dir.y = Math.max(dir.y, 0.15);
+            dir.normalize();
+            obj.physics.velocity.addScaledVector(dir, strength * (2.5 - dist) / 2.5);
+        }
+    }
+};
+
+// ============================================================
 // CORE
 // ============================================================
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x020407);
-scene.fog = new THREE.FogExp2(0x05080c, 0.035);
+scene.fog = new THREE.FogExp2(0x05080c, TARS_RENDER.renderer.fogDensity);
 
 const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 100);
 camera.position.set(0, 2.7, 10);
 
-const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.0));
+const renderer = new THREE.WebGLRenderer({ antialias: TARS_RENDER.renderer.antialias, powerPreference: "high-performance" });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, TARS_RENDER.renderer.pixelRatio));
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.shadowMap.enabled = true;
+renderer.shadowMap.enabled = TARS_RENDER.shadows;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 document.getElementById("scene").appendChild(renderer.domElement);
@@ -707,7 +1169,7 @@ lexterior.add(lcelestial);
 
 // Left stars
 const lstarGeometry = new THREE.BufferGeometry();
-const lstarCount = 150;
+const lstarCount = TARS_RENDER.particles.lstarCount;
 const lstarPositions = new Float32Array(lstarCount * 3);
 for (let i = 0; i < lstarCount; i++) {
     lstarPositions[i * 3] = -11.8 - Math.random() * 3;  // x: further out
@@ -827,7 +1289,7 @@ for (let i = 0; i < 10; i++) {
 }
 
 // Layer 3: Foreground water/river (closest) - along Z axis
-const lwaterGeo = new THREE.PlaneGeometry(35, 8);
+const lwaterGeo = new THREE.PlaneGeometry(16, 8);
 const lwaterMat = new THREE.MeshPhysicalMaterial({
     color: 0x051020,
     metalness: 0.9,
@@ -839,7 +1301,7 @@ const lwaterMat = new THREE.MeshPhysicalMaterial({
 });
 const lwaterMesh = new THREE.Mesh(lwaterGeo, lwaterMat);
 lwaterMesh.rotation.x = -Math.PI / 2;
-lwaterMesh.position.set(0, 0.15, -2);
+lwaterMesh.position.set(-5, 0.15, -2);
 lexterior.add(lwaterMesh);
 lbridgeLayers.push({ mesh: lwaterMesh, depth: -2, speed: 0.05 });
 
@@ -939,7 +1401,7 @@ const lrainGroup = new THREE.Group();
 lrainGroup.position.set(LEFT_WALL_X - 0.6, 0, 0);
 scene.add(lrainGroup);
 
-let lrainCount = 200;
+let lrainCount = TARS_RENDER.particles.rainCount;
 const lrainGeometry = new THREE.BufferGeometry();
 const lrainPositions = new Float32Array(lrainCount * 3);
 let lrainSpeeds = new Float32Array(lrainCount);
@@ -978,7 +1440,7 @@ celestial.position.set(0, 5, -9.5);
 exterior.add(celestial);
 
 const starGeometry = new THREE.BufferGeometry();
-const starCount = 100;  // Reduced from 200
+const starCount = TARS_RENDER.particles.starCount;
 const starPositions = new Float32Array(starCount * 3);
 for (let i = 0; i < starCount; i++) {
     starPositions[i * 3] = (Math.random() - 0.5) * 26;
@@ -1027,7 +1489,7 @@ const rainGroup = new THREE.Group();
 rainGroup.position.set(0, 0, WALL_Z - 0.6);
 scene.add(rainGroup);
 
-let rainCount = 200;  // Reduced from 500
+let rainCount = TARS_RENDER.particles.rainCount;
 const rainGeometry = new THREE.BufferGeometry();
 const rainPositions = new Float32Array(rainCount * 3);
 let rainSpeeds = new Float32Array(rainCount);
@@ -1110,6 +1572,11 @@ function updateDayNight() {
         lights.right.material.opacity = intensity;
         lights.leftTail.material.opacity = intensity * 0.8;
         lights.rightTail.material.opacity = intensity * 0.8;
+    });
+
+    // Bridge lights: visible at night, subtle pulse
+    bridgeLights.forEach((bl, i) => {
+        bl.material.opacity = dayFactor < 0.4 ? (0.3 + Math.sin(Date.now() * 0.003 + i * 0.8) * 0.15) : 0;
     });
 
     return dayFactor;
@@ -1658,7 +2125,7 @@ function createMonitor(x, y, z, scale, drawFn, refreshRate) {
     monitor.scale.setScalar(scale);
     desk.add(monitor);
 
-    const tex = registerAnimatedScreen(512, 320, drawFn, refreshRate);
+    const tex = registerAnimatedScreen(TARS_RENDER.canvas.monitorWidth, TARS_RENDER.canvas.monitorHeight, drawFn, refreshRate * TARS_RENDER.canvas.monitorRefreshMultiplier);
     const screen = new THREE.Mesh(
         new THREE.BoxGeometry(1.5, 0.9, 0.08),
         new THREE.MeshStandardMaterial({
@@ -1949,7 +2416,7 @@ function buildRack(originX, originZ, unitTypes) {
     });
 
     const screenLabel = "NODE " + Math.floor(Math.random() * 90 + 10);
-    const screenTex = registerAnimatedScreen(256, 96, (ctx, w, h) => drawRackScreen(ctx, w, h, screenLabel), 0.3);
+    const screenTex = registerAnimatedScreen(TARS_RENDER.canvas.monitorWidth/2, TARS_RENDER.canvas.monitorHeight/2, (ctx, w, h) => drawRackScreen(ctx, w, h, screenLabel), TARS_RENDER.canvas.statusScreenRefreshRate);
     const statusScreen = new THREE.Mesh(
         new THREE.PlaneGeometry(0.9, 0.3),
         new THREE.MeshStandardMaterial({ map: screenTex, emissiveMap: screenTex, emissive: 0xffffff, emissiveIntensity: 0.9 })
@@ -2013,7 +2480,7 @@ createPlant(-1.2, -5.2);
 // BIRDS SYSTEM - Birds fly outside window occasionally
 // ============================================================
 
-const birdCount = 8;
+const birdCount = TARS_RENDER.particles.birdCount;
 const birds = [];
 const birdGeometry = new THREE.BufferGeometry();
 const birdPositions = new Float32Array(birdCount * 3);
@@ -2076,39 +2543,6 @@ for (let i = 0; i < birdCount; i++) {
 const deskWiggle = { intensity: 0, timer: 0, x: 0, z: 0, prevDist: 0 };
 const rackWiggle = { intensity: 0, timer: 0, prevDist: 0 };
 
-// ============================================================
-// COLLISION AVOIDANCE - Simple steering
-// ============================================================
-
-function getAvoidanceVector(pos, target, dt) {
-    const avoid = new THREE.Vector3();
-    const radius = 0.8; // TARS body radius + margin
-    
-    for (const obs of OBSTACLES) {
-        const dx = pos.x - obs.x;
-        const dz = pos.z - obs.z;
-        const dist = Math.sqrt(dx*dx + dz*dz);
-        const dangerDist = obs.radius + radius + 0.5;
-        
-        if (dist < dangerDist) {
-            // Repulsion force
-            const force = (dangerDist - dist) / dangerDist;
-            const pushX = (dx / dist) * force * 0.15;
-            const pushZ = (dz / dist) * force * 0.15;
-            avoid.x += pushX;
-            avoid.z += pushZ;
-        }
-    }
-    
-    // Room bounds
-    const margin = 1.0;
-    if (pos.x < ROOM_BOUNDS.xMin + margin) avoid.x += (ROOM_BOUNDS.xMin + margin - pos.x) * 0.05;
-    if (pos.x > ROOM_BOUNDS.xMax - margin) avoid.x += (ROOM_BOUNDS.xMax - margin - pos.x) * 0.05;
-    if (pos.z < ROOM_BOUNDS.zMin + margin) avoid.z += (ROOM_BOUNDS.zMin + margin - pos.z) * 0.05;
-    if (pos.z > ROOM_BOUNDS.zMax - margin) avoid.z += (ROOM_BOUNDS.zMax - margin - pos.z) * 0.05;
-    
-    return avoid;
-}
 const ledStripMat = new THREE.MeshBasicMaterial({ color: 0x3fb8ff, toneMapped: false });
 const ledStrip = new THREE.Mesh(new THREE.BoxGeometry(15, 0.05, 0.1), ledStripMat);
 ledStrip.position.set(0, 7.85, -5.5);
@@ -2118,7 +2552,7 @@ ledStripLight.position.set(0, 7.7, -5.3);
 scene.add(ledStripLight);
 
 const dustGeometry = new THREE.BufferGeometry();
-const dustCount = 60;  // Reduced from 130
+const dustCount = TARS_RENDER.particles.dustCount;
 const dustPositions = new Float32Array(dustCount * 3);
 for (let i = 0; i < dustCount; i++) {
     dustPositions[i * 3] = (Math.random() - 0.5) * 14;
@@ -2277,9 +2711,15 @@ const WorldPersistence = {
         try {
             const snapshot = this.capture();
             localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+            if (typeof emitTARSEvent === "function") {
+                emitTARSEvent("world.saved", { savedAt: snapshot.savedAt, savedAtISO: snapshot.savedAtISO }, "tars.persistence");
+            }
             return true;
         } catch (e) {
             console.warn("[WorldPersistence] Save failed:", e.message);
+            if (typeof emitTARSEvent === "function") {
+                emitTARSEvent("error.detected", { context: "world_persistence_save", error: e.message }, "tars.persistence");
+            }
             return false;
         }
     },
@@ -2355,6 +2795,9 @@ const WorldPersistence = {
         const elapsedMs = Date.now() - (data.savedAt || Date.now());
         worldState.session.totalElapsed = elapsedMs;
         console.log(`[WorldPersistence] Restored from ${data.savedAtISO} (${(elapsedMs / 1000).toFixed(0)}s elapsed)`);
+        if (typeof emitTARSEvent === "function") {
+            emitTARSEvent("world.loaded", { restoredFrom: data.savedAtISO, elapsedMs }, "tars.persistence");
+        }
         return true;
     }
 };
@@ -2374,6 +2817,318 @@ function logWorldEvent(eventType, activity, location, reason, metadata = {}) {
     persistWorldEvent(event);
     return event;
 }
+
+// ============================================================
+// PHASE 7.4.1: CANONICAL TARS EVENT INFRASTRUCTURE
+// ============================================================
+
+const EVENT_CATEGORY_MAP = {
+    // State Events
+    "activity.started": "state",
+    "activity.completed": "state",
+    "activity.interrupted": "state",
+    "need.changed": "state",
+    "weather.changed": "state",
+    "world.loaded": "state",
+    "world.saved": "state",
+    "memory.created": "state",
+
+    // Telemetry Events
+    "decision.made": "telemetry",
+    "score.breakdown": "telemetry",
+    "performance.metric": "telemetry",
+
+    // Diagnostic Events
+    "error.detected": "diagnostic",
+    "warning.detected": "diagnostic",
+    "health.status": "diagnostic",
+
+    // User Events
+    "user.interaction": "user"
+};
+
+const TARS_EVENT_BUS = {
+    subscribers: new Map(), // type string -> Set of callbacks
+    eventLog: [],           // Capped ring buffer of canonical events
+    maxLogSize: 100,
+
+    subscribe(eventType, callback) {
+        if (typeof callback !== "function") return () => {};
+        if (!this.subscribers.has(eventType)) {
+            this.subscribers.set(eventType, new Set());
+        }
+        this.subscribers.get(eventType).add(callback);
+        return () => this.unsubscribe(eventType, callback);
+    },
+
+    unsubscribe(eventType, callback) {
+        if (this.subscribers.has(eventType)) {
+            this.subscribers.get(eventType).delete(callback);
+        }
+    },
+
+    emit(type, payload = {}, source = "tars.engine") {
+        const now = Date.now();
+        const category = EVENT_CATEGORY_MAP[type] || (type.includes(".") ? type.split(".")[0] : "state");
+        const event = {
+            id: `evt_${now}_${Math.random().toString(36).substring(2, 9)}`,
+            version: 1,
+            category,
+            type,
+            timestamp: new Date().toISOString(),
+            source,
+            payload
+        };
+
+        // 1. Ring buffer storage
+        this.eventLog.push(event);
+        if (this.eventLog.length > this.maxLogSize) {
+            this.eventLog.shift();
+        }
+
+        // 2. Notify type subscribers
+        const typeSubs = this.subscribers.get(type);
+        if (typeSubs) {
+            typeSubs.forEach(cb => {
+                try { cb(event); } catch (err) { console.error(`[EventBus] Subscriber error (${type}):`, err); }
+            });
+        }
+
+        // 3. Notify wildcard subscribers ("*")
+        const wildcardSubs = this.subscribers.get("*");
+        if (wildcardSubs) {
+            wildcardSubs.forEach(cb => {
+                try { cb(event); } catch (err) { console.error(`[EventBus] Wildcard error:`, err); }
+            });
+        }
+
+        // 4. Dispatch DOM CustomEvent for browser UI and external stream adapters
+        try {
+            if (typeof window !== "undefined" && window.dispatchEvent) {
+                window.dispatchEvent(new CustomEvent("tars-event", { detail: event }));
+                window.dispatchEvent(new CustomEvent("tars-telemetry", { detail: event }));
+            }
+        } catch (e) {}
+
+        return event;
+    }
+};
+
+function emitTARSEvent(type, payload = {}, source = "tars.engine") {
+    return TARS_EVENT_BUS.emit(type, payload, source);
+}
+
+function subscribeTARSEvent(type, callback) {
+    return TARS_EVENT_BUS.subscribe(type, callback);
+}
+
+// Expose on window
+window.TARS_EVENT_BUS = TARS_EVENT_BUS;
+window.emitTARSEvent = emitTARSEvent;
+window.subscribeTARSEvent = subscribeTARSEvent;
+
+// ============================================================
+// PHASE 7.4.4: OBSERVATORY DATA LAYER (Event Bus Consumer & Telemetry Store)
+// ============================================================
+
+const ObservatoryDataLayer = {
+    // 1. Raw Event Storage (Capped Ring Buffer: 100 max)
+    rawEvents: [],
+    maxEvents: 100,
+
+    // 2. Projected Current Observation State
+    projectedState: {
+        activity: {
+            current: "idle",
+            location: "spawn",
+            startedAt: Date.now(),
+            expectedEndAt: null,
+            reason: "initialization",
+            previousActivity: null
+        },
+        environment: {
+            weather: null,
+            timeOfDay: null
+        },
+        needs: {},
+        world: {
+            lastLoadedFrom: null,
+            lastSavedAt: null,
+            isLoaded: false
+        }
+    },
+
+    // 3. Derived Observational Metrics & Telemetry (with Freshness Timestamps)
+    derivedMetrics: {
+        decisionsCount: 0,
+        totalConfidence: 0,
+        averageConfidence: 0,
+        interruptionCount: 0,
+        completedCount: 0,
+        saveCount: 0,
+        errorCount: 0,
+        lastUpdatedISO: new Date().toISOString(),
+        lastUpdatedMs: Date.now()
+    },
+
+    // 4. Decision Telemetry Buffers (Capped Ring Buffer: 50 max)
+    latestDecision: null,
+    recentDecisions: [],
+    maxDecisions: 50,
+
+    _initialized: false,
+    _unsubscribers: [],
+
+    init() {
+        if (this._initialized) return;
+        this._initialized = true;
+
+        const topics = [
+            "activity.started",
+            "activity.completed",
+            "activity.interrupted",
+            "decision.made",
+            "need.changed",
+            "weather.changed",
+            "world.loaded",
+            "world.saved",
+            "error.detected"
+        ];
+
+        topics.forEach(topic => {
+            if (typeof subscribeTARSEvent === "function") {
+                const unsub = subscribeTARSEvent(topic, (evt) => this.ingestEvent(evt));
+                this._unsubscribers.push(unsub);
+            }
+        });
+
+        console.log("[ObservatoryDataLayer] Initialized and subscribed to TARS_EVENT_BUS topics.");
+    },
+
+    ingestEvent(evt) {
+        if (!evt || !evt.type) return;
+
+        // 1. Raw Event Storage
+        this.rawEvents.push(evt);
+        if (this.rawEvents.length > this.maxEvents) {
+            this.rawEvents.shift();
+        }
+
+        const payload = evt.payload || {};
+        const now = Date.now();
+
+        // 2. Projected Observation State & Derived Metrics Update
+        switch (evt.type) {
+            case "activity.started":
+                this.projectedState.activity.current = payload.activity || "idle";
+                this.projectedState.activity.location = payload.location || "—";
+                this.projectedState.activity.startedAt = now;
+                this.projectedState.activity.expectedEndAt = payload.activityEndsAt || null;
+                this.projectedState.activity.reason = payload.reason || "started";
+                break;
+
+            case "activity.completed":
+                this.derivedMetrics.completedCount += 1;
+                this.projectedState.activity.previousActivity = {
+                    activity: payload.activity,
+                    location: payload.location,
+                    duration: payload.duration,
+                    endedAt: payload.endedAt || now
+                };
+                break;
+
+            case "activity.interrupted":
+                this.derivedMetrics.interruptionCount += 1;
+                this.projectedState.activity.previousActivity = {
+                    activity: payload.activity,
+                    location: payload.location,
+                    duration: payload.duration,
+                    endedAt: payload.endedAt || now,
+                    interrupted: true
+                };
+                break;
+
+            case "decision.made":
+                this.latestDecision = payload;
+                this.recentDecisions.push(payload);
+                if (this.recentDecisions.length > this.maxDecisions) {
+                    this.recentDecisions.shift();
+                }
+                this.derivedMetrics.decisionsCount += 1;
+                if (typeof payload.confidence === "number") {
+                    this.derivedMetrics.totalConfidence += payload.confidence;
+                    this.derivedMetrics.averageConfidence = +(this.derivedMetrics.totalConfidence / this.derivedMetrics.decisionsCount).toFixed(3);
+                }
+                break;
+
+            case "need.changed":
+                if (payload.currentNeeds) {
+                    this.projectedState.needs = { ...payload.currentNeeds };
+                }
+                break;
+
+            case "weather.changed":
+                this.projectedState.environment.weather = { ...payload };
+                break;
+
+            case "world.loaded":
+                this.projectedState.world.isLoaded = true;
+                this.projectedState.world.lastLoadedFrom = payload.restoredFrom || null;
+                break;
+
+            case "world.saved":
+                this.derivedMetrics.saveCount += 1;
+                this.projectedState.world.lastSavedAt = payload.savedAtISO || new Date().toISOString();
+                break;
+
+            case "error.detected":
+                this.derivedMetrics.errorCount += 1;
+                break;
+        }
+
+        // 3. Update freshness timestamps
+        this.derivedMetrics.lastUpdatedMs = now;
+        this.derivedMetrics.lastUpdatedISO = new Date(now).toISOString();
+    },
+
+    // Public API Methods for UI Consumption
+    getProjectedState() {
+        return JSON.parse(JSON.stringify(this.projectedState));
+    },
+
+    getMetrics() {
+        return { ...this.derivedMetrics };
+    },
+
+    getLatestDecision() {
+        return this.latestDecision;
+    },
+
+    getRecentDecisions(count = 50) {
+        return this.recentDecisions.slice(-count);
+    },
+
+    getRawEvents(count = 100, category = null) {
+        if (!category) return this.rawEvents.slice(-count);
+        return this.rawEvents.filter(e => e.category === category).slice(-count);
+    },
+
+    getCurrentActivityDuration() {
+        const started = this.projectedState.activity.startedAt;
+        if (!started) return 0;
+        return Math.max(0, Math.floor((Date.now() - started) / 1000));
+    },
+
+    getActivityCountdown() {
+        const expected = this.projectedState.activity.expectedEndAt;
+        if (!expected) return 0;
+        return Math.max(0, Math.ceil((expected - Date.now()) / 1000));
+    }
+};
+
+// Initialize on script load
+ObservatoryDataLayer.init();
+window.ObservatoryDataLayer = ObservatoryDataLayer;
 
 // ============================================================
 // PHASE 5: INTERNAL STATE & OFFLINE CONTINUITY
@@ -2415,6 +3170,16 @@ function processOfflineElapsed() {
     console.log(`[Offline] ${durationStr} elapsed:`, Object.entries(needs).map(([k, v]) =>
         `${k}:${(v * 100).toFixed(0)}% (was ${(previousNeeds[k] * 100).toFixed(0)}%)`
     ).join(" "));
+
+    if (typeof emitTARSEvent === "function") {
+        emitTARSEvent("need.changed", {
+            reason: "offline_elapsed",
+            elapsedMs,
+            clampedHours,
+            previousNeeds,
+            currentNeeds: { ...needs }
+        }, "tars.continuity");
+    }
 
     worldState._offlineEvent = {
         eventType: "offline_elapsed",
@@ -2549,6 +3314,19 @@ const ACTIVITY_REGISTRY = {
         minDuration: 20,
         maxDuration: 90
     },
+    play_with_ball: {
+        id: "play_with_ball",
+        label: "Playing with Orb",
+        location: ["ball"],
+        needsSatisfied: { curiosity: 0.003, comfort: 0.001 },
+        priority: PRIORITY.LOW,
+        interruptionOkay: true,
+        resumable: false,
+        persistentEvent: false,
+        requiredObject: "ball",
+        minDuration: 8,
+        maxDuration: 25
+    },
     idle: {
         id: "idle",
         label: "Idle / Wandering",
@@ -2567,7 +3345,7 @@ const ACTIVITY_REGISTRY = {
 // LLM-ready context API
 const EMOTION_VALUES = ["idle", "listen", "think", "speak", "sarcastic", "amused", "confused", "serious", "warning", "critical", "celebrate", "chill", "disapproving", "excited"];
 const GESTURE_VALUES = ["nod", "shake", "pulse", "expand", "spin"];
-const TARGET_VALUES = ["window_left", "window_right", "desk", "rack-a", "user"];
+const TARGET_VALUES = ["window_left", "window_right", "desk", "rack-a", "user", "ball"];
 const MOVEMENT_VALUES = ["walk", "drift", "rush"];
 
 function getTARSContext() {
@@ -2788,33 +3566,65 @@ function logActivityEvent(eventType, activity, location, reason, metadata = {}) 
     if (worldState.activityLog.length > worldState.maxActivityLogSize) {
         worldState.activityLog.shift();
     }
+
+    // Route through canonical event bus
+    const mappedType = eventType === "activity_started" ? "activity.started" :
+                       eventType === "activity_completed" ? "activity.completed" :
+                       eventType === "interruption" ? "activity.interrupted" : `activity.${eventType}`;
+
+    if (typeof emitTARSEvent === "function") {
+        emitTARSEvent(mappedType, {
+            activity,
+            location,
+            reason,
+            metadata,
+            activityEndsAt: worldState.tars.activityEndsAt || null
+        }, "tars.activity");
+    }
+
     console.log(`[ActivityLog] ${eventType}: ${activity} at ${location} (${reason})`, metadata);
     return event;
 }
 
-// Helper: Update TARS activity state
+// Helper: Update TARS activity state (Single Canonical Emitter for Activity Lifecycle)
 function setTARSActivity(activity, location, reason, metadata = {}) {
     const now = Date.now();
     const prevActivity = worldState.tars.activity;
     const prevLocation = worldState.tars.location;
-    const isNewActivity = prevActivity !== "idle" && prevActivity !== activity;
+    const isNewActivity = prevActivity !== activity;
     const isNewLocation = prevLocation !== location;
 
-    if (isNewActivity) {
+    // 1. If transitioning away from an active activity, complete or interrupt it FIRST
+    if (isNewActivity && prevActivity && prevActivity !== "idle") {
+        const duration = now - (worldState.tars.activityStartedAt || now);
         worldState.tars.previousActivity = {
             activity: prevActivity,
             location: prevLocation,
-            duration: now - worldState.tars.activityStartedAt,
+            duration,
             endedAt: now
         };
+        worldState.tars.activityRecency[prevActivity] = now;
+
+        const isInterruption = typeof reason === "string" && (reason.includes("interruption") || reason.includes("environmental_event") || reason.includes("user_override"));
+        const completionType = isInterruption ? "interruption" : "activity_completed";
+
+        logActivityEvent(completionType, prevActivity, prevLocation, reason, {
+            duration,
+            endedAt: now,
+            ...metadata
+        });
+
+        // Apply completion effects for previous activity
+        const prevEffects = ACTIVITY_EFFECTS[prevActivity];
+        if (prevEffects && prevEffects.onCompletion) {
+            for (const [need, amount] of Object.entries(prevEffects.onCompletion)) {
+                worldState.tars.needs[need] = Math.max(0, Math.min(1, (worldState.tars.needs[need] || 0.5) + amount));
+            }
+        }
     }
 
     if (isNewLocation && prevLocation && prevLocation !== "spawn") {
         worldState.tars.locationRecency[prevLocation] = now;
-    }
-
-    if (isNewActivity && prevActivity && prevActivity !== "idle") {
-        worldState.tars.activityRecency[prevActivity] = now;
     }
 
     // Phase 7.2A: Record activity transition telemetry (lightweight, not a decision)
@@ -2825,6 +3635,7 @@ function setTARSActivity(activity, location, reason, metadata = {}) {
         }
     }
 
+    // 2. Set state for new activity
     worldState.tars.activity = activity;
     worldState.tars.location = location;
     worldState.tars.activityStartedAt = now;
@@ -2839,19 +3650,11 @@ function setTARSActivity(activity, location, reason, metadata = {}) {
         worldState.tars.activityEndsAt = now + 15000;
     }
 
-    logActivityEvent("activity_started", activity, location, reason, metadata);
-    if (isNewActivity && worldState.tars.previousActivity) {
-        logActivityEvent("activity_completed", prevActivity, prevLocation, reason, {
-            duration: worldState.tars.previousActivity.duration
-        });
-        // Apply completion effects for previous activity
-        const prevEffects = ACTIVITY_EFFECTS[prevActivity];
-        if (prevEffects && prevEffects.onCompletion) {
-            for (const [need, amount] of Object.entries(prevEffects.onCompletion)) {
-                worldState.tars.needs[need] = Math.max(0, Math.min(1, worldState.tars.needs[need] + amount));
-            }
-        }
+    // 3. Start new activity SECOND (if new activity is active)
+    if (isNewActivity && activity !== "idle") {
+        logActivityEvent("activity_started", activity, location, reason, metadata);
     }
+
     debugLog("Activity set:", { activity, location, reason, previousActivity: worldState.tars.previousActivity?.activity, endsAt: new Date(worldState.tars.activityEndsAt).toISOString() });
     logStateChange("activity_set", { activity, location, reason });
     WorldPersistence.save();
@@ -2917,7 +3720,7 @@ const weatherVisualEngine = {
         // Rain
         if (config.rain) {
             rainGroup.visible = true;
-            rainCount = config.rain.intensity === "heavy" ? 500 : 200;
+            rainCount = config.rain.intensity === "heavy" ? Math.floor(TARS_RENDER.particles.rainCount * 2.5) : TARS_RENDER.particles.rainCount;
             rainSpeeds = new Float32Array(rainCount);
             const positions = rain.geometry.attributes.position.array;
             for (let i = 0; i < rainCount; i++) {
@@ -2930,7 +3733,7 @@ const weatherVisualEngine = {
             rain.material.opacity = config.rain.intensity === "heavy" ? 0.8 : 0.7;
             // Left window rain
             lrainGroup.visible = true;
-            const lCount = config.rain.intensity === "heavy" ? 500 : 200;
+            const lCount = config.rain.intensity === "heavy" ? Math.floor(TARS_RENDER.particles.rainCount * 2.5) : TARS_RENDER.particles.rainCount;
             if (lCount !== lrainCount) {
                 lrainCount = lCount;
                 lrainSpeeds = new Float32Array(lrainCount);
@@ -2959,10 +3762,10 @@ const weatherVisualEngine = {
         
         // Fog (adjust scene fog)
         if (config.fog) {
-            scene.fog.density = config.fog.density * 0.035;
+            scene.fog.density = config.fog.density * TARS_RENDER.renderer.fogDensity;
             scene.fog.color = new THREE.Color(0x05080c);
         } else {
-            scene.fog.density = 0.035;
+            scene.fog.density = TARS_RENDER.renderer.fogDensity;
         }
         
         // Lightning
@@ -3044,19 +3847,26 @@ if (worldState._offlineEvent) {
 // ROOM BOUNDS & GAZE TARGET REFERENCE MATRIX
 // ============================================================
 const ROOM_BOUNDS = { xMin: -7.5, xMax: 7.5, yMin: 0.15, yMax: 7.6, zMin: -5.5, zMax: 6.8 };
-const OBSTACLES = [
-    { x: 1.7, z: -2.2, radius: 1.3, label: "desk" },
-    { x: -4.7, z: -4, radius: 1.1, label: "rack-a" },
-    { x: -6.6, z: -5.2, radius: 1.0, label: "rack-b" },
-    { x: 5.7, z: -4.7, radius: 0.6, label: "plant-a" },
-    { x: -1.2, z: -5.2, radius: 0.6, label: "plant-b" }
-];
+
+// ============================================================
+// WORLD VIEWPORT — invisible observation window
+// The camera observes TARS through this plane.
+// Future objects collide with it like any other wall.
+// Later: glass, reflections, rain streaks, fog, distortion.
+// ============================================================
+const WORLD_VIEWPORT = {
+    position: new THREE.Vector3(0, 4, 7),
+    normal: new THREE.Vector3(0, 0, -1),
+    size: { width: 16, height: 8 }
+};
+
 const TARGET_POSITIONS = {
-    "user": new THREE.Vector3(0, 2.7, 0),    // Center of room (where user appears to be)
+    "user": new THREE.Vector3(0, 2.7, 0),
     "desk": new THREE.Vector3(1.7, 2.3, -2.2),
     "rack-a": new THREE.Vector3(-4.7, 2.5, -4),
     "window_right": new THREE.Vector3(WIN_X, WIN_Y, WALL_Z),
-    "window_left": new THREE.Vector3(-7.5, 4.2, 0)
+    "window_left": new THREE.Vector3(-7.5, 4.2, 0),
+    "ball": new THREE.Vector3(3, 0.5, 1.5)
 };
 
 // ============================================================
@@ -3071,8 +3881,8 @@ scene.add(tarsEntityGroup);
 
 // 1. Dynamic Point Light casting shadows across room
 const tarsLight = new THREE.PointLight(0x5fd0ff, 5, 10, 2);
-tarsLight.castShadow = true;
-tarsLight.shadow.mapSize.set(512, 512);  // Reduced from 1024
+tarsLight.castShadow = TARS_RENDER.shadows;
+tarsLight.shadow.mapSize.set(TARS_RENDER.shadowMapSize, TARS_RENDER.shadowMapSize);
 tarsEntityGroup.add(tarsLight);
 
 // 2. Inner Glowing Energy Core
@@ -3083,8 +3893,8 @@ tarsEntityGroup.add(tarsCoreMesh);
 
 // 2b. Emotional Face Display (projected on core front - LARGER & MORE EXPRESSIVE)
 const faceCanvas = document.createElement("canvas");
-faceCanvas.width = 256;
-faceCanvas.height = 256;
+faceCanvas.width = TARS_RENDER.canvas.faceWidth;
+faceCanvas.height = TARS_RENDER.canvas.faceHeight;
 const faceCtx = faceCanvas.getContext("2d");
 const faceTexture = new THREE.CanvasTexture(faceCanvas);
 faceTexture.colorSpace = THREE.SRGBColorSpace;
@@ -3364,7 +4174,7 @@ function drawFace(time) {
 }
 
 // 3. Translucent Volumetric Deforming Body
-const bodyGeo = new THREE.IcosahedronGeometry(0.48, 3);  // Reduced from 4 to 3 (80 vertices -> 20)
+const bodyGeo = new THREE.IcosahedronGeometry(0.48, TARS_RENDER.geometry.bodyDetail);
 const originalBodyPositions = bodyGeo.attributes.position.array.slice();
 const bodyMat = new THREE.MeshStandardMaterial({
     color: 0x1b4f72,
@@ -3380,7 +4190,7 @@ const tarsBodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
 tarsEntityGroup.add(tarsBodyMesh);
 
 // 4. Dynamic Outer Wireframe / Grid Shell
-const shellGeo = new THREE.IcosahedronGeometry(0.58, 1);  // Reduced from 2 to 1
+const shellGeo = new THREE.IcosahedronGeometry(0.58, TARS_RENDER.geometry.shellDetail);
 const shellMat = new THREE.MeshBasicMaterial({ color: 0x5fd0ff, wireframe: true, transparent: true, opacity: 0.35 });
 const tarsShellMesh = new THREE.Mesh(shellGeo, shellMat);
 tarsEntityGroup.add(tarsShellMesh);
@@ -3394,7 +4204,7 @@ tarsGazeIndicator.position.z = 0.65;  // In front of body
 tarsEntityGroup.add(tarsGazeIndicator);
 
 // 6. Orbiting Energy Particles / Filaments
-const orbParticleCount = 30;  // Reduced from 60
+const orbParticleCount = TARS_RENDER.particles.orbParticleCount;
 const orbParticleGeo = new THREE.BufferGeometry();
 const orbParticlePositions = new Float32Array(orbParticleCount * 3);
 const orbParticlePhases = new Float32Array(orbParticleCount);
@@ -3418,7 +4228,7 @@ tarsEntityGroup.add(tarsParticleSystem);
 // FX PARTICLE SYSTEM (celebration bursts, warning strobes, etc)
 // ============================================================
 
-const fxParticleCount = 120;
+const fxParticleCount = TARS_RENDER.particles.fxParticleCount;
 const fxParticleGeo = new THREE.BufferGeometry();
 const fxParticlePositions = new Float32Array(fxParticleCount * 3);
 const fxParticleVelocities = new Float32Array(fxParticleCount * 3);
@@ -4204,10 +5014,11 @@ const NEED_RESTORATION = {
     "rack-a": { energy: 3, maintenance: 6 },
     "window_right": { curiosity: 4, comfort: 3 },
     "window_left": { curiosity: 4, comfort: 3 },
-    user: { social: 6, energy: 1 }
+    user: { social: 6, energy: 1 },
+    ball: { curiosity: 5 }
 };
 
-const LOCATIONS = ["desk", "rack-a", "window_right", "window_left", "user"];
+const LOCATIONS = ["desk", "rack-a", "window_right", "window_left", "user", "ball"];
 
 // Phase 7.3: Fatigue, scoring, exploration, and wander constants
 const ACTIVITY_FATIGUE = {
@@ -4239,6 +5050,8 @@ const WANDER = {
     PRIORITY_DEFICIT_THRESHOLD: 0.7,
     SCORE_GAP_THRESHOLD: 5
 };
+
+let _needSnapshotAccum = 0;
 
 function updateNeeds(dt) {
     // Decay all needs
@@ -4273,6 +5086,17 @@ function updateNeeds(dt) {
     }
 
     accumulateFatigue(dt);
+
+    // Phase 7.4.5: Feed throttled need snapshot into the Observatory layer
+    // (presentation telemetry only — does not alter autonomous behavior).
+    _needSnapshotAccum += dt;
+    if (_needSnapshotAccum >= 1 && typeof emitTARSEvent === "function") {
+        _needSnapshotAccum = 0;
+        emitTARSEvent("need.changed", {
+            reason: "live_snapshot",
+            currentNeeds: { ...worldState.tars.needs }
+        }, "tars.autonomy");
+    }
 }
 
 function accumulateFatigue(dt) {
@@ -4329,7 +5153,8 @@ const LOCATION_PREF_KEYS = {
     "rack-a": "rack-a",
     window_right: "window_right",
     window_left: "window_left",
-    user: "user"
+    user: "user",
+    ball: "ball"
 };
 
 function scoreLocation(location) {
@@ -4364,7 +5189,8 @@ function scoreLocation(location) {
         "rack-a": "server_check",
         "window_right": "weather_observation",
         "window_left": "weather_observation",
-        user: "user_interaction"
+        user: "user_interaction",
+        ball: "play_with_ball"
     };
     const activity = activityMap[location];
     if (activity) score += (prefs.activities[activity] || 0.5) * 10;
@@ -4493,7 +5319,7 @@ function selectBestActivity() {
 
     // Sort descending for runner-up info
     candidates.sort((a, b) => b.score - a.score);
-    const topAlternatives = candidates.slice(0, 3).map(c => ({ id: c.id, score: +c.score.toFixed(2) }));
+    const topAlternatives = candidates.slice(0, 5).map(c => ({ id: c.id, score: +c.score.toFixed(2), components: c.components }));
     const winnerComponents = candidates.find(c => c.id === bestActivity)?.components || null;
 
     if (AUTONOMY_TELEMETRY_DEBUG) {
@@ -4546,7 +5372,8 @@ function selectWanderDestination() {
             "window_right": "weather_observation",
             "desk": "computer_work",
             "rack-a": "server_check",
-            "user": "user_interaction"
+            "user": "user_interaction",
+            "ball": "play_with_ball"
         };
         const act = activityMap[loc];
         if (act) {
@@ -4594,6 +5421,7 @@ const ACTIVITY_INTENT_MAP = {
     user_interaction: "socialize",
     gaming: "entertain",
     tv_watching: "rest",
+    play_with_ball: "play",
     idle: "rest"
 };
 
@@ -4648,20 +5476,34 @@ function generateDecisionReason(activity, action, needs) {
     return "autonomous decision";
 }
 
-// Phase 7.2A: Record a decision to autonomy state and history
+// Phase 7.4.3: Record a decision to autonomy state and history with complete Decision Artifact
 function recordAutonomyDecision(intent, selectedActivity, selectedLocation, decisionAction, decisionReason, decisionScore, extra = {}) {
     const now = Date.now();
     const needsSnapshot = { ...worldState.tars.needs };
+    const fatigueSnapshot = { ...(worldState.tars.activityFatigue || {}) };
+    const weatherSnapshot = { ...(worldState.environment?.weather || {}) };
+
+    // Calculate confidence metric based on winner vs runner-up score separation
+    const alternatives = extra.alternatives || [];
+    const runnerUpScore = (alternatives && alternatives.length > 1) ? alternatives[1].score : (decisionScore - 10);
+    const scoreGap = +(decisionScore - runnerUpScore).toFixed(2);
+    // Confidence normalized float [0.0 - 1.0]: gap of 15+ points = 1.0 confidence
+    const confidence = Math.min(1, Math.max(0, +(scoreGap / 15).toFixed(2)));
 
     const decision = {
-        timestamp: now,
+        timestamp: new Date(now).toISOString(),
+        timestampMs: now,
         intent,
         selectedActivity,
         selectedLocation,
         decisionAction,
         decisionReason,
-        decisionScore,
-        needs: needsSnapshot,
+        decisionScore: +decisionScore.toFixed(2),
+        confidence,
+        scoreGap,
+        needsSnapshot,
+        fatigueSnapshot,
+        weatherSnapshot,
         ...extra
     };
 
@@ -4675,9 +5517,13 @@ function recordAutonomyDecision(intent, selectedActivity, selectedLocation, deci
         worldState.tars.autonomyHistory.splice(0, worldState.tars.autonomyHistory.length - 200);
     }
 
+    // Emit canonical decision.made event
+    if (typeof emitTARSEvent === "function") {
+        emitTARSEvent("decision.made", decision, "tars.autonomy");
+    }
+
     if (AUTONOMY_TELEMETRY_DEBUG) {
-        console.log(`[TARS AUTONOMY] intent=${intent} activity=${selectedActivity} location=${selectedLocation} action=${decisionAction} reason="${decisionReason}" score=${decisionScore}`);
-        console.log(`  needs:`, Object.entries(needsSnapshot).map(([k,v]) => `${k}=${(v*100).toFixed(0)}%`).join(" "));
+        console.log(`[TARS AUTONOMY] intent=${intent} activity=${selectedActivity} location=${selectedLocation} action=${decisionAction} confidence=${(confidence * 100).toFixed(0)}% (gap=${scoreGap}) reason="${decisionReason}"`);
     }
 }
 
@@ -4716,16 +5562,14 @@ function makeAutonomousDecision() {
 
         if (fatigue >= ACTIVITY_FATIGUE.COMPLETE_THRESHOLD) {
             finalizeExperience();
-            worldState.tars.activity = "idle";
-            worldState.tars.activityEndsAt = 0;
-            worldState.tars.continuationCount = 0;
             const reason = generateDecisionReason(chosenActivity, "complete", needs);
+            setTARSActivity("idle", current, reason, { fatigueAtDecision: fatigue });
+            worldState.tars.continuationCount = 0;
             recordAutonomyDecision(intent, chosenActivity, chosenLocation, "complete", reason, bestScore, {
                 fatigueAtDecision: fatigue,
                 scoreComponents: winnerComponents,
                 alternatives: topAlternatives
             });
-            logStateChange("activity_completed", { activity: chosenActivity, fatigue });
             return;
         }
 
@@ -5197,6 +6041,20 @@ function animate() {
     blueLight.intensity = 16 + Math.sin(time * 0.4) * 2;
     ledStripLight.intensity = 3.5 + Math.sin(time * 2.2) * 0.8;
 
+    // 6a. Physics update for dynamic objects (ball)
+    TARS_PHYSICS.update(dt);
+
+    // 6b. Ball glow pulse + ring spin
+    if (TARS_PHYSICS.objects.has("ball")) {
+        const ballObj = TARS_PHYSICS.objects.get("ball");
+        if (ballObj.mesh.parent) {
+            const bri = 0.2 + Math.sin(time * 2 + ballObj.mesh.position.x) * 0.12;
+            ballMat.emissiveIntensity = ballObj.physics.sleeping ? 0.08 : bri;
+            ballRing.rotation.z = time * 0.8;
+            ballRingMat.opacity = ballObj.physics.sleeping ? 0.08 : 0.2 + Math.sin(time * 1.5) * 0.08;
+        }
+    }
+
     // 7. T.A.R.S. POSITION & MOVEMENT PROCEDURAL CONTROLLER
     // ============================================================
     // COLLISION AVOIDANCE & PATHFINDING SYSTEM
@@ -5204,47 +6062,8 @@ function animate() {
 
     // Simple steering behaviors for obstacle avoidance
     function getAvoidanceVector(position, targetPos, dt) {
-        const avoidStrength = 0.8;
-        const lookAhead = 1.5;
-        const avoidanceVec = new THREE.Vector3(0, 0, 0);
-        
-        // Check each obstacle
-        for (const obs of OBSTACLES) {
-            const toObs = new THREE.Vector3().subVectors(position, new THREE.Vector3(obs.x, position.y, obs.z));
-            const dist = toObs.length();
-            const radius = obs.radius + 0.5; // TARS radius + buffer
-            
-            if (dist < radius + lookAhead) {
-                // Calculate avoidance force
-                const force = (radius + lookAhead - dist) / (radius + lookAhead);
-                if (dist > 0.001) {
-                    toObs.normalize();
-                    avoidanceVec.addScaledVector(toObs, force * avoidStrength);
-                } else {
-                    // Random push if exactly on top
-                    avoidanceVec.add(new THREE.Vector3(
-                        (Math.random() - 0.5) * force * avoidStrength,
-                        0,
-                        (Math.random() - 0.5) * force * avoidStrength
-                    ));
-                }
-            }
-        }
-        
-        // Also avoid room bounds
-        const bounds = ROOM_BOUNDS;
-        const margin = 1.0;
-        if (position.x < bounds.xMin + margin) avoidanceVec.x += (bounds.xMin + margin - position.x) * 0.5;
-        if (position.x > bounds.xMax - margin) avoidanceVec.x += (bounds.xMax - margin - position.x) * 0.5;
-        if (position.z < bounds.zMin + margin) avoidanceVec.z += (bounds.zMin + margin - position.z) * 0.5;
-        if (position.z > bounds.zMax - margin) avoidanceVec.z += (bounds.zMax - margin - position.z) * 0.5;
-        
-        return avoidanceVec;
+        return TARS_COLLISION.getAvoidanceVector(position, targetPos, dt);
     }
-
-    // Table wiggle effect when bumped
-    let deskWiggle = { x: 0, z: 0, intensity: 0, timer: 0 };
-    let rackWiggle = { intensity: 0, timer: 0 };
 
     // ============================================================
     // MOVEMENT WITH COLLISION AVOIDANCE
@@ -5329,6 +6148,14 @@ function animate() {
         }
     }
 
+    // 7a. HARD SAFETY CLAMP — failsafe against numerical drift
+    {
+        const p = tarsEntityGroup.position;
+        p.x = THREE.MathUtils.clamp(p.x, ROOM_BOUNDS.xMin + 0.3, ROOM_BOUNDS.xMax - 0.3);
+        p.y = THREE.MathUtils.clamp(p.y, ROOM_BOUNDS.yMin + 0.2, ROOM_BOUNDS.yMax - 0.2);
+        p.z = THREE.MathUtils.clamp(p.z, ROOM_BOUNDS.zMin + 0.3, ROOM_BOUNDS.zMax - 0.3);
+    }
+
     // 7b. LOCATION-BASED INTERACTIONS
     const pos = tarsEntityGroup.position;
     const atDesk = pos.distanceTo(new THREE.Vector3(1.7, 2.3, -2.2)) < 1.5;
@@ -5387,6 +6214,38 @@ function animate() {
         currentState.atWindowSide = null;
     }
 
+    // 7c. BALL INTERACTION
+    if (TARS_PHYSICS.objects.has("ball")) {
+        const ballObj = TARS_PHYSICS.objects.get("ball");
+        const ballDist = tarsEntityGroup.position.distanceTo(ballObj.mesh.position);
+
+        // Push ball when TARS is close
+        if (ballDist < 2.0 && !ballObj.physics.sleeping) {
+            TARS_PHYSICS.interact("ball", tarsEntityGroup.position, 2.5 * dt * 60);
+        }
+
+        // Specific behavior when play_with_ball activity is active
+        if (worldState.tars.activity === "play_with_ball") {
+            if (ballDist > 2.5 && ballObj.mesh.position.y < 1.5) {
+                currentState.targetPos.copy(ballObj.mesh.position);
+                currentState.targetPos.y = 2.3;
+            } else if (ballDist <= 2.5) {
+                currentState.targetPos.copy(ballObj.mesh.position);
+                currentState.targetPos.y = Math.max(ballObj.mesh.position.y + 0.4, 0.5);
+            }
+            if (ballObj.physics.sleeping && ballDist < 2.0) {
+                TARS_PHYSICS.wake("ball");
+                const dir = new THREE.Vector3(
+                    (Math.random() - 0.5) * 3,
+                    0.3 + Math.random() * 0.4,
+                    (Math.random() - 0.5) * 3
+                );
+                ballObj.physics.velocity.add(dir);
+            }
+            currentState.gazeTarget = "ball";
+        }
+    }
+
     // 8. T.A.R.S. EMBODIMENT PROCEDURAL SHADER & MESH ANIMATION
     // Update EmotionMixer for smooth transitions
     emotionMixer.update(dt);
@@ -5434,27 +6293,30 @@ function animate() {
         tarsGazeIndicator.material.color.copy(currentState.currentColor);
     }
 
-    // Deforming Vertex Noise Body
-    const bodyPosAttr = bodyGeo.attributes.position;
-    const posArr = bodyPosAttr.array;
-    const defAmount = currentState.deformation + (currentState.speaking ? 0.1 : 0) + currentState.speechAmplitude * 0.15;
-    
-    for (let i = 0; i < posArr.length; i += 3) {
-        const ox = originalBodyPositions[i];
-        const oy = originalBodyPositions[i + 1];
-        const oz = originalBodyPositions[i + 2];
+    // Deforming Vertex Noise Body (skipped on some frames for Pi)
+    deformFrameCounter++;
+    if (deformFrameCounter % TARS_RENDER.geometry.vertexDeformEveryNFrames === 0) {
+        const bodyPosAttr = bodyGeo.attributes.position;
+        const posArr = bodyPosAttr.array;
+        const defAmount = currentState.deformation + (currentState.speaking ? 0.1 : 0) + currentState.speechAmplitude * 0.15;
         
-        // Multi-frequency wave deformation
-        const noise = Math.sin(ox * 5 + time * 3) * Math.cos(oy * 5 + time * 2.5) * Math.sin(oz * 5 + time * 4);
-        const asym = ox * currentState.asymmetry;
-        const factor = 1.0 + (noise * defAmount) + (asym * 0.2);
+        for (let i = 0; i < posArr.length; i += 3) {
+            const ox = originalBodyPositions[i];
+            const oy = originalBodyPositions[i + 1];
+            const oz = originalBodyPositions[i + 2];
+            
+            // Multi-frequency wave deformation
+            const noise = Math.sin(ox * 5 + time * 3) * Math.cos(oy * 5 + time * 2.5) * Math.sin(oz * 5 + time * 4);
+            const asym = ox * currentState.asymmetry;
+            const factor = 1.0 + (noise * defAmount) + (asym * 0.2);
 
-        posArr[i] = ox * factor * currentState.scale;
-        posArr[i + 1] = oy * factor * currentState.scale;
-        posArr[i + 2] = oz * factor * currentState.scale;
+            posArr[i] = ox * factor * currentState.scale;
+            posArr[i + 1] = oy * factor * currentState.scale;
+            posArr[i + 2] = oz * factor * currentState.scale;
+        }
+        bodyPosAttr.needsUpdate = true;
+        bodyGeo.computeVertexNormals();
     }
-    bodyPosAttr.needsUpdate = true;
-    bodyGeo.computeVertexNormals();
 
     // Orbiting Particles Simulation
     const pArr = orbParticleGeo.attributes.position.array;
@@ -5642,42 +6504,6 @@ function animate() {
         }
     }
 
-    // FX Spark Particle System Update
-    if (fxParticleGeo && fxParticleLifes) {
-        const positions = fxParticleGeo.attributes.position.array;
-        const velocities = fxParticleVelocities;
-        const lifes = fxParticleLifes;
-        const colors = fxParticleGeo.attributes.color.array;
-        const sizes = fxParticleGeo.attributes.size.array;
-        
-        for (let i = 0; i < fxParticleCount; i++) {
-            if (lifes[i] > 0) {
-                const idx = i * 3;
-                positions[idx] += velocities[idx] * dt * 60;
-                positions[idx + 1] += velocities[idx + 1] * dt * 60;
-                positions[idx + 2] += velocities[idx + 2] * dt * 60;
-                
-                // Gravity
-                velocities[idx + 1] -= 0.3 * dt * 60;
-                
-                lifes[i] -= dt;
-                if (lifes[i] <= 0) {
-                    sizes[i] = 0;
-                } else {
-                    // Fade out
-                    sizes[i] = Math.max(0, 0.04 * (lifes[i] / 1.5));
-                    // Fade color
-                    colors[idx] *= 0.98;
-                    colors[idx + 1] *= 0.98;
-                    colors[idx + 2] *= 0.98;
-                }
-            }
-        }
-        fxParticleGeo.attributes.position.needsUpdate = true;
-        fxParticleGeo.attributes.size.needsUpdate = true;
-        fxParticleGeo.attributes.color.needsUpdate = true;
-    }
-
     // Left window bridge: animate cars on bridge
     lcars.forEach((car, i) => {
         const ud = car.userData;
@@ -5711,8 +6537,528 @@ function animate() {
     lwaterMesh.position.y = 0.15 + Math.sin(lwaterDistortion.time * 1.5) * 0.02;
     lwaterMesh.rotation.z = Math.sin(lwaterDistortion.time * 0.7) * 0.005;
 
+    if (typeof TARS_DEBUG !== 'undefined' && TARS_DEBUG.update) TARS_DEBUG.update(time, dt);
     renderer.render(scene, camera);
+    if (typeof TARS_DEBUG !== 'undefined' && TARS_DEBUG.update) TARS_DEBUG.update(time, dt);
+
+    // Ball physics diagnostic
+    if (TARS_PHYSICS.objects.has("ball")) {
+        const _b = TARS_PHYSICS.objects.get("ball");
+        const _el = document.getElementById("ball-debug");
+        if (_el && _b && _b.physics) {
+            const p = _b.mesh.position;
+            const v = _b.physics.velocity;
+            _el.textContent = `ball: pos(${p.x.toFixed(2)},${p.y.toFixed(2)},${p.z.toFixed(2)}) vel(${v.x.toFixed(2)},${v.y.toFixed(2)},${v.z.toFixed(2)}) sleep:${_b.physics.sleeping}`;
+        }
+    }
 }
+
+// Apply render profile to disable unwanted lights
+TARS_RENDER.lighting.disableLights.forEach(name => {
+    const lightMap = { serverLight, lampBulb, ledStripLight, rgbLight };
+    if (lightMap[name]) lightMap[name].visible = false;
+});
+
+// Register world objects for collision and spatial queries
+function initializeWorldObjects() {
+    // ================================================================
+    // TIER 1 — WORLD SHELL (permanent room boundary planes)
+    // Each plane normal points INTO the room.
+    // ================================================================
+    TARS_WORLD_OBJECTS.register({
+        id: "floor", name: "Floor", category: "structure", presence: "collision",
+        collisionTier: COLLISION_TIERS.WORLD_SHELL,
+        transform: { position: new THREE.Vector3(0, -0.15, 0) },
+        bounds: { type: "plane", normal: new THREE.Vector3(0, 1, 0), constant: 0 },
+        collision: { enabled: true, static: true, margin: 0.3 },
+        interaction: { enabled: false, actions: [] },
+        state: { active: true, visible: true, condition: 1.0, lastInteraction: 0 },
+        metadata: { zone: null, tags: ["structure", "shell", "floor"] }
+    });
+    TARS_WORLD_OBJECTS.register({
+        id: "ceiling", name: "Ceiling", category: "structure", presence: "collision",
+        collisionTier: COLLISION_TIERS.WORLD_SHELL,
+        transform: { position: new THREE.Vector3(0, 8, 0) },
+        bounds: { type: "plane", normal: new THREE.Vector3(0, -1, 0), constant: -8 },
+        collision: { enabled: true, static: true, margin: 0.3 },
+        interaction: { enabled: false, actions: [] },
+        state: { active: true, visible: true, condition: 1.0, lastInteraction: 0 },
+        metadata: { zone: null, tags: ["structure", "shell", "ceiling"] }
+    });
+    TARS_WORLD_OBJECTS.register({
+        id: "wall-left", name: "Left Wall", category: "structure", presence: "collision",
+        collisionTier: COLLISION_TIERS.WORLD_SHELL,
+        transform: { position: new THREE.Vector3(-8, 4, 0) },
+        bounds: { type: "plane", normal: new THREE.Vector3(1, 0, 0), constant: -8 },
+        collision: { enabled: true, static: true, margin: 0.3 },
+        interaction: { enabled: false, actions: [] },
+        state: { active: true, visible: true, condition: 1.0, lastInteraction: 0 },
+        metadata: { zone: null, tags: ["structure", "shell", "wall"] }
+    });
+    TARS_WORLD_OBJECTS.register({
+        id: "wall-right", name: "Right Wall", category: "structure", presence: "collision",
+        collisionTier: COLLISION_TIERS.WORLD_SHELL,
+        transform: { position: new THREE.Vector3(8, 4, 0) },
+        bounds: { type: "plane", normal: new THREE.Vector3(-1, 0, 0), constant: -8 },
+        collision: { enabled: true, static: true, margin: 0.3 },
+        interaction: { enabled: false, actions: [] },
+        state: { active: true, visible: true, condition: 1.0, lastInteraction: 0 },
+        metadata: { zone: null, tags: ["structure", "shell", "wall"] }
+    });
+    TARS_WORLD_OBJECTS.register({
+        id: "wall-back", name: "Back Wall", category: "structure", presence: "collision",
+        collisionTier: COLLISION_TIERS.WORLD_SHELL,
+        transform: { position: new THREE.Vector3(0, 4, -6) },
+        bounds: { type: "plane", normal: new THREE.Vector3(0, 0, 1), constant: -6 },
+        collision: { enabled: true, static: true, margin: 0.3 },
+        interaction: { enabled: false, actions: [] },
+        state: { active: true, visible: true, condition: 1.0, lastInteraction: 0 },
+        metadata: { zone: null, tags: ["structure", "shell", "wall"] }
+    });
+    TARS_WORLD_OBJECTS.register({
+        id: "viewport", name: "Viewport Window", category: "structure", presence: "collision",
+        collisionTier: COLLISION_TIERS.WORLD_SHELL,
+        transform: { position: WORLD_VIEWPORT.position.clone() },
+        bounds: { type: "plane", normal: WORLD_VIEWPORT.normal.clone(), constant: -7 },
+        collision: { enabled: true, static: true, margin: 0.3 },
+        interaction: { enabled: false, actions: [] },
+        state: { active: true, visible: true, condition: 1.0, lastInteraction: 0 },
+        metadata: { zone: null, tags: ["structure", "shell", "viewport"] }
+    });
+
+    // ================================================================
+    // TIER 2 — FURNITURE
+    // ================================================================
+    TARS_WORLD_OBJECTS.register({
+        id: "desk", name: "Workstation Desk", category: "furniture", presence: "collision",
+        collisionTier: COLLISION_TIERS.FURNITURE,
+        transform: { position: new THREE.Vector3(1.7, 1.15, -2.2) },
+        bounds: { type: "box", halfExtents: new THREE.Vector3(2.1, 1.275, 0.75) },
+        collision: { enabled: true, static: true, margin: 0.3, _legacyRadius: 1.3 },
+        interaction: { enabled: false, actions: [] },
+        state: { active: true, visible: true, condition: 1.0, lastInteraction: 0 },
+        metadata: { zone: "workstation", tags: ["furniture", "workstation"] }
+    });
+    TARS_WORLD_OBJECTS.register({
+        id: "rack-a", name: "Server Rack A", category: "electronics", presence: "collision",
+        collisionTier: COLLISION_TIERS.FURNITURE,
+        transform: { position: new THREE.Vector3(-4.7, 2.5, -4) },
+        bounds: { type: "box", halfExtents: new THREE.Vector3(0.8, 3.5, 0.8) },
+        collision: { enabled: true, static: true, margin: 0.2, _legacyRadius: 1.1 },
+        interaction: { enabled: false, actions: [] },
+        state: { active: true, visible: true, condition: 1.0, lastInteraction: 0 },
+        metadata: { zone: "server_area", tags: ["electronics", "server"] }
+    });
+    TARS_WORLD_OBJECTS.register({
+        id: "rack-b", name: "Server Rack B", category: "electronics", presence: "collision",
+        collisionTier: COLLISION_TIERS.FURNITURE,
+        transform: { position: new THREE.Vector3(-6.6, 2.5, -5.2) },
+        bounds: { type: "box", halfExtents: new THREE.Vector3(0.8, 3.5, 0.8) },
+        collision: { enabled: true, static: true, margin: 0.2, _legacyRadius: 1.0 },
+        interaction: { enabled: false, actions: [] },
+        state: { active: true, visible: true, condition: 1.0, lastInteraction: 0 },
+        metadata: { zone: "server_area", tags: ["electronics", "server"] }
+    });
+    TARS_WORLD_OBJECTS.register({
+        id: "plant-a", name: "Plant A", category: "decoration", presence: "collision",
+        collisionTier: COLLISION_TIERS.FURNITURE,
+        transform: { position: new THREE.Vector3(5.7, 0.6, -4.7) },
+        bounds: { type: "capsule", radius: 0.35, height: 1.2 },
+        collision: { enabled: true, static: true, margin: 0.2, _legacyRadius: 0.6 },
+        interaction: { enabled: false, actions: [] },
+        state: { active: true, visible: true, condition: 1.0, lastInteraction: 0 },
+        metadata: { zone: "observation", tags: ["decoration", "plant"] }
+    });
+    TARS_WORLD_OBJECTS.register({
+        id: "plant-b", name: "Plant B", category: "decoration", presence: "collision",
+        collisionTier: COLLISION_TIERS.FURNITURE,
+        transform: { position: new THREE.Vector3(-1.2, 0.6, -5.2) },
+        bounds: { type: "capsule", radius: 0.35, height: 1.2 },
+        collision: { enabled: true, static: true, margin: 0.2, _legacyRadius: 0.6 },
+        interaction: { enabled: false, actions: [] },
+        state: { active: true, visible: true, condition: 1.0, lastInteraction: 0 },
+        metadata: { zone: "relaxation", tags: ["decoration", "plant"] }
+    });
+}
+initializeWorldObjects();
+
+// ============================================================
+// FUTURE OBJECT TEMPLATES
+// ============================================================
+// Adding a new object requires only registration + visual mesh.
+// Examples (uncomment + customize when ready):
+//
+// TARS_WORLD_OBJECTS.register({
+//     id: "sleeping-pod", name: "Recharge Station", category: "furniture",
+//     presence: "collision", collisionTier: COLLISION_TIERS.FURNITURE,
+//     transform: { position: new THREE.Vector3(x, y, z) },
+//     bounds: { type: "box", halfExtents: new THREE.Vector3(0.8, 0.6, 1.2) },
+//     collision: { enabled: true, static: true, margin: 0.2 },
+//     interaction: { enabled: true, canRest: true, actions: ["rest"] },
+//     state: { active: true, visible: true, condition: 1.0, lastInteraction: 0 },
+//     metadata: { zone: "relaxation", tags: ["furniture", "sleep"] }
+// });
+//
+// TARS_WORLD_OBJECTS.register({
+//     id: "tv", name: "Television", category: "electronics",
+//     presence: "collision", collisionTier: COLLISION_TIERS.FURNITURE,
+//     transform: { position: new THREE.Vector3(x, y, z) },
+//     bounds: { type: "box", halfExtents: new THREE.Vector3(0.6, 0.4, 0.1) },
+//     collision: { enabled: true, static: true, margin: 0.1 },
+//     interaction: { enabled: true, canObserve: true, canTurnOn: true, actions: ["watch", "turn_on", "turn_off"] },
+//     state: { active: true, visible: true, condition: 1.0, lastInteraction: 0 },
+//     metadata: { zone: "observation", tags: ["electronics", "entertainment"] }
+// });
+//
+// TARS_WORLD_OBJECTS.register({
+//     id: "radio", name: "Radio", category: "electronics",
+//     presence: "collision", collisionTier: COLLISION_TIERS.FURNITURE,
+//     transform: { position: new THREE.Vector3(x, y, z) },
+//     bounds: { type: "box", halfExtents: new THREE.Vector3(0.2, 0.1, 0.2) },
+//     collision: { enabled: true, static: true, margin: 0.05 },
+//     interaction: { enabled: true, canPlay: true, actions: ["play", "stop"] },
+//     state: { active: true, visible: true, condition: 1.0, lastInteraction: 0 },
+//     metadata: { zone: "relaxation", tags: ["electronics", "audio"] }
+// });
+//
+// TARS_WORLD_OBJECTS.register({
+//     id: "floor-lamp", name: "Floor Lamp", category: "furniture",
+//     presence: "collision", collisionTier: COLLISION_TIERS.FURNITURE,
+//     transform: { position: new THREE.Vector3(x, y, z) },
+//     bounds: { type: "capsule", radius: 0.08, height: 2.0 },
+//     collision: { enabled: true, static: true, margin: 0.1 },
+//     interaction: { enabled: true, canToggle: true, actions: ["toggle"] },
+//     state: { active: true, visible: true, condition: 1.0, lastInteraction: 0 },
+//     metadata: { zone: null, tags: ["furniture", "lighting"] }
+// });
+//
+// TARS_WORLD_OBJECTS.register({
+//     id: "chair", name: "Chair", category: "furniture",
+//     presence: "collision", collisionTier: COLLISION_TIERS.FURNITURE,
+//     transform: { position: new THREE.Vector3(x, y, z) },
+//     bounds: { type: "box", halfExtents: new THREE.Vector3(0.4, 0.5, 0.4) },
+//     collision: { enabled: true, static: true, margin: 0.1 },
+//     interaction: { enabled: true, canSit: true, actions: ["sit"] },
+//     state: { active: true, visible: true, condition: 1.0, lastInteraction: 0 },
+//     metadata: { zone: "workstation", tags: ["furniture", "seating"] }
+// });
+//
+// TARS_WORLD_OBJECTS.register({
+//     id: "couch", name: "Couch", category: "furniture",
+//     presence: "collision", collisionTier: COLLISION_TIERS.FURNITURE,
+//     transform: { position: new THREE.Vector3(x, y, z) },
+//     bounds: { type: "box", halfExtents: new THREE.Vector3(1.2, 0.4, 0.6) },
+//     collision: { enabled: true, static: true, margin: 0.2 },
+//     interaction: { enabled: true, canRest: true, canSit: true, actions: ["sit", "rest"] },
+//     state: { active: true, visible: true, condition: 1.0, lastInteraction: 0 },
+//     metadata: { zone: "relaxation", tags: ["furniture", "seating"] }
+// });
+// ============================================================
+
+// ============================================================
+// TARS ENERGY ORB (Ball)
+// ============================================================
+
+const ballGeo = new THREE.SphereGeometry(0.22, 16, 16);
+const ballMat = new THREE.MeshStandardMaterial({
+    color: 0x5fd0ff,
+    emissive: 0x5fd0ff,
+    emissiveIntensity: 0.3,
+    roughness: 0.2,
+    metalness: 0.1
+});
+const ballMesh = new THREE.Mesh(ballGeo, ballMat);
+ballMesh.castShadow = true;
+ballMesh.receiveShadow = true;
+ballMesh.position.set(3, 4, 1.5);
+scene.add(ballMesh);
+
+const ballCoreGeo = new THREE.SphereGeometry(0.08, 12, 12);
+const ballCoreMat = new THREE.MeshBasicMaterial({ color: 0xa0f0ff });
+const ballCoreMesh = new THREE.Mesh(ballCoreGeo, ballCoreMat);
+ballMesh.add(ballCoreMesh);
+
+const ballRingGeo = new THREE.RingGeometry(0.18, 0.22, 24);
+const ballRingMat = new THREE.MeshBasicMaterial({
+    color: 0x5fd0ff,
+    transparent: true,
+    opacity: 0.25,
+    side: THREE.DoubleSide,
+    depthWrite: false
+});
+const ballRing = new THREE.Mesh(ballRingGeo, ballRingMat);
+ballRing.rotation.x = Math.PI / 2;
+ballMesh.add(ballRing);
+
+// Register ball in TARS_WORLD_OBJECTS
+TARS_WORLD_OBJECTS.register({
+    id: "ball",
+    name: "Energy Orb",
+    category: "toy",
+    presence: "physics",
+    collisionTier: COLLISION_TIERS.INTERACTIVE,
+    transform: { position: ballMesh.position },
+    bounds: { type: "sphere", radius: 0.22 },
+    collision: { enabled: true, static: false, margin: 0.05 },
+    interaction: { enabled: true, canPush: true, canObserve: true, actions: ["push", "observe"] },
+    state: { active: true, visible: true, condition: 1.0, lastInteraction: 0 },
+    metadata: { zone: null, tags: ["toy", "interactive", "physics"] },
+    canBeMoved: true,
+    canBePushed: true,
+    canBeObserved: true
+});
+
+// Register ball in TARS_PHYSICS
+TARS_PHYSICS.register({
+    id: "ball",
+    mesh: ballMesh,
+    physics: {
+        enabled: true,
+        type: "dynamic",
+        shape: "sphere",
+        radius: 0.22,
+        mass: 1,
+        velocity: new THREE.Vector3(1.5, -2, 1),
+        restitution: 0.7,
+        friction: 0.35,
+        sleeping: false,
+        sleepTimer: 0
+    },
+    interaction: {
+        canPush: true,
+        canPickup: false,
+        canObserve: true
+    }
+});
+
+// Update TARGET_POSITIONS to follow ball
+TARGET_POSITIONS.ball = ballMesh.position;
+
+// ============================================================
+// [DEBUG] World Object & Collision Visualization
+// Activate: ?debug=world or localStorage.TARS_DEBUG_WORLD=true
+// Shows collision volumes, zone boundaries, avoidance vectors.
+// ============================================================
+
+const debugEnabled = new URLSearchParams(window.location.search).has("debug") ||
+    localStorage.getItem("TARS_DEBUG_WORLD") === "true";
+
+if (debugEnabled) {
+
+    const debugGroup = new THREE.Group();
+    scene.add(debugGroup);
+
+    // Tier visibility toggles
+    const debugTierFilter = {
+        [COLLISION_TIERS.WORLD_SHELL]: true,
+        [COLLISION_TIERS.FURNITURE]: true,
+        [COLLISION_TIERS.INTERACTIVE]: true,
+        [COLLISION_TIERS.DECORATIVE]: true
+    };
+
+    function rebuildDebugVisuals() {
+        while (debugGroup.children.length) {
+            const c = debugGroup.children[0];
+            if (c.geometry) c.geometry.dispose();
+            if (c.material) c.material.dispose();
+            debugGroup.remove(c);
+        }
+
+        for (const obj of TARS_WORLD_OBJECTS.getCollisionObjects()) {
+            if (!debugTierFilter[obj.collisionTier]) continue;
+
+            const pos = obj.transform.position;
+            const tier = obj.collisionTier || COLLISION_TIERS.DECORATIVE;
+            const color = TIER_COLORS[tier] || 0x888888;
+
+            if (obj.bounds.type === "plane") {
+                const n = obj.bounds.normal;
+                const size = obj.collisionTier === COLLISION_TIERS.WORLD_SHELL ? 7 : 4;
+                const planeGeo = new THREE.PlaneGeometry(size * 2, size * 2);
+                const edgesGeo = new THREE.EdgesGeometry(planeGeo);
+                const line = new THREE.Line(edgesGeo, new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.2 }));
+                line.position.copy(pos);
+                if (Math.abs(n.y) > 0.9) line.rotation.x = -Math.PI / 2;
+                else if (Math.abs(n.x) > 0.9) line.rotation.y = Math.PI / 2;
+                debugGroup.add(line);
+
+                const dot = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 6), new THREE.MeshBasicMaterial({ color }));
+                dot.position.copy(pos);
+                debugGroup.add(dot);
+                continue;
+            }
+
+            let edgesGeo;
+            if (obj.bounds.type === "box") {
+                const h = obj.bounds.halfExtents;
+                edgesGeo = new THREE.EdgesGeometry(new THREE.BoxGeometry(h.x * 2, h.y * 2, h.z * 2));
+            } else if (obj.bounds.type === "capsule") {
+                const r = obj.bounds.radius;
+                const hh = obj.bounds.height * 0.5;
+                edgesGeo = new THREE.EdgesGeometry(new THREE.BoxGeometry(r * 2, hh * 2 + r * 2, r * 2));
+            } else if (obj.bounds.type === "sphere") {
+                edgesGeo = new THREE.EdgesGeometry(new THREE.SphereGeometry(obj.bounds.radius, 12, 8));
+            }
+            if (edgesGeo) {
+                const line = new THREE.Line(edgesGeo, new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.35 }));
+                line.position.copy(pos);
+                debugGroup.add(line);
+                const dot = new THREE.Mesh(new THREE.SphereGeometry(0.04, 6, 6), new THREE.MeshBasicMaterial({ color }));
+                dot.position.copy(pos);
+                debugGroup.add(dot);
+            }
+        }
+
+        for (const [name, zone] of Object.entries(TARS_WORLD_OBJECTS._zones)) {
+            const pts = [];
+            for (let i = 0; i <= 32; i++) {
+                const t = (i / 32) * Math.PI * 2;
+                pts.push(new THREE.Vector3(zone.center.x + Math.cos(t) * zone.radius, 0.2, zone.center.z + Math.sin(t) * zone.radius));
+            }
+            const colors = { workstation: 0x4488ff, server_area: 0xff6644, observation: 0x44ff88, relaxation: 0xffcc44 };
+            const ring = new THREE.Line(
+                new THREE.BufferGeometry().setFromPoints(pts),
+                new THREE.LineBasicMaterial({ color: colors[name] || 0xffffff, transparent: true, opacity: 0.2, depthWrite: false })
+            );
+            ring.renderOrder = -1;
+            debugGroup.add(ring);
+        }
+    }
+
+    rebuildDebugVisuals();
+
+    const debugArrow = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 0, 0), 0.5, 0xff4444);
+    debugGroup.add(debugArrow);
+
+    // Physics debug — velocity arrows for dynamic objects
+    const physArrows = [];
+    for (const [, obj] of TARS_PHYSICS.objects) {
+        const arrow = new THREE.ArrowHelper(new THREE.Vector3(1, 0, 0), obj.mesh.position, 0.01, 0x44ff88);
+        debugGroup.add(arrow);
+        physArrows.push({ obj, arrow });
+    }
+
+    window.TARS_DEBUG = {
+        enabled: true,
+        rebuild: rebuildDebugVisuals,
+        tierFilter: debugTierFilter,
+        update(time, dt) {
+            const avoid = TARS_COLLISION.getAvoidanceVector(tarsEntityGroup.position, currentState.targetPos, 0.016);
+            if (avoid.length() > 0.01) {
+                debugArrow.visible = true;
+                debugArrow.position.copy(tarsEntityGroup.position);
+                debugArrow.position.y += 0.5;
+                debugArrow.setDirection(avoid.clone().normalize());
+                debugArrow.setLength(Math.min(avoid.length() * 2, 2.0));
+            } else {
+                debugArrow.visible = false;
+            }
+
+            for (const { obj, arrow } of physArrows) {
+                const p = obj.physics;
+                if (p && p.enabled) {
+                    const vel = p.velocity;
+                    const speed = vel.length();
+                    if (speed > 0.01 && !p.sleeping) {
+                        arrow.visible = true;
+                        arrow.position.copy(obj.mesh.position);
+                        arrow.position.y += 0.3;
+                        arrow.setDirection(vel.clone().normalize());
+                        arrow.setLength(Math.min(speed * 0.3, 1.5));
+                        arrow.setColor(p.sleeping ? 0x666666 : 0x44ff88);
+                    } else {
+                        arrow.visible = false;
+                    }
+                } else {
+                    arrow.visible = false;
+                }
+            }
+        }
+    };
+
+    // LEGEND overlay
+    const legendDiv = document.createElement("div");
+    legendDiv.id = "tars-debug-legend";
+    legendDiv.style.cssText = "position:fixed;bottom:12px;right:12px;background:rgba(5,8,12,0.85);border:1px solid rgba(80,180,255,0.15);border-radius:6px;padding:8px 10px;font:9px monospace;color:rgba(210,235,255,0.6);z-index:9999;display:flex;flex-direction:column;gap:3px;";
+    const tiers = [
+        { tier: COLLISION_TIERS.WORLD_SHELL, label: "World Shell" },
+        { tier: COLLISION_TIERS.FURNITURE, label: "Furniture" },
+        { tier: COLLISION_TIERS.INTERACTIVE, label: "Interactive" },
+        { tier: COLLISION_TIERS.DECORATIVE, label: "Decorative" }
+    ];
+    for (const t of tiers) {
+        const hex = '#' + new THREE.Color(TIER_COLORS[t.tier]).getHexString();
+        const row = document.createElement("div");
+        row.style.cssText = "display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;";
+        const swatch = document.createElement("span");
+        swatch.style.cssText = `display:inline-block;width:8px;height:8px;border-radius:2px;background:${hex};`;
+        const label = document.createElement("span");
+        label.textContent = `${t.label} (${TARS_WORLD_OBJECTS.getCollisionObjectsByTier(t.tier).length})`;
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.checked = true;
+        cb.style.cssText = "margin:0;accent-color:#5fd0ff;";
+        cb.addEventListener("change", () => {
+            debugTierFilter[t.tier] = cb.checked;
+            rebuildDebugVisuals();
+        });
+        row.appendChild(cb);
+        row.appendChild(swatch);
+        row.appendChild(label);
+        legendDiv.appendChild(row);
+    }
+    const countRow = document.createElement("div");
+    countRow.style.cssText = "border-top:1px solid rgba(80,180,255,0.1);padding-top:3px;margin-top:2px;color:rgba(210,235,255,0.4);";
+    const physCount = TARS_PHYSICS.objects.size;
+    countRow.textContent = `${TARS_WORLD_OBJECTS.getAll().length} total · ${TARS_WORLD_OBJECTS.getCollisionObjects().length} collision · ${physCount} physics · ${Object.keys(TARS_WORLD_OBJECTS._zones).length} zones`;
+    legendDiv.appendChild(countRow);
+    document.body.appendChild(legendDiv);
+
+    console.log(`[TARS DEBUG] World: ${TARS_WORLD_OBJECTS.getAll().length} objects, ${TARS_WORLD_OBJECTS.getCollisionObjects().length} collision, ${Object.keys(TARS_WORLD_OBJECTS._zones).length} zones.`);
+}
+
+// ============================================================
+// PHASE 8.4.3.8 — BALL READINESS VERIFICATION
+// ============================================================
+// Every required hook verified — no implementation yet.
+//
+// Floor bounce:    ✅ pointDistanceToPlane — floor plane at y=0
+// Wall bounce:     ✅ pointDistanceToPlane — 3 walls + viewport as planes
+// Viewport bounce: ✅ pointDistanceToPlane — WORLD_VIEWPORT plane at z=7
+// Furniture bounce:✅ pointDistanceToBox / pointDistanceToCapsule
+// Sphere overlap:  ⚠️  pointInBox exists for containment, but no sphere-vs-box
+//                   overlap test (needs radius-aware version for ball)
+// Rolling:         ❌ No friction or rolling dynamics — needs gravity + torque
+// Sleeping:        ✅ canSleep flag in registry schema
+// Resting:         ❌ No resting contact resolution — objects pass through floor
+//                   without stopping (avoidance pushes but doesn't halt)
+// Gravity:         ❌ No gravity integration for dynamic objects
+//
+// Summary: The collision detection primitives exist for all surface types.
+// Missing for ball: dynamic body state (position/velocity/acceleration),
+// contact resolution (position correction + impulse), and friction.
+// ============================================================
+
+// ============================================================
+// PHASE 8.4.3.8 — FUTURE COMPATIBILITY
+// ============================================================
+// The collision tier system and world shell make future additions
+// straightforward. Adding a new object requires only:
+//
+// 1. A registration call in initializeWorldObjects() with:
+//    - id, name, category, presence
+//    - collisionTier (matching the object's role)
+//    - bounds (box/sphere/capsule/plane)
+//    - collision.enabled (true for tiers 1-3, false for tier 4)
+//    - metadata.zone and metadata.tags for spatial queries
+//
+// 2. Optionally a visual mesh in the scene construction section.
+//
+// No changes to the collision engine itself are required.
+// The registry already supports: sleeping pod, couch, television,
+// radio, floor lamp, bookshelf, cat, charging dock, toys, plants,
+// drone, aquarium, hologram projector, decorations.
+// ============================================================
 
 updateDayNight();
 setClockToRealTime();
@@ -5865,139 +7211,119 @@ const TARS_UI = {
     },
 
     renderObservatory(el) {
-        const needs = worldState.tars.needs;
-        const fatigue = worldState.tars.activityFatigue || {};
-        const scores = window.TARS_AUTONOMY ? window.TARS_AUTONOMY.getActivityScores() : [];
-        const history = worldState.tars.autonomyHistory || [];
-        const expBuf = worldState.tars.experienceBuffer || [];
-        const lastFew = history.slice(-5).reverse();
+        // PHASE 7.4.5: Developer Observatory — presentation ONLY.
+        // Renders exclusively from ObservatoryDataLayer APIs.
+        // Never mutates worldState, never alters autonomous behavior.
+        const layer = window.ObservatoryDataLayer;
+        const proj = layer ? layer.getProjectedState() : null;
+        const metrics = layer ? layer.getMetrics() : null;
+        const decision = layer ? layer.getLatestDecision() : null;
+        const events = layer ? layer.getRawEvents(24) : [];
 
-        // Needs
-        let needsHtml = "";
+        const fmtTime = (secs) => secs >= 0 ? `${Math.floor(secs)}s` : "—";
+
+        // 1. Current State
+        const act = (proj && proj.activity) || {};
+        const stateHtml = `
+            <div class="tars-data-row"><span class="tars-data-label">Activity</span><span class="tars-data-value">${act.current || "idle"}</span></div>
+            <div class="tars-data-row"><span class="tars-data-label">Location</span><span class="tars-data-value">${act.location || "—"}</span></div>
+            <div class="tars-data-row"><span class="tars-data-label">Reason</span><span class="tars-data-value">${act.reason || "—"}</span></div>
+            <div class="tars-data-row"><span class="tars-data-label">Elapsed</span><span class="tars-data-value">${layer ? fmtTime(layer.getCurrentActivityDuration()) : "—"}</span></div>
+            <div class="tars-data-row"><span class="tars-data-label">Remaining</span><span class="tars-data-value">${layer ? fmtTime(layer.getActivityCountdown()) : "—"}</span></div>`;
+
+        // 2. Needs (projected from event bus need.changed snapshots)
+        const needs = (proj && proj.needs) || {};
         const needLabels = { energy: "Energy", curiosity: "Curiosity", social: "Social", maintenance: "Maint.", comfort: "Comfort", hunger: "Hunger" };
         const needColors = { energy: "energy", curiosity: "curiosity", social: "social", maintenance: "maintenance", comfort: "comfort", hunger: "hunger" };
-        for (const [k, v] of Object.entries(needs)) {
-            const pct = (v * 100).toFixed(0);
-            needsHtml += `<div class="tars-need-bar"><label>${needLabels[k] || k}</label><div class="tars-need-track"><div class="tars-need-fill ${needColors[k] || 'energy'}" style="width:${pct}%"></div></div><span class="tars-need-pct">${pct}%</span></div>`;
+        let needsHtml = "";
+        for (const k of Object.keys(needLabels)) {
+            const v = needs[k];
+            const pct = (typeof v === "number" ? v * 100 : 0).toFixed(0);
+            needsHtml += `<div class="tars-need-bar"><label>${needLabels[k]}</label><div class="tars-need-track"><div class="tars-need-fill ${needColors[k] || 'energy'}" style="width:${pct}%"></div></div><span class="tars-need-pct">${pct}%</span></div>`;
         }
+        if (!needsHtml) needsHtml = '<div class="tars-empty">No need snapshots yet</div>';
 
-        // Activity Scores
-        let scoresHtml = "";
-        for (const s of (scores || [])) {
-            scoresHtml += `<div class="tars-data-row"><span class="tars-data-label">${s.id}</span><span class="tars-data-value">${s.score.toFixed(2)}</span></div>`;
-        }
+        // 3. Decision Inspector
+        let decisionHtml = "";
+        if (decision) {
+            const score = typeof decision.decisionScore === "number" ? decision.decisionScore.toFixed(2) : "—";
+            const conf = typeof decision.confidence === "number" ? `${(decision.confidence * 100).toFixed(0)}%` : "—";
+            decisionHtml = `
+                <div class="tars-data-row"><span class="tars-data-label">Activity</span><span class="tars-data-value">${decision.selectedActivity || "—"}</span></div>
+                <div class="tars-data-row"><span class="tars-data-label">Location</span><span class="tars-data-value">${decision.selectedLocation || "—"}</span></div>
+                <div class="tars-data-row"><span class="tars-data-label">Confidence</span><span class="tars-data-value">${conf}</span></div>
+                <div class="tars-data-row"><span class="tars-data-label">Score</span><span class="tars-data-value">${score}</span></div>`;
 
-        // Fatigue
-        let fatigueHtml = "";
-        for (const [k, v] of Object.entries(fatigue)) {
-            fatigueHtml += `<div class="tars-data-row"><span class="tars-data-label">${k}</span><span class="tars-data-value">${v.toFixed(3)}</span></div>`;
-        }
-        // Fatigue history — last 5 completed experiences
-        const fatigueHistory = expBuf.slice(-5).reverse();
-        if (fatigueHistory.length > 0) {
-            fatigueHtml += '<div style="margin-top:6px;padding-top:4px;border-top:1px solid rgba(80,180,255,0.08)"><div style="font-size:9px;color:rgba(210,235,255,0.4);margin-bottom:2px">Recent Fatigue Changes</div>';
-            for (const f of fatigueHistory) {
-                const fd = f.duration ? (f.duration / 1000).toFixed(0) + "s" : "—";
-                const ff = (f.fatigueAtEnd * 100).toFixed(0);
-                fatigueHtml += `<div class="tars-data-row" style="font-size:9px"><span class="tars-data-label">${f.activity}</span><span class="tars-data-value">${ff}% fatigue after ${fd}</span></div>`;
-            }
-            fatigueHtml += '</div>';
-        }
-
-        // Recent Decisions
-        let decisionsHtml = "";
-        for (const d of lastFew) {
-            const t = d.timestamp ? new Date(d.timestamp).toLocaleTimeString() : "—";
-            decisionsHtml += `<div class="tars-journal-entry"><span class="tars-journal-time">${t}</span> <span class="tars-journal-act">${d.decisionAction}</span> ${d.selectedActivity} @ ${d.selectedLocation} <span class="tars-journal-reason">"${d.decisionReason || ""}"</span></div>`;
-        }
-
-        // Activity Statistics (computed dynamically)
-        let statsHtml = "";
-        if (history.length > 0) {
-            const activityCounts = {};
-            const locationCounts = {};
-            let completeCount = 0;
-            let continueCount = 0;
-            for (const d of history) {
-                const a = d.selectedActivity || "?";
-                activityCounts[a] = (activityCounts[a] || 0) + 1;
-                const l = d.selectedLocation || "?";
-                locationCounts[l] = (locationCounts[l] || 0) + 1;
-                if (d.decisionAction === "complete") completeCount++;
-                if (d.decisionAction === "continue") continueCount++;
-            }
-            const sortedActivities = Object.entries(activityCounts).sort((a, b) => b[1] - a[1]);
-            const sortedLocations = Object.entries(locationCounts).sort((a, b) => b[1] - a[1]);
-
-            let avgDuration = 0;
-            if (expBuf.length > 0) {
-                avgDuration = expBuf.reduce((s, e) => s + (e.duration || 0), 0) / expBuf.length;
+            if (decision.scoreComponents) {
+                const c = decision.scoreComponents;
+                const rows = [
+                    { label: "Need", val: c.need }, { label: "Preference", val: c.preference },
+                    { label: "Fatigue", val: c.fatigue }, { label: "Curiosity", val: c.curiosity },
+                    { label: "Recency", val: c.recency }, { label: "Weather", val: c.weather },
+                    { label: "Idle base", val: c.idle }
+                ];
+                decisionHtml += '<div style="margin-top:6px;padding-top:4px;border-top:1px solid rgba(80,180,255,0.08)"><div style="font-size:9px;color:rgba(210,235,255,0.4);margin-bottom:2px">Score Components</div>';
+                for (const r of rows) {
+                    const val = typeof r.val === "number" ? r.val.toFixed(2) : "—";
+                    const cls = typeof r.val === "number" && r.val !== 0 ? (r.val > 0 ? "#4ade80" : "#f87171") : "rgba(210,235,255,0.3)";
+                    decisionHtml += `<div style="display:flex;justify-content:space-between;font-size:9px;padding:1px 0"><span style="color:rgba(210,235,255,0.5)">${r.label}</span><span style="color:${cls}">${val}</span></div>`;
+                }
+                decisionHtml += '</div>';
             }
 
-            statsHtml = `<div class="tars-data-row"><span class="tars-data-label">Total Decisions</span><span class="tars-data-value">${history.length}</span></div>`;
-            statsHtml += `<div class="tars-data-row"><span class="tars-data-label">Completions</span><span class="tars-data-value">${completeCount}</span></div>`;
-            statsHtml += `<div class="tars-data-row"><span class="tars-data-label">Continuations</span><span class="tars-data-value">${continueCount}</span></div>`;
-            if (avgDuration > 0) statsHtml += `<div class="tars-data-row"><span class="tars-data-label">Avg Duration</span><span class="tars-data-value">${(avgDuration / 1000).toFixed(0)}s</span></div>`;
-            statsHtml += '<div style="margin-top:6px;font-size:9px;color:rgba(210,235,255,0.4)">Most Frequent Activities</div>';
-            for (let i = 0; i < Math.min(3, sortedActivities.length); i++) {
-                statsHtml += `<div class="tars-data-row"><span class="tars-data-label">${i + 1}. ${sortedActivities[i][0]}</span><span class="tars-data-value">${sortedActivities[i][1]}x</span></div>`;
+            if (decision.alternatives && decision.alternatives.length > 1) {
+                decisionHtml += '<div style="margin-top:6px;padding-top:4px;border-top:1px solid rgba(80,180,255,0.08)"><div style="font-size:9px;color:rgba(210,235,255,0.4);margin-bottom:2px">Runner Ups</div>';
+                for (let i = 1; i < decision.alternatives.length; i++) {
+                    const alt = decision.alternatives[i];
+                    const altScore = typeof alt.score === "number" ? alt.score.toFixed(2) : "—";
+                    decisionHtml += `<div style="display:flex;justify-content:space-between;font-size:9px;padding:1px 0"><span style="color:rgba(210,235,255,0.45)">${alt.id}</span><span style="color:rgba(210,235,255,0.3)">${altScore}</span></div>`;
+                }
+                decisionHtml += '</div>';
             }
-            statsHtml += '<div style="margin-top:6px;font-size:9px;color:rgba(210,235,255,0.4)">Preferred Locations</div>';
-            for (let i = 0; i < Math.min(3, sortedLocations.length); i++) {
-                statsHtml += `<div class="tars-data-row"><span class="tars-data-label">${i + 1}. ${sortedLocations[i][0]}</span><span class="tars-data-value">${sortedLocations[i][1]}x</span></div>`;
-            }
+        } else {
+            decisionHtml = '<div class="tars-empty">No decision recorded yet</div>';
         }
+
+        // 4. Event Timeline (raw events from ObservatoryDataLayer)
+        let timelineHtml = "";
+        for (const evt of events) {
+            const t = evt.timestamp ? new Date(evt.timestamp).toLocaleTimeString() : "—";
+            const cat = evt.category || "state";
+            const catColor = cat === "telemetry" ? "#a78bfa" : cat === "diagnostic" ? "#f87171" : cat === "user" ? "#4ade80" : "rgba(95,208,255,0.7)";
+            timelineHtml += `<div class="tars-journal-entry"><span class="tars-journal-time">${t}</span><span style="color:${catColor};margin-right:6px">${cat}</span><span class="tars-journal-act">${evt.type || "?"}</span></div>`;
+        }
+        if (!timelineHtml) timelineHtml = '<div class="tars-empty">No events recorded</div>';
+
+        // 5. System Metrics
+        const m = metrics || {};
+        const metricsHtml = `
+            <div class="tars-data-row"><span class="tars-data-label">Decisions</span><span class="tars-data-value">${m.decisionsCount ?? "—"}</span></div>
+            <div class="tars-data-row"><span class="tars-data-label">Avg Confidence</span><span class="tars-data-value">${typeof m.averageConfidence === "number" ? (m.averageConfidence * 100).toFixed(0) + "%" : "—"}</span></div>
+            <div class="tars-data-row"><span class="tars-data-label">Interruptions</span><span class="tars-data-value">${m.interruptionCount ?? "—"}</span></div>
+            <div class="tars-data-row"><span class="tars-data-label">Completions</span><span class="tars-data-value">${m.completedCount ?? "—"}</span></div>
+            <div class="tars-data-row"><span class="tars-data-label">Saves</span><span class="tars-data-value">${m.saveCount ?? "—"}</span></div>
+            <div class="tars-data-row"><span class="tars-data-label">Errors</span><span class="tars-data-value">${m.errorCount ?? "—"}</span></div>`;
 
         el.innerHTML = `
+            <div class="tars-section">
+                <div class="tars-section-title">Current State</div>
+                ${stateHtml}
+            </div>
             <div class="tars-section">
                 <div class="tars-section-title">Needs</div>
                 ${needsHtml}
             </div>
             <div class="tars-section">
-                <div class="tars-section-title">Activity Scores</div>
-                ${scoresHtml || '<div class="tars-empty">No scores available</div>'}
+                <div class="tars-section-title">Decision Inspector</div>
+                ${decisionHtml}
             </div>
             <div class="tars-section">
-                <div class="tars-section-title">Fatigue</div>
-                ${fatigueHtml || '<div class="tars-empty">No fatigue data</div>'}
+                <div class="tars-section-title">Event Timeline</div>
+                ${timelineHtml}
             </div>
             <div class="tars-section">
-                <div class="tars-section-title">Recent Decisions</div>
-                ${decisionsHtml || '<div class="tars-empty">No decisions recorded</div>'}
-            </div>
-            <div class="tars-section">
-                <div class="tars-section-title">Activity Stats</div>
-                ${statsHtml || '<div class="tars-data-row"><span class="tars-data-label">Insufficient data</span><span class="tars-data-value">—</span></div>'}
-            </div>
-            <div class="tars-section">
-                <div class="tars-section-title">Behavior Patterns (observed)</div>
-                ${(() => {
-                    if (history.length < 3) return '<div class="tars-data-row"><span class="tars-data-label">Insufficient data</span><span class="tars-data-value">—</span></div>';
-                    const counts = {};
-                    for (const d of history) {
-                        const a = d.selectedActivity || "?";
-                        counts[a] = (counts[a] || 0) + 1;
-                    }
-                    const total = history.length;
-                    const exploreActs = ["weather_observation", "idle"];
-                    const maintainActs = ["server_check"];
-                    const socialActs = ["user_interaction"];
-                    const restActs = ["tv_watching", "idle"];
-                    const workActs = ["computer_work"];
-                    const calcTend = (acts) => {
-                        const n = acts.reduce((s, a) => s + (counts[a] || 0), 0);
-                        const pct = n / total;
-                        const label = pct > 0.25 ? "High" : pct > 0.1 ? "Medium" : "Low";
-                        const color = pct > 0.25 ? "#4ade80" : pct > 0.1 ? "#fb923c" : "rgba(210,235,255,0.35)";
-                        return `<span style="color:${color}">${label} (${(pct * 100).toFixed(0)}%)</span>`;
-                    };
-                    let patHtml = `<div class="tars-data-row"><span class="tars-data-label">Exploration</span><span class="tars-data-value">${calcTend(exploreActs)}</span></div>`;
-                    patHtml += `<div class="tars-data-row"><span class="tars-data-label">Maintenance</span><span class="tars-data-value">${calcTend(maintainActs)}</span></div>`;
-                    patHtml += `<div class="tars-data-row"><span class="tars-data-label">Social</span><span class="tars-data-value">${calcTend(socialActs)}</span></div>`;
-                    patHtml += `<div class="tars-data-row"><span class="tars-data-label">Rest</span><span class="tars-data-value">${calcTend(restActs)}</span></div>`;
-                    patHtml += `<div class="tars-data-row"><span class="tars-data-label">Work</span><span class="tars-data-value">${calcTend(workActs)}</span></div>`;
-                    return patHtml;
-                })()}
+                <div class="tars-section-title">System Metrics</div>
+                ${metricsHtml}
             </div>`;
     },
 
@@ -6058,15 +7384,18 @@ const TARS_UI = {
         el.innerHTML = html;
     },
 
-    collapsedSections: new Set(["behavior-testing","gesture-testing","activity-testing","location-testing","need-simulation"]),
+    collapsedSections: new Set(["system-controls","behavior","movement","needs","environment","rendering","debug"]),
 
     renderSettings(el) {
         const s = worldState.tars;
         const needs = s.needs || {};
+        const env = worldState.environment || {};
+        const weather = env.weather || {};
         const fatigue = s.activityFatigue || {};
         const expBuf = s.experienceBuffer || [];
         const history = s.autonomyHistory || [];
         const recentTelemetry = history.slice(-25).reverse();
+        const curProfile = localStorage.getItem("TARS_RENDER_PROFILE") || "DESKTOP_HIGH";
 
         // Telemetry HTML
         let telemetryHtml = "";
@@ -6085,7 +7414,6 @@ const TARS_UI = {
             memHtml = '<div class="tars-memory-card"><div class="tars-empty" style="padding:10px 0">No experiences stored yet.</div></div>';
         } else {
             memHtml = `<div class="tars-memory-card"><div class="mem-row"><span>Buffer Size</span><span class="val">${expBuf.length} / 100</span></div></div>`;
-            // Show all entries, most recent first, limited to 20 for compactness
             const shown = expBuf.slice(-20).reverse();
             for (const ex of shown) {
                 const a = ex.activity || "?";
@@ -6149,16 +7477,101 @@ const TARS_UI = {
         }
         activityHtml += '</div>';
 
-        // Location/gaze targets
-        const targets = ["user","desk","rack-a","window_left","window_right"];
-        let locHtml = '<div class="tars-creator-actions">';
-        for (const t of targets) {
-            const label = t.replace("_"," ").toUpperCase();
-            locHtml += `<button class="btn btn-sm" data-action="look-at" data-target="${t}">${label}</button>`;
+        // Movement Go-To targets
+        const moveTargets = [
+            { key: "user", label: "HOME" },
+            { key: "desk", label: "DESK" },
+            { key: "rack-a", label: "RACK-A" },
+            { key: "rack-b", label: "RACK-B" },
+            { key: "window_left", label: "LEFT WINDOW" },
+            { key: "window_right", label: "RIGHT WINDOW" }
+        ];
+        let moveHtml = '<div class="tars-creator-actions">';
+        for (const t of moveTargets) {
+            moveHtml += `<button class="btn btn-sm" data-action="go-to" data-target="${t.key}">${t.label}</button>`;
         }
-        locHtml += '</div>';
+        moveHtml += `</div><div class="tars-creator-actions" style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(80,180,255,0.06)">
+            <span style="font-size:9px;color:rgba(210,235,255,0.3);width:100%">Look At</span>`;
+        const targets = ["user","desk","rack-a","window_left","window_right"];
+        for (const t of targets) {
+            moveHtml += `<button class="btn btn-sm" data-action="look-at" data-target="${t}">${t.replace("_"," ").toUpperCase()}</button>`;
+        }
+        moveHtml += '</div>';
 
-        // Build full HTML with collapsible sections
+        // Environment controls
+        const weatherConditions = ["clear","cloudy","overcast","rain","thunderstorm","snow","fog"];
+        let envHtml = `<div style="margin-bottom:6px">
+            <div style="font-size:9px;color:rgba(210,235,255,0.35);margin-bottom:3px">Weather</div>
+            <div class="tars-env-group">`;
+        for (const c of weatherConditions) {
+            envHtml += `<span class="tars-env-pill" data-action="set-weather" data-condition="${c}">${c.toUpperCase()}</span>`;
+        }
+        envHtml += `</div></div><div style="margin-bottom:6px">
+            <div style="font-size:9px;color:rgba(210,235,255,0.35);margin-bottom:3px">Time of Day</div>
+            <div class="tars-env-group">`;
+        const timePresets = ["dawn","morning","noon","dusk","night"];
+        for (const p of timePresets) {
+            envHtml += `<span class="tars-env-pill" data-action="set-time" data-preset="${p}">${p.toUpperCase()}</span>`;
+        }
+        envHtml += `</div></div><div style="margin-bottom:6px">
+            <div style="font-size:9px;color:rgba(210,235,255,0.35);margin-bottom:3px">Temperature: <span id="env-temp">${env.temperature || 22}</span>°C</div>
+            <div class="tars-env-group">
+                <span class="tars-env-pill" data-action="set-temp" data-delta="-5">−5°</span>
+                <span class="tars-env-pill" data-action="set-temp" data-delta="-1">−1°</span>
+                <span class="tars-env-pill" data-action="set-temp" data-delta="1">+1°</span>
+                <span class="tars-env-pill" data-action="set-temp" data-delta="5">+5°</span>
+            </div></div><div>
+            <div style="font-size:9px;color:rgba(210,235,255,0.35);margin-bottom:3px">Wind Intensity</div>
+            <div class="tars-env-group">`;
+        const windLevels = ["calm","light","moderate","strong","gale"];
+        for (const w of windLevels) {
+            envHtml += `<span class="tars-env-pill" data-action="set-wind" data-intensity="${w}">${w.toUpperCase()}</span>`;
+        }
+        envHtml += `</div></div>`;
+
+        // Render profile
+        const profiles = ["DESKTOP_HIGH", "PI_BALANCED"];
+        let renderHtml = `<div style="font-size:9px;color:rgba(210,235,255,0.35);margin-bottom:4px">Quality Profile: <span id="render-profile-label">${curProfile.replace("_"," ")}</span></div>
+            <div class="tars-profile-group">`;
+        for (const p of profiles) {
+            const active = p === curProfile ? " active" : "";
+            renderHtml += `<span class="tars-profile-opt${active}" data-action="set-profile" data-profile="${p}">${p.replace("_", " ")}</span>`;
+        }
+        renderHtml += `</div>`;
+
+        // Debug toggles
+        const debugFeatures = [
+            { key: "collision-volumes", label: "Collision Volumes", lsKey: "TARS_DEBUG_WORLD" },
+            { key: "zone-boundaries", label: "Zone Boundaries", lsKey: "TARS_DEBUG_WORLD" },
+            { key: "avoidance-vectors", label: "Avoidance Vectors", lsKey: "TARS_DEBUG_WORLD" },
+            { key: "fps", label: "FPS", lsKey: "TARS_DEBUG_FPS" },
+            { key: "ai-state", label: "AI State", lsKey: "TARS_DEBUG_AI_STATE" }
+        ];
+        let debugHtml = "";
+        for (const f of debugFeatures) {
+            const checked = localStorage.getItem(f.lsKey) === "true" ? " checked" : "";
+            debugHtml += `<label class="tars-debug-toggle">
+                <input type="checkbox" data-action="toggle-debug" data-feature="${f.key}" data-lskey="${f.lsKey}"${checked}>
+                <span>${f.label}</span>
+            </label>`;
+        }
+        debugHtml += '<div style="margin-top:6px;font-size:8px;color:rgba(210,235,255,0.2)">Collision debug requires ?debug=world in URL</div>';
+
+        // Developer tools tab shortcuts
+        const devTools = [
+            { tab: "brain", label: "🧠 Brain" },
+            { tab: "observatory", label: "📊 Observatory" },
+            { tab: "journal", label: "📜 Journal" },
+            { tab: "conversation", label: "💬 Conversation" },
+            { tab: "settings", label: "⚙ Settings" }
+        ];
+        let devHtml = '<div class="tars-dev-tools">';
+        for (const d of devTools) {
+            devHtml += `<button class="btn" data-action="open-dev-tool" data-tab="${d.tab}">${d.label}</button>`;
+        }
+        devHtml += '</div><div style="margin-top:10px;padding-top:8px;border-top:1px solid rgba(80,180,255,0.06)">';
+
+        // Build collapsible section helper
         const cs = (key, title, body, badge) => {
             const collapsed = this.collapsedSections.has(key);
             return `<div class="tars-collapse-section">
@@ -6169,54 +7582,67 @@ const TARS_UI = {
             </div>`;
         };
 
-        el.innerHTML = cs("system-controls", "System Controls",
-            `<div class="tars-creator-grid">
-                <div class="tars-creator-stat"><span class="label">Activity</span><span class="value" id="cs-activity">${s.activity || "idle"}</span></div>
-                <div class="tars-creator-stat"><span class="label">Location</span><span class="value" id="cs-location">${s.location || "—"}</span></div>
-                <div class="tars-creator-stat"><span class="label">Intent</span><span class="value" id="cs-intent">${(s.autonomy && s.autonomy.intent) || "—"}</span></div>
-                <div class="tars-creator-stat"><span class="label">Mode</span><span class="value" id="creator-mode-display">${(s.controlMode || "autonomous").toUpperCase()}</span></div>
-                <div class="tars-creator-stat"><span class="label">Fatigue (current)</span><span class="value" id="cs-fatigue">${((fatigue[s.activity] || 0)*100).toFixed(0)}%</span></div>
-                <div class="tars-creator-stat"><span class="label">Decisions</span><span class="value" id="cs-decisions">${history.length}</span></div>
-            </div>
-            <div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(80,180,255,0.08)">
-                <div class="tars-creator-actions">
-                    <button class="btn" data-action="pause">⏸ PAUSE</button>
-                    <button class="btn" data-action="resume">▶ RESUME</button>
-                    <button class="btn" data-action="force-decision">⚡ FORCE</button>
-                    <button class="btn" data-action="trigger-wander">🧭 WANDER</button>
-                    <button class="btn" data-action="reset-state">🔄 RESET</button>
+        el.innerHTML =
+            // System Controls (always visible at top, not in a collapsible)
+            `<div class="tars-collapse-section">
+                <div class="tars-collapse-header" data-collapse="system-controls">
+                    <span class="arrow">${this.collapsedSections.has("system-controls") ? "▶" : "▼"}</span> System Controls
                 </div>
-                <div class="tars-creator-actions" style="margin-top:6px">
-                    <span style="font-size:9px;color:rgba(210,235,255,0.3);width:100%">System Mode</span>
-                    <button class="btn btn-sm" data-action="set-mode" data-mode="live">LIVE</button>
-                    <button class="btn btn-sm" data-action="set-mode" data-mode="demo">DEMO</button>
+                <div class="tars-collapse-body${this.collapsedSections.has("system-controls") ? " collapsed" : ""}" id="collapse-system-controls">
+                    <div class="tars-creator-grid">
+                        <div class="tars-creator-stat"><span class="label">Activity</span><span class="value" id="cs-activity">${s.activity || "idle"}</span></div>
+                        <div class="tars-creator-stat"><span class="label">Location</span><span class="value" id="cs-location">${s.location || "—"}</span></div>
+                        <div class="tars-creator-stat"><span class="label">Intent</span><span class="value" id="cs-intent">${(s.autonomy && s.autonomy.intent) || "—"}</span></div>
+                        <div class="tars-creator-stat"><span class="label">Mode</span><span class="value" id="creator-mode-display">${(s.controlMode || "autonomous").toUpperCase()}</span></div>
+                        <div class="tars-creator-stat"><span class="label">Fatigue</span><span class="value" id="cs-fatigue">${((fatigue[s.activity] || 0)*100).toFixed(0)}%</span></div>
+                        <div class="tars-creator-stat"><span class="label">Decisions</span><span class="value" id="cs-decisions">${history.length}</span></div>
+                    </div>
+                    <div style="margin-top:8px;padding-top:8px;border-top:1px solid rgba(80,180,255,0.08)">
+                        <div class="tars-creator-actions">
+                            <button class="btn" data-action="pause">⏸ PAUSE</button>
+                            <button class="btn" data-action="resume">▶ RESUME</button>
+                            <button class="btn" data-action="force-decision">⚡ FORCE</button>
+                            <button class="btn" data-action="trigger-wander">🧭 WANDER</button>
+                            <button class="btn" data-action="reset-state">🔄 RESET</button>
+                        </div>
+                        <div class="tars-creator-actions" style="margin-top:6px">
+                            <span style="font-size:9px;color:rgba(210,235,255,0.3);width:100%">System Mode</span>
+                            <button class="btn btn-sm" data-action="set-mode" data-mode="live">LIVE</button>
+                            <button class="btn btn-sm" data-action="set-mode" data-mode="demo">DEMO</button>
+                        </div>
+                        <div class="tars-creator-actions" style="margin-top:6px">
+                            <span style="font-size:9px;color:rgba(210,235,255,0.3);width:100%">Control Mode</span>
+                            <button class="btn btn-sm" data-action="set-control" data-mode="autonomous">AUTO</button>
+                            <button class="btn btn-sm" data-action="set-control" data-mode="llm">LLM</button>
+                            <button class="btn btn-sm" data-action="release-control">RELEASE</button>
+                        </div>
+                        <div class="tars-feedback" id="creator-feedback"></div>
+                    </div>
                 </div>
-                <div class="tars-creator-actions" style="margin-top:6px">
-                    <span style="font-size:9px;color:rgba(210,235,255,0.3);width:100%">Control Mode</span>
-                    <button class="btn btn-sm" data-action="set-control" data-mode="autonomous">AUTO</button>
-                    <button class="btn btn-sm" data-action="set-control" data-mode="llm">LLM</button>
-                    <button class="btn btn-sm" data-action="release-control">RELEASE</button>
+            </div>` +
+            cs("behavior", "Behavior",
+                `<div style="margin-bottom:6px"><div style="font-size:9px;color:rgba(210,235,255,0.35);margin-bottom:3px">Emotion Presets</div>${behaviorHtml}</div>
+                <div style="margin-bottom:6px"><div style="font-size:9px;color:rgba(210,235,255,0.35);margin-bottom:3px">Activity Testing</div>${activityHtml}</div>
+                <div><div style="font-size:9px;color:rgba(210,235,255,0.35);margin-bottom:3px">Gesture Testing</div>${gestureHtml}</div>`, emotions.length + activityIds.length + gestures.length) +
+            cs("movement", "Movement", moveHtml, moveTargets.length + targets.length) +
+            cs("needs", "Needs", `<div class="tars-inject-group">${needHtml}</div>
+                <div style="margin-top:6px"><button class="btn btn-sm" data-action="reset-state" style="font-size:9px">🔄 Reset All to 50%</button></div>`, needNames.length) +
+            cs("environment", "Environment", envHtml, weatherConditions.length + timePresets.length + windLevels.length) +
+            cs("rendering", "Rendering", renderHtml, profiles.length) +
+            cs("debug", "Debug", debugHtml, debugFeatures.length) +
+            cs("developer-tools", "Developer Tools",
+                `<div style="margin-bottom:8px">${devHtml}
+                    <div style="font-size:9px;color:rgba(210,235,255,0.35);margin-bottom:4px;margin-top:8px">Telemetry Console</div>
+                    <div class="tars-console" id="creator-telemetry">${telemetryHtml}</div>
                 </div>
-                <div class="tars-feedback" id="creator-feedback"></div>
-            </div>`
-        ) + cs("behavior-testing", "Behavior Testing", behaviorHtml, emotions.length) +
-          cs("gesture-testing", "Gesture Testing", gestureHtml, gestures.length) +
-          cs("activity-testing", "Activity Testing", activityHtml, activityIds.length) +
-          cs("location-testing", "Location Testing", locHtml, targets.length) +
-          cs("need-simulation", "Need Simulation", `<div class="tars-inject-group">${needHtml}</div>`, needNames.length) +
-          cs("diagnostics", "Diagnostics",
-            `<div style="margin-bottom:8px">
-                <div style="font-size:9px;color:rgba(210,235,255,0.4);margin-bottom:4px">Telemetry Console</div>
-                <div class="tars-console" id="creator-telemetry">${telemetryHtml}</div>
-            </div>
-            <div>
-                <div style="font-size:9px;color:rgba(210,235,255,0.4);margin-bottom:4px">Memory Inspector</div>
-                ${memHtml}
-                <div style="margin-top:6px;font-size:9px;color:rgba(210,235,255,0.3)">
-                    Persistence v${window.TARS_SAVE_VERSION || 2} | Save: ${WorldPersistence.lastSaved ? new Date(WorldPersistence.lastSaved).toLocaleTimeString() : "—"}
-                </div>
-            </div>`
-        );
+                <div>
+                    <div style="font-size:9px;color:rgba(210,235,255,0.35);margin-bottom:4px">Memory Inspector</div>
+                    ${memHtml}
+                    <div style="margin-top:6px;font-size:9px;color:rgba(210,235,255,0.3)">
+                        Persistence v${window.TARS_SAVE_VERSION || 2} | Save: ${WorldPersistence.lastSaved ? new Date(WorldPersistence.lastSaved).toLocaleTimeString() : "—"}
+                    </div>
+                </div>`
+            );
     },
 
     updateStatusHeader() {
@@ -6272,6 +7698,10 @@ const TARS_UI = {
             const valEl = document.querySelector(`[data-need-val="${n}"]`);
             if (valEl) valEl.textContent = ((needs[n] || 0.5) * 100).toFixed(0) + "%";
         }
+
+        // Environment
+        const envEl = document.getElementById("env-temp");
+        if (envEl) envEl.textContent = worldState.environment.temperature || 22;
 
         // Telemetry
         const telemetryEl = document.getElementById("creator-telemetry");
@@ -6727,6 +8157,45 @@ function initObservatoryUI() {
                 setFb("↩ Control released to autonomous", "#4ade80");
                 break;
 
+            // Environment Controls
+            case "set-weather":
+                TARS_setWeather(e.target.dataset.condition);
+                setFb(`Weather: ${e.target.dataset.condition}`, "#5fd0ff");
+                break;
+            case "set-time":
+                TARS_setTimeOfDay(e.target.dataset.preset);
+                setFb(`Time: ${e.target.dataset.preset}`, "#5fd0ff");
+                break;
+            case "set-temp":
+                TARS_setTemperature(parseFloat(e.target.dataset.delta));
+                setFb(`Temperature adjusted`, "#5fd0ff");
+                break;
+            case "set-wind":
+                TARS_setWind(e.target.dataset.intensity);
+                setFb(`Wind: ${e.target.dataset.intensity}`, "#5fd0ff");
+                break;
+
+            // Rendering
+            case "set-profile":
+                TARS_setRenderProfile(e.target.dataset.profile);
+                break;
+
+            // Movement
+            case "go-to":
+                TARS_goTo(e.target.dataset.target);
+                setFb(`Moving to: ${e.target.dataset.target}`, "#a78bfa");
+                break;
+
+            // Debug
+            case "toggle-debug": {
+                const lsKey = e.target.dataset.lskey;
+                const feature = e.target.dataset.feature;
+                TARS_toggleDebug(feature, lsKey);
+                const isOn = localStorage.getItem(lsKey) === "true";
+                setFb(`Debug: ${feature} → ${isOn ? "ON" : "OFF"}`, isOn ? "#4ade80" : "#f87171");
+                break;
+            }
+
             // Testing sections
             case "inject-need": {
                 const need = e.target.dataset.need;
@@ -6787,7 +8256,88 @@ function initObservatoryUI() {
     });
 
     TARS_UI.updateStatusHeader();
-    console.log("[TARS OBSERVATORY] Phase 7.4 UI initialized. Press 🧠📊📜💬⚙ to open panels.");
+
+    // PHASE 7.4.5: Developer Observatory — F3 or Ctrl+Shift+D toggles the overlay.
+    document.addEventListener("keydown", (e) => {
+        const isObservatoryKey =
+            e.key === "F3" ||
+            (e.ctrlKey && e.shiftKey && (e.key === "D" || e.key === "d"));
+        if (!isObservatoryKey) return;
+        if (e.target && (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")) return;
+        e.preventDefault();
+        if (TARS_UI.activeTab === "observatory" && TARS_UI.overlayVisible) {
+            TARS_UI.closeOverlay();
+        } else {
+            TARS_UI.openTab("observatory");
+        }
+    });
+
+    console.log("[TARS OBSERVATORY] Phase 7.4 UI initialized. Press 🧠📊📜💬⚙ or F3 / Ctrl+Shift+D to open panels.");
+}
+
+// ============================================================
+// [DEBUG] Creator Console Handler Functions
+// Module-level functions for environment, movement, rendering, debug actions.
+// ============================================================
+
+function TARS_setWeather(condition) {
+    worldState.environment.weather.condition = condition;
+    worldState.environment.lastWeatherChange = Date.now();
+    if (window.weatherVisualEngine && weatherVisualEngine.updateFromWeatherState) {
+        weatherVisualEngine.updateFromWeatherState();
+    }
+}
+
+function TARS_setTimeOfDay(preset) {
+    const times = { dawn: 6, morning: 9, noon: 12, dusk: 18, night: 22 };
+    const hour = times[preset] || 12;
+    worldState.environment.timeOfDay = hour;
+    if (typeof updateDayNight === "function") updateDayNight();
+}
+
+function TARS_setTemperature(delta) {
+    const cur = worldState.environment.temperature || 22;
+    worldState.environment.temperature = Math.max(-10, Math.min(50, cur + delta));
+    const el = document.getElementById("env-temp");
+    if (el) el.textContent = worldState.environment.temperature;
+}
+
+function TARS_setWind(intensity) {
+    const speedMap = { calm: 0, light: 5, moderate: 15, strong: 30, gale: 55 };
+    worldState.environment.weather.wind = { intensity, direction: 270, speed: speedMap[intensity] || 15 };
+    if (window.weatherVisualEngine && weatherVisualEngine.applyWind) {
+        weatherVisualEngine.applyWind(intensity);
+    }
+}
+
+function TARS_setRenderProfile(profile) {
+    localStorage.setItem("TARS_RENDER_PROFILE", profile);
+    document.querySelectorAll(".tars-profile-opt").forEach(el => {
+        el.classList.toggle("active", el.dataset.profile === profile);
+    });
+    const lbl = document.getElementById("render-profile-label");
+    if (lbl) lbl.textContent = profile.replace("_", " ");
+    window.location.reload();
+}
+
+function TARS_goTo(target) {
+    const pos = TARGET_POSITIONS[target] || TARGET_POSITIONS.user;
+    if (window.TARS && TARS.moveTo) {
+        TARS.moveTo(pos.clone());
+        TARS.lookAt(target, "creator_console");
+    }
+}
+
+function TARS_toggleDebug(feature, lsKey) {
+    const newVal = localStorage.getItem(lsKey) !== "true";
+    localStorage.setItem(lsKey, newVal ? "true" : "false");
+    if (feature === "collision-volumes" || feature === "zone-boundaries" || feature === "avoidance-vectors") {
+        if (window.TARS_DEBUG && TARS_DEBUG.rebuild) {
+            TARS_DEBUG.rebuild();
+        } else {
+            window.location.reload();
+        }
+    }
 }
 
 initObservatoryUI();

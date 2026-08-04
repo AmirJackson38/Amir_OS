@@ -55,17 +55,32 @@ health-monitor.js (tick every 10s)
 |--------|------|--------|----------|-------------|--------|-------|
 | Home | 🏠 | `home` | `TARS_UI.renderHome()` | `#tars-connection-dot` className + `tars-events-connected`/`disconnected` events | **Working** | Shows event bus connection status + HA placeholder |
 | INFRA | ◈ | `infra` | `TARS_UI.renderInfra()` | REST `/api/events` (initial) + `tars-event` DOM events (live) + 10s polling | **Working** | CPU, mem, disk, temp, uptime, services, Docker, network, alerts |
-| Observatory | 📊 | `observatory` | `TARS_UI.renderObservatory()` | `worldState.tars.*` + `TARS_AUTONOMY.getActivityScores()` | **Working** | Needs bars, scores, fatigue, decisions, stats, behavior patterns |
+| Observatory | 📊 | `observatory` | `TARS_UI.renderObservatory()` | `ObservatoryDataLayer` (projected state + emitted events) | **Working** | Needs bars, scores, fatigue, decisions, stats, behavior patterns; full-screen overlay via **F3 / Ctrl+Shift+D** |
 | Brain | 🧠 | `brain` | `TARS_UI.renderBrain()` | `worldState.tars.autonomy` (scoreComponents, alternatives) | **Working** | Activity, score breakdown, runner-up, fatigue |
+| Journal | 📜 | `journal` | `TARS_UI.renderJournal()` | `worldState.tars.autonomyHistory` | **Working** | Activity timeline with expand/collapse |
 | System | ⚙ | `system` | `TARS_UI.renderSystem()` | `GET /health` (runtime version, event bus stats) | **Working** | Version, uptime, event bus stats, dev tool nav buttons |
+| Creator Console | 🎛 | `settings` | `TARS_UI.renderSettings()` + 400ms `refreshSettingsLive()` | `worldState.tars` + DOM actions | **Working** | 7-section control center (see below) |
 
-### Hidden Tabs (no toolbar button — accessible via System tab buttons or `TARS_UI.openTab()`)
+### Conversation (separate panel)
 
-| Tab | Icon | Renderer | Data Source | Status | Notes |
-|-----|------|----------|-------------|--------|-------|
-| Journal | 📜 | `TARS_UI.renderJournal()` | `worldState.tars.autonomyHistory` | **Working** | Activity timeline with expand/collapse |
-| Settings | ⚙ | `TARS_UI.renderSettings()` + 400ms `refreshSettingsLive()` | `worldState.tars` + DOM actions | **Working** | System controls, behavior test, need inject, telemetry |
-| Conversation | 💬 | `TARS_CHAT.send()` (no LLM) | `TARS_CHAT.history[]` | **Working but stub** | No toolbar button. Replies "cognitive system offline". |
+| Component | ID | Handler | Data Source | Status | Notes |
+|-----------|-----|---------|-------------|--------|-------|
+| Chat | `tars-chat` | `TARS_CHAT.send()` | `TARS_CHAT.history[]` | **Working but stub** | Replies "cognitive system offline". No LLM. |
+
+### Creator Console Sections (Settings Tab)
+
+| Section | Collapsible | Controls | Handler Actions |
+|---------|-------------|----------|-----------------|
+| System Controls | ✅ | Status grid, PAUSE/RESUME/FORCE/WANDER/RESET, LIVE/DEMO, AUTO/LLM/RELEASE | `pause`, `resume`, `force-decision`, `trigger-wander`, `reset-state`, `set-mode`, `set-control`, `release-control` |
+| Behavior | ✅ | 14 emotion presets, 7 activity tests, 5 gesture tests | `trigger-behavior`, `test-behavior`, `trigger-gesture`, `test-activity` |
+| Movement | ✅ | 6 go-to targets (HOME, DESK, RACK-A, RACK-B, LEFT/RIGHT WINDOW), 5 look-at targets | `go-to`, `look-at` |
+| Needs | ✅ | 6 need bars with +/-10% inject, reset | `inject-need`, `reset-state` |
+| Environment | ✅ | Weather (7 conditions), Time (5 presets), Temperature (+/-), Wind (5 levels) | `set-weather`, `set-time`, `set-temp`, `set-wind` |
+| Rendering | ✅ | Quality profile selector (HIGH / PI_BALANCED) | `set-profile` |
+| Debug | ✅ | Toggle checkboxes (collision volumes, zones, avoidance vectors, FPS, AI state) | `toggle-debug` |
+| Developer Tools | ✅ | Tab shortcuts (Brain, Observatory, Journal, Conversation, Settings), Telemetry Console, Memory Inspector | `open-dev-tool` |
+
+All 22 data-action values wired to real handlers. Zero dead controls.
 
 ### Standalone Components
 
@@ -85,7 +100,7 @@ health-monitor.js (tick every 10s)
 - **Pi readiness**: All monitors degrade gracefully on Windows (no /var/run/docker.sock, ping fallback)
 
 ## File Map
-- `tars_face_v1.html` — complete frontend (HTML + CSS + JS, ~6900 lines)
+- `tars_face_v1.html` — complete frontend (HTML + CSS + JS, ~8472 lines; event bus, ObservatoryDataLayer, world objects, physics foundation)
 - `pi-server/server.js` — runtime server entry point
 - `pi-server/event-bus.js` — in-process event bus
 - `pi-server/ws-bridge.js` — WebSocket event broadcast

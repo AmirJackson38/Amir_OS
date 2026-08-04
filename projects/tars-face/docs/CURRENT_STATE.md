@@ -1,13 +1,27 @@
 # TARS Face — Current State
 
-**Date**: 2026-07-29
-**Version**: v7.5 + Phase 8.3.4 stabilization audit (committed)
+**Date**: 2026-08-03
+**Version**: v7.5 + Phase 8.3.4 stabilization + Phase 8.4.3.6 Creator Console restoration + Phase 8.4 Observable Spatial Runtime Base
+
+## Completed
+All behavior delivered and verified (see sections below): Three.js face with expressions/gestures/eye tracking, need-driven autonomy engine with scoring, world state persistence, runtime server (WebSocket + REST), health/asset/docker/network/alert monitoring, Creator Console (7 sections / 22 live actions), in-process event bus, and the Phase 8.4 observable spatial runtime base.
+
+## Newly Integrated (Phase 8.4 — Observable Spatial Runtime Base)
+- **Renderer**: `TARS_RENDER_PROFILES` (DESKTOP_HIGH / PI_BALANCED) + `detectRenderProfile()` for quality selection with persist + reload
+- **Event bus**: `TARS_EVENT_BUS`, `EVENT_CATEGORY_MAP`, `emitTARSEvent()` / `subscribeTARSEvent()` (in-process pub/sub)
+- **Observability data layer**: `ObservatoryDataLayer` (Phase 7.4.4) with `ingestEvent`, projected state, derived metrics; feeds live world/behavior/needs/event views
+- **Developer Observatory**: `initObservatoryUI()` with **F3 / Ctrl+Shift+D** overlay toggle; `renderObservatory()` reads only the data layer
+- **Decision telemetry**: `recordAutonomyDecision()` emits `decision.made` artifacts with score breakdown + confidence
+- **World objects**: `TARS_WORLD_OBJECTS` registry (zones, presence levels), `TARS_COLLISION` (box/capsule/plane shape math), `TARS_PHYSICS` (gravity, integration, collision response), `initializeWorldObjects()`
+- **Live hooks**: `need.changed`, `activityStarted`/`activityEndsAt` emitted from the autonomy engine
+- **Creator Console**: 7-section collapsible control center; System, Behavior, Movement, Needs, Environment, Rendering, Debug; 22 actions all wired to real handlers — zero dead controls
 
 ## What Works
 - Three.js 3D face with expressions, gestures, eye tracking
 - Autonomy engine: need-driven activity selection with scoring
 - World state persistence (localStorage)
-- Right-side toolbar: 🏠 Home, ◈ INFRA, 📊 Observatory, 🧠 Brain, ⚙ System
+- Right-side toolbar: 🏠 Home, ◈ INFRA, 📊 Observatory, 🧠 Brain, 📜 Journal, ⚙ System, 🎛 Creator Console
+- 📊 Observatory: live world, behavior, needs, and event views rendered from `ObservatoryDataLayer` (no direct state reads); toggleable full-screen overlay via **F3 / Ctrl+Shift+D**
 - Runtime server with WebSocket + REST API
 - Health monitoring (CPU, memory, disk, temp, uptime) every 10s via `/api/events`
 - Docker container monitoring (Unix only, graceful disable on Windows)
@@ -19,6 +33,19 @@
 - INFRA tab: CPU, Memory, Disk, Temperature, Uptime, Services, Docker, Network, Alerts — all populated from live events + REST poll
 - System tab: version info, runtime stats, dev tool navigation buttons
 - Home tab: connection status display
+- Settings tab (Creator Console): 7-section collapsible control center
+  - System Controls: pause/resume/force/wander/reset, system mode, control mode
+  - Behavior: emotion presets (14), activity testing (7), gesture testing (5)
+  - Movement: go-to targets (6), look-at targets (5)
+  - Needs: 6 need bars with +/- inject, reset to 50%
+  - Environment: weather (7 conditions), time of day (5 presets), temperature, wind (5 levels)
+  - Rendering: quality profile selector (HIGH / PI_BALANCED)
+  - Debug: toggle checkboxes for collision volumes, zones, avoidance vectors, FPS, AI state
+  - Developer Tools: tab navigation shortcuts, telemetry console, memory inspector
+- Environment controls accessible from Creator Console: set weather, time, temperature, wind at runtime
+- Render quality profile switching via Creator Console (HIGH / PI_BALANCED) with persist + reload
+- Debug visualization toggles via Creator Console (collision volumes, zones, avoidance vectors, FPS, AI state)
+- All 22 button actions wired to real handlers — zero dead controls
 
 ## Data Pipeline (verified)
 ```
@@ -61,7 +88,7 @@ All 10 event types (`health.cpu`, `.memory`, `.disk`, `.uptime`, `system.heartbe
 ### Persistence Boundaries
 
 ```
-localStorage (browser)           Server memory              Future (Phase 8.4+)
+localStorage (browser)           Server memory              Future (Phase 8.5+)
 ├── needs                        ├── event history          ├── SQLite event log
 ├── fatigue                      ├── active alerts          ├── SQLite alert history
 ├── activity history (200)       ├── service registry       ├── SQLite service history
@@ -71,7 +98,7 @@ localStorage (browser)           Server memory              Future (Phase 8.4+)
 └── environment
 ```
 
-### Future Persistence (Phase 8.4+)
+### Future Persistence (Phase 8.5+)
 
 | Feature | Storage | Purpose |
 |---------|---------|---------|
@@ -89,7 +116,20 @@ localStorage (browser)           Server memory              Future (Phase 8.4+)
 - **Home Assistant integration**: Home tab is placeholder
 - **Network monitor**: Uses ICMP ping (may require admin/root on some systems)
 - **No authentication**: All API endpoints are public
-- **Single-file frontend**: `tars_face_v1.html` ~6900 lines
+- **Single-file frontend**: `tars_face_v1.html` ~8472 lines
+
+## Not Yet Complete
+- **Full ball physics**: gravity/integration primitives exist; ball dynamics, rolling, contact resolution, and friction not implemented
+- **Object interaction**: no world-object TARS interaction (grab/knock/roll) beyond debug placeholders
+- **Advanced collision response**: multi-tier (COLLISION_TIERS) response, capsule-capsule, and compound shapes incomplete
+- **SQLite event log / alert history**: still in-memory server buffers (see Future Persistence)
+- **Episodic / semantic memory**: not started
+- **LLM connection**: chat is placeholder, Brain tab shows "Cognitive layer offline"
+- **Home Assistant bridge**: not started
+- **Network monitors for Optiplex/TrueNAS/Plex**: not implemented (ICMP ping only for 3 hosts)
+- **Raspberry Pi deployment**: no Pi hardware, no kiosk/systemd/service config
+- **Frontend modularization**: single file still ~8472 lines
+- **Automated test suite**: only `test_observatory.js` regression exists (run via Node directly)
 
 ## Stabilization Audit (Phase 8.3.4)
 All findings categorized:
@@ -110,15 +150,16 @@ All findings categorized:
 - Status badge "🧠 OFFLINE" is hardcoded
 
 ### FUTURE WORK
-- Chat button missing from toolbar — no way to open chat from UI
 - Two click listeners on `#tars-overlay-body` could be merged (non-critical)
-- Phase 8.4: LLM integration, Home Assistant, alert notifications, modularization
+- Phase 8.5: LLM integration, Home Assistant, alert notifications, modularization
 
-## Next Steps (Phase 8.4)
-1. Connect LLM for cognitive layer (Brain tab + Chat)
-2. Home Assistant / IoT integration (Home tab)
-3. Weather, news, calendar feeds (Observatory expansion)
-4. Alert notification system (push/toast)
-5. Frontend modularization (split HTML into components)
-6. Automated test suite for server monitors
-7. Raspberry Pi deployment testing
+## Next Steps (Phase 8.5+)
+1. Continue Phase 8.5 feature implementation (ball dynamics, object interaction, collision response completion)
+2. Connect LLM for cognitive layer (Brain tab + Chat)
+3. Home Assistant / IoT integration (Home tab)
+4. Weather, news, calendar feeds (Observatory expansion)
+5. Alert notification system (push/toast)
+6. SQLite event log + persistent alert/service history
+7. Frontend modularization (split HTML into components)
+8. Automated test suite for server monitors
+9. Raspberry Pi deployment (kiosk, systemd, physical display)

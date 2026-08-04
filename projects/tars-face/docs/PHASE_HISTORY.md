@@ -76,3 +76,45 @@
 - **BUG FIX**: `renderHome` listener leak on tab re-open
 - **BUG FIX**: `throttledUpdate` hammered INFRA with 4+ API calls every 400ms
 - Stabilization audit: all 10 event types traced, all 15 UI components mapped, 0 regressions
+
+## Phase 8.4 — Observable Spatial Runtime Base (working tree → checkpoint)
+- **Renderer profiles**: `TARS_RENDER_PROFILES` (DESKTOP_HIGH / PI_BALANCED) + `detectRenderProfile()`; quality selector persists and survives reload
+- **In-process event bus**: `TARS_EVENT_BUS`, `EVENT_CATEGORY_MAP`, `emitTARSEvent()` / `subscribeTARSEvent()` in the frontend
+- **Observatory data layer**: `ObservatoryDataLayer` (ingestEvent, projected state, derived metrics); `renderObservatory()` reads the data layer only — no direct engine reads
+- **Developer Observatory**: `initObservatoryUI()` full-screen overlay toggle via **F3 / Ctrl+Shift+D**; live world, behavior, needs, events views
+- **Decision telemetry**: `recordAutonomyDecision()` emits `decision.made` artifacts with score breakdown + confidence
+- **World objects**: `TARS_WORLD_OBJECTS` registry, `TARS_COLLISION` (box/capsule/plane shape math), `TARS_PHYSICS` (gravity, integration, collision response), `initializeWorldObjects()`
+- **Live hooks**: `need.changed` and `activityStarted`/`activityEndsAt` emitted from the autonomy engine for the observatory feed
+- Checkpoint commit anchored the full working tree as the Phase 8.4 base
+
+## Phase 8.4.3 — TARS World Object / Spatial Framework
+- Created `TARS_WORLD_OBJECTS` registry with collision objects, semantic zones, presence levels (visual/spatial/collision/interactive/physics)
+- Created `TARS_COLLISION` service with shape math (box/capsule/plane/sphere), avoidance vector, nearest obstacle query
+- Removed legacy `OBSTACLES` array (5 objects → 0 references)
+- Migrated `getAvoidanceVector()` to delegate to `TARS_COLLISION` with identical avoidance force values
+- Added `initializeWorldObjects()` with 5 registrations (desk, 2 racks, 2 plants) using legacy radii for exact backward compatibility
+- 4 room zones: workstation, server_area, observation, relaxation
+- Added debug visualization toggle (`?debug=world`): wireframe collision volumes, zone circles, avoidance arrow
+- All legacy radii match: desk=1.3, rack-a=1.1, rack-b=1.0, plant-a=0.6, plant-b=0.6 → all +0.5 = same as old behavior
+
+## Phase 8.4.3.6 — Creator Console Restoration & Expansion
+- Added toolbar buttons: 📜 Journal, 🎛 Creator Console (settings tab now one click away)
+- Restructured Creator Console into 7 logical collapsible sections:
+  - **System Controls**: status grid + pause/resume/force/wander/reset + mode toggles
+  - **Behavior**: 14 emotion presets, 7 activity tests, 5 gesture tests
+  - **Movement**: 6 go-to targets (desk, racks, windows, home) + 5 look-at targets
+  - **Needs**: 6 need bars with +/-10% inject + reset
+  - **Environment**: weather (7 conditions), time of day (5 presets), temperature (+/-), wind (5 levels)
+  - **Rendering**: quality profile selector (HIGH / PI_BALANCED) with persist + reload
+  - **Debug**: checkbox toggles for collision volumes, zones, avoidance vectors, FPS, AI state
+  - **Developer Tools**: tab shortcuts + telemetry console + memory inspector
+- Added 7 handler functions: TARS_setWeather, TARS_setTimeOfDay, TARS_setTemperature, TARS_setWind, TARS_setRenderProfile, TARS_goTo, TARS_toggleDebug
+- All 22 button data-action values wired to switch cases — zero dead controls
+- Updated collapse state defaults (system, behavior, movement, needs, environment, rendering, debug start collapsed)
+
+## Phase 8.5 — Planned (not started)
+- Ball dynamics / rolling / contact resolution / friction completion
+- Object interaction (grab/knock/roll), compound collision shapes
+- SQLite event log + persistent alert/service history
+- LLM cognitive layer (Brain + Chat), Home Assistant bridge
+- Raspberry Pi deployment (kiosk, systemd, physical display)
