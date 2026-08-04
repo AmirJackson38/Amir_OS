@@ -616,6 +616,7 @@ const TARS_WORLD_OBJECTS = {
         });
     }
 };
+window.TARS_WORLD_OBJECTS = TARS_WORLD_OBJECTS;
 
 // ============================================================
 // TARS COLLISION SERVICE
@@ -728,6 +729,7 @@ const TARS_COLLISION = {
         return avoidanceVec;
     }
 };
+window.TARS_COLLISION = TARS_COLLISION;
 
 // ============================================================
 // TARS PHYSICS SERVICE
@@ -1024,6 +1026,7 @@ const TARS_PHYSICS = {
         }
     }
 };
+window.TARS_PHYSICS = TARS_PHYSICS;
 
 // ============================================================
 // CORE
@@ -2701,6 +2704,7 @@ const worldState = {
         totalElapsed: 0
     }
 };
+window.worldState = worldState;
 
 // ============================================================
 // PHASE 4: CROSS-SESSION WORLD PERSISTENCE
@@ -3835,13 +3839,13 @@ window.TARS_WORLD_AGENT = TARS_WORLD_AGENT;
 try {
     TARS_WORLD_SENSOR.init();
     TARS_WORLD_AGENT.init();
-    if (window.renderer && renderer.domElement) {
+    if (renderer && renderer.domElement) {
         TARS_INPUT_CLASSIFIER.init(renderer.domElement);
         console.log("[TARS 8.5] Embodied interaction layer ready (classifier+sensor+agent attached to canvas).");
     } else {
         console.warn("[TARS 8.5] renderer not available yet; classifier deferred.");
         const _bindWhenReady = () => {
-            if (window.renderer && renderer.domElement) {
+            if (renderer && renderer.domElement) {
                 TARS_INPUT_CLASSIFIER.init(renderer.domElement);
             }
         };
@@ -5404,6 +5408,7 @@ const currentState = {
     orbitSpeed: 0.8,
     scale: 1.0
 };
+window.currentState = currentState;
 
 // Global TARS Controller API
 
@@ -9012,6 +9017,7 @@ const TARS_UI = {
         });
     }
 };
+window.TARS_UI = TARS_UI;
 
 // Chat API — placeholder, no LLM connection
 window.TARS_CHAT = {
