@@ -1040,6 +1040,9 @@ const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerH
 camera.position.set(0, 2.7, 10);
 
 const renderer = new THREE.WebGLRenderer({ antialias: TARS_RENDER.renderer.antialias, powerPreference: "high-performance" });
+window.scene = scene;
+window.camera = camera;
+window.renderer = renderer;
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, TARS_RENDER.renderer.pixelRatio));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = TARS_RENDER.shadows;
