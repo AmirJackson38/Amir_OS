@@ -755,6 +755,7 @@ const TARS_PHYSICS = {
         for (const [, obj] of this.objects) {
             const p = obj.physics;
             if (!p || !p.enabled || p.sleeping) continue;
+            if (p.type === "kinematic") continue;
             this.applyGravity(obj, step);
             this.moveObject(obj, step);
             this.resolveCollisions(obj);
