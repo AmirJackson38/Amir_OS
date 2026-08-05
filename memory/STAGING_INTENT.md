@@ -8,9 +8,9 @@
 ## Active Staged Action
 
 - **Timestamp:** 2026-08-04 UTC
-- **Target Component:** TARS deployment provenance contract
-- **Planned Action:** Inject the deployed Git SHA, Docker image digest, UTC deployment timestamp, and validation status into `tars_backend`; expose them through `/health`; record the same facts on the Pi during deployment. Preserve offline-first frontend behavior and the no-Docker-socket runtime boundary.
-- **Status:** Complete — local syntax, Observatory (59/59), and isolated `/health` provenance checks passed. Pi deployment intentionally not run in this change.
+- **Target Component:** TARS browser startup / day-night bridge-light state
+- **Planned Action:** Repair the verified `bridgeLights` scope regression introduced by the WindowEnvironmentProvider refactor. Restore the shared collection at module scope without changing environment behavior, then validate a cold kiosk startup on the Pi through Chromium DevTools before release.
+- **Status:** Local validation passed; pending Pi cold-start validation and release confirmation.
 
 ---
 

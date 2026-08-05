@@ -1338,6 +1338,8 @@ const lfarBuildings = [];
 const lbuildings = [];
 const lcars = [];
 const lcarLights = [];
+// Shared with updateDayNight(); fallback construction populates this collection.
+const bridgeLights = [];
 
 function buildLeftProceduralFallback() {
     // Layer 1: Distant hills/mountains (furthest)
@@ -1409,7 +1411,6 @@ function buildLeftProceduralFallback() {
         }
     }
 
-    const bridgeLights = [];
     for (let i = 0; i < 10; i++) {
         const lightGeo = new THREE.SphereGeometry(0.12, 8, 8);
         const lightMat = new THREE.MeshBasicMaterial({ color: 0xffdd88, transparent: true, opacity: 0 });
