@@ -1207,11 +1207,6 @@ const lwindowGlow = new THREE.PointLight(0x1679c9, 10, 15);
 lwindowGlow.position.set(LEFT_WALL_X - 1, LWIN_Y - 0.2, 0);
 scene.add(lwindowGlow);
 
-const lframeMaterial = material(0x101820, 0.6, 0.5);
-const lvFrame = new THREE.Mesh(new THREE.BoxGeometry(0.12, LWIN_H + 0.3, 0.2), lframeMaterial);
-lwindowFrame.add(lvFrame);
-const lhFrame = new THREE.Mesh(new THREE.BoxGeometry(LWIN_W + 0.3, 0.12, 0.2), lframeMaterial);
-lwindowFrame.add(lhFrame);
 const ltrimMat = material(0x0d151c, 0.55, 0.4);
 const ltrimTop = new THREE.Mesh(new THREE.BoxGeometry(LWIN_W + 0.4, 0.15, 0.25), ltrimMat);
 ltrimTop.position.y = LWIN_H / 2 + 0.1;

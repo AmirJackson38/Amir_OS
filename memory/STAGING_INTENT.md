@@ -9,7 +9,7 @@
 
 - **Timestamp:** 2026-08-04 UTC
 - **Target Component:** TARS left-window static environment placement
-- **Planned Action:** Correct the left static image mesh from double-offset exterior coordinates to local `lexterior` coordinates, keeping the image small while restoring visibility through the side-window opening. Preserve ball fix, rear window scale, weather, source-color rendering, and autonomy/UI systems.
+- **Planned Action:** Correct the left static image mesh from double-offset exterior coordinates to local `lexterior` coordinates and remove the left-window center bars that read as a diagonal obstruction at the Pi camera angle. Preserve outer trim, glass, ball fix, rear window scale, weather, source-color rendering, and autonomy/UI systems.
 - **Status:** In Progress.
 
 ---
