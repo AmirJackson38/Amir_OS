@@ -10,7 +10,7 @@
 - **Timestamp:** 2026-08-04 UTC
 - **Target Component:** TARS left-window static environment alignment
 - **Planned Action:** Rotate the left static background texture by +16 degrees inside its aligned side-window plane so the street perspective lines up with the window sill. Preserve placement, scale, outer trim, glass, ball fix, rear window scale, weather, source-color rendering, and autonomy/UI systems.
-- **Status:** In Progress.
+- **Status:** Complete — deployed as `27b32a0` to `tars.local`; production Chromium reload confirmed visible 800x480 WebGL canvas, loaded left/rear window assets, no failed requests, no startup exceptions, and texture rotation flipped to the requested direction without tilting the window plane.
 
 ---
 
