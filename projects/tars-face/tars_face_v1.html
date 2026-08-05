@@ -758,7 +758,7 @@ const TARS_PHYSICS = {
             objectId: obj.id,
             otherId: obs.id,
             otherTier: obs.collisionTier,
-            position: { x: +pos.x.toFixed(3), y: +pos.y.toFixed(3), z: +pos.z.toFixed(3) }
+            position: { x: +position.x.toFixed(3), y: +position.y.toFixed(3), z: +position.z.toFixed(3) }
         });
     },
 
@@ -1340,6 +1340,9 @@ const lcars = [];
 const lcarLights = [];
 // Shared with updateDayNight(); fallback construction populates this collection.
 const bridgeLights = [];
+// Fallback-only water state; static backgrounds do not create a water mesh.
+let lwaterMesh = null;
+const lwaterDistortion = { time: 0 };
 
 function buildLeftProceduralFallback() {
     // Layer 1: Distant hills/mountains (furthest)
@@ -1425,7 +1428,7 @@ function buildLeftProceduralFallback() {
         color: 0x051020, metalness: 0.9, roughness: 0.1, transmission: 0.3,
         transparent: true, opacity: 0.6, side: THREE.DoubleSide
     });
-    const lwaterMesh = new THREE.Mesh(lwaterGeo, lwaterMat);
+    lwaterMesh = new THREE.Mesh(lwaterGeo, lwaterMat);
     lwaterMesh.rotation.x = -Math.PI / 2;
     lwaterMesh.position.set(-5, 0.15, -2);
     lexterior.add(lwaterMesh);
@@ -7127,10 +7130,12 @@ function animate() {
         layer.mesh.position.x += (parallaxX - layer.mesh.position.x) * 0.005;
     });
 
-    // Water surface subtle animation
-    lwaterDistortion.time += dt;
-    lwaterMesh.position.y = 0.15 + Math.sin(lwaterDistortion.time * 1.5) * 0.02;
-    lwaterMesh.rotation.z = Math.sin(lwaterDistortion.time * 0.7) * 0.005;
+    // Water surface subtle animation (only when the procedural fallback created it).
+    if (lwaterMesh) {
+        lwaterDistortion.time += dt;
+        lwaterMesh.position.y = 0.15 + Math.sin(lwaterDistortion.time * 1.5) * 0.02;
+        lwaterMesh.rotation.z = Math.sin(lwaterDistortion.time * 0.7) * 0.005;
+    }
 
     if (typeof TARS_DEBUG !== 'undefined' && TARS_DEBUG.update) TARS_DEBUG.update(time, dt);
     renderer.render(scene, camera);
