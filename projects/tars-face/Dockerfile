@@ -22,6 +22,7 @@ COPY --chown=node:node pi-server/ ./pi-server/
 COPY --chown=node:node tars_face_v1.html ./tars_face_v1.html
 COPY --chown=node:node three.module.js ./three.module.js
 COPY --chown=node:node config/ ./config/
+COPY --chown=node:node assets/ ./assets/
 
 USER node
 WORKDIR /srv/tars/pi-server
