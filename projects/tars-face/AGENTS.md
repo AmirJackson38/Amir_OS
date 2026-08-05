@@ -25,6 +25,19 @@ Browser (tars_face_v1.html)           Server (pi-server/)
 
 Communication: Event bus → WS bridge → WebSocket → TARS_EVENTS → DOM events → TARS_UI
 
+## Current Runtime Mode
+
+```text
+TARS_RUNTIME_MODE=legacy
+```
+
+The Phase 10.1 canonical runtime shell exists as an infrastructure-only contract
+layer in `pi-server/`. It owns runtime identity, snapshot placeholders,
+renderer registration, version ordering, and handshake validation only. It does
+**not** own or mutate `worldState`, autonomy, persistence, weather, or
+behavioral memory. The frontend remains authoritative until a later migration
+phase explicitly changes this mode.
+
 ## Current Phase Status
 
 - Phase 7: Complete — autonomy, needs, face, world simulation
@@ -40,8 +53,10 @@ Communication: Event bus → WS bridge → WebSocket → TARS_EVENTS → DOM eve
 - Phase 9.1: **Complete** — node deployment preparation (`0b86279`)
 - Phase 9.2: **Complete** — TARS deployed to Pi node (`tars_backend` :8080) `97636ab`
 - Phase 9.3: **Complete** — recovery validation (container/daemon/reboot/network-loss/persistence) `3124ec1`
-- **Current: Phase 9.4** — physical embodiment and reliability work is in progress. Kiosk service verification is complete; display/touch validation and hardware reliability remain open.
+- **Phase 9.4 baseline** — physical embodiment and reliability work remains in progress. Kiosk service verification is complete; display/touch validation and hardware reliability remain open.
 - **Phase 9.4 behavioral memory enhancement** — session/daily summaries, provenance, bounded persistence, inspection, and selected backend mirroring are implemented incrementally; this does not alter autonomy or world-state authority.
+- **Current: Phase 10.2.1** — live shadow observation connected locally at 1 Hz; observation is diagnostic/non-authoritative and no authority has moved.
+- **Next gate: Phase 10.2 validation review** — verify live receipts and bounded behavior before any Phase 10.3 extraction; do not enable canonical mode.
 
 ## Development Environment Reality
 
@@ -71,6 +86,14 @@ Windows is **not** the production runtime. Do not assume Windows Docker exists, 
 Before runtime testing, explicitly identify the development environment, deployment target, and production status. Runtime validation belongs on `tars.local`; local checks validate source only.
 
 ## Golden Architecture Rules
+
+### Runtime Authority Guard
+
+`TARS_RUNTIME_MODE` supports `legacy`, `shadow`, and reserved `canonical` values.
+The current default is `legacy`. In legacy and shadow modes, any attempted
+canonical persistence or world mutation must be rejected. The Phase 10 shell
+does not enable canonical writes even when the reserved mode is explicitly
+named; authority migration requires a later approved phase.
 
 1. **Frontend runs independently** — The face, autonomy, and world simulation must work without the server.
 2. **LLM is consultant, not pilot** — Cognitive layer enriches but never controls. Autonomy engine is always the fallback.

@@ -413,6 +413,7 @@
     </div>
 </div>
 
+<script src="/frontend-observation-adapter.js"></script>
 <script type="module">
 
 import * as THREE from "/three.module.js";
@@ -9072,6 +9073,47 @@ setInterval(() => TARS_UI.throttledUpdate(Date.now()), 400);
     if (window.location.host && window.location.host !== "") {
         connect();
     }
+})();
+
+// Phase 10.2.1 — read-only shadow observation bridge.
+// This timer is intentionally independent from requestAnimationFrame and the
+// simulation clock. It sends bounded diagnostic snapshots only.
+(function () {
+    const OBSERVATION_INTERVAL_MS = 1000;
+    let timer = null;
+    let adapter = null;
+
+    function captureAndSend() {
+        if (!window.TARS_EVENTS || !window.TARS_EVENTS.isConnected()) return false;
+        if (typeof window.FrontendObservationAdapter !== "function") return false;
+        if (!adapter) adapter = new window.FrontendObservationAdapter();
+        const observation = adapter.capture({
+            worldVersion: Number.isInteger(window.TARS_WORLD_VERSION) ? window.TARS_WORLD_VERSION : null
+        });
+        if (!observation) return false;
+        return window.TARS_EVENTS.send({ type: "shadow.observation", observation });
+    }
+
+    function start() {
+        if (timer !== null) return;
+        timer = window.setInterval(captureAndSend, OBSERVATION_INTERVAL_MS);
+        captureAndSend();
+    }
+
+    function stop() {
+        if (timer === null) return;
+        window.clearInterval(timer);
+        timer = null;
+    }
+
+    window.TARS_SHADOW_OBSERVATION = Object.freeze({
+        intervalMs: OBSERVATION_INTERVAL_MS,
+        start,
+        stop,
+        captureNow: captureAndSend
+    });
+
+    document.addEventListener("tars-events-connected", start, { once: true });
 })();
 
 // ── Connection Indicator ──

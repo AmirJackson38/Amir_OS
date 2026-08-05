@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "description": "Deterministic Phase 10.2 comparison fixture; no live runtime dependency.",
+  "observations": [
+    {
+      "schemaVersion": 1,
+      "source": "frontend",
+      "timestamp": "2026-08-05T12:00:00.000Z",
+      "sessionId": "fixture-session",
+      "worldVersion": 10,
+      "state": {
+        "activity": "server_check",
+        "location": "rack-a",
+        "emotion": { "mood": "focused" },
+        "needs": { "energy": 0.8 },
+        "weather": { "condition": "rain" },
+        "timeOfDay": 0.42,
+        "lightingProfile": { "key": "daylight" },
+        "objects": { "ball": { "position": { "x": 1, "y": 2, "z": 3 } } }
+      }
+    },
+    {
+      "schemaVersion": 1,
+      "source": "frontend",
+      "timestamp": "2026-08-05T12:00:01.000Z",
+      "sessionId": "fixture-session",
+      "worldVersion": 11,
+      "state": {
+        "activity": "idle",
+        "location": "rack-a",
+        "emotion": { "mood": "focused" },
+        "needs": { "energy": 0.8 },
+        "weather": { "condition": "rain" },
+        "timeOfDay": 0.42,
+        "lightingProfile": { "key": "daylight" },
+        "objects": { "ball": { "position": { "x": 1, "y": 2, "z": 3 } } }
+      }
+    }
+  ],
+  "expected": {
+    "differences": [
+      { "field": "activity", "frontend": "server_check", "shadow": "idle" },
+      { "field": "metadata.worldVersion", "frontend": 10, "shadow": 11 }
+    ]
+  }
+}

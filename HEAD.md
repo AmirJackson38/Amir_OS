@@ -6,12 +6,12 @@ This is the first file to read before working on TARS. It records the current op
 
 - **Current release version:** `tars-v9.3.2`
 - **Release tag target:** `92adc86b965c8fa23b99b8f635900ce20b16665e` — `TARS: guard fallback animation state`
-- **Last verified development HEAD:** `9744f5327d4995a25fd33bcef6961770c0cc79a8` — `TARS: record left window coverage validation`
+- **Last verified development HEAD:** `b07e0638f3f3d659d68d51025c25a2c66a9a1af8` — `TARS: implement Phase 9.4 behavioral memory`
 - **Current branch:** `master`
 - **Last verified production runtime:** `ba9559011f5493ba866c101715a6d31c7cf569a9` — `/health` validated on `tars.local`
-- **Current phase:** Phase 9.4 physical embodiment and reliability stabilization. Phase 9.5 release hardening is proposed, not an immutable completed release unless a future tag records it.
+- **Current phase:** Phase 10.2.1 live shadow observation active locally. Phase 9.4 (`b07e063`) remains the production behavior baseline; no runtime authority has moved.
 - **Last validated milestone marker:** `tars-v9.3.2` — TARS Phase 9.3.2 kiosk startup regression recovery.
-- **Active workstream:** Phase 9.4 behavioral memory implementation alongside Raspberry Pi display/kiosk/touch/render reliability work; behavioral memory must remain derived and non-authoritative.
+- **Active workstream:** 1 Hz observation-only normalization, comparison, and diagnostics. `TARS_RUNTIME_MODE=legacy`; frontend remains authoritative for worldState, autonomy, persistence, and behavioral memory.
 
 ## Important Version Note
 
@@ -59,4 +59,4 @@ Do not expand features yet. First stabilize the project truth layer:
 2. Do not call `master` a release until tagged.
 3. Record new work as forward-only commits and future versions.
 4. Verify production on `tars.local` before making runtime claims.
-5. Continue Phase 9.4/9.5 work focused on Raspberry Pi physical embodiment, kiosk/touch reliability, render stability, release hardening, and accurate telemetry.
+5. Validate Phase 10.2.1 live observation on the development runtime; do not relocate authority or deploy canonical mode.

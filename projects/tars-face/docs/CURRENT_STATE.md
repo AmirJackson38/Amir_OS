@@ -1,10 +1,51 @@
 # TARS Face — Current State
 
-**Date**: 2026-08-04
+**Date**: 2026-08-05
 **Version**: v7.5 + Phase 8.3.4 stabilization + Phase 8.4 Observable Spatial Runtime Base + Phase 8.5 Embodied Interaction Layer + Phase 9.1 Deployment Preparation + Phase 9.2 Node Deployment + Phase 9.3 Recovery Validation
 
 ## Completed
 All behavior described below is delivered and verified. TARS frontend, backend, autonomy, world engine, and persistence are now **deployed and running on the Raspberry Pi node** (`tars_backend` on `:8080`) and have passed power-loss, Docker-restart, network-loss, and persistence recovery validation (Phase 9.3). Phase 9.4 physical embodiment work is now in progress: kiosk service verification has been completed, while display/touch validation and hardware reliability acceptance remain open. See `docs/PHASE_9_3_RECOVERY_TEST_REPORT.md`, `docs/PHASE_9_2_DEPLOYMENT_RESULT.md`, and root `HEAD.md`.
+
+## Current Runtime Mode
+
+```text
+TARS_RUNTIME_MODE=legacy
+authority=frontend
+```
+
+The Phase 10.1 canonical runtime shell is implemented locally as an
+infrastructure-only contract layer. It provides server-owned runtime identity,
+placeholder snapshots, renderer registration, version ordering, and handshake
+validation. It does not own or mutate worldState, autonomy, persistence,
+weather, or behavioral memory. No production authority has moved.
+
+## Newly Integrated (Phase 10.1 — Canonical Runtime Shell)
+
+- **Runtime identity provider**: server-owned `runtimeId`, `instanceId`, `runtimeEpoch`, `worldVersion`, deployment provenance, and schema version.
+- **Snapshot shell**: valid `world.snapshot` contract marked `canonical: false`, `status: shadow`, and `authority: frontend`.
+- **Renderer handshake**: validates `renderer.hello`, negotiates schema version, returns `renderer.accepted`, and sends the placeholder snapshot.
+- **Renderer registry**: stores connection metadata only; no world, behavior, memory, or persistence state.
+- **Version tracker**: validates `(runtimeEpoch, worldVersion)` ordering and identifies stale/duplicate versions.
+- **Health**: `/health` now includes `canonicalRuntime`, reporting shell mode, frontend authority, epoch, world version, and connected renderer count.
+- **Tests**: shell identity, handshake, schema rejection, duplicate connections, version ordering, and authority isolation.
+- **Hardening**: explicit `legacy`/`shadow`/reserved `canonical` mode guard, snapshot contract validation, malformed renderer rejection, and diagnostic-only shadow comparison interfaces.
+
+## Phase 10.2 Shadow Observation Foundation
+
+- **Observation adapter**: read-only conversion of the existing frontend state into a stable observation schema; a separate 1 Hz timer sends it outside the simulation loop.
+- **Bounded observer**: accepts frontend observations only, keeps in-memory history, and exposes diagnostic health.
+- **Comparison engine**: compares only approved behavioral/environment/object/metadata fields; missing shadow output remains `waiting`.
+- **Diagnostic endpoint**: `/health.shadow` reports observer status with `authority: frontend`.
+- **Fixture support**: deterministic `fixtures/shadow-session.json` covers waiting and divergent comparisons.
+
+## Phase 10.2 Authority Boundary
+
+Phase 10.2.1 live observation is connected locally through a separate 1 Hz
+timer, but the shell remains non-authoritative and no frontend behavior logic
+has changed. `TARS_RUNTIME_MODE` defaults to `legacy`;
+canonical persistence and world mutations are rejected by the shell guard.
+Shadow data is bounded, diagnostic-only, and cannot influence autonomy,
+worldState, persistence, or behavioral memory.
 
 ## Newly Integrated (Phase 9.3 — Recovery Validation)
 - **Test-only phase** (no runtime/Docker/arch changes): validated `tars_backend` survives real hardware lifecycle events on the node.

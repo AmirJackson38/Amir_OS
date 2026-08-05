@@ -4,6 +4,7 @@ const crypto = require("crypto");
 class WsBridge {
     constructor(eventBus, options = {}) {
         this.eventBus = eventBus;
+        this.runtimeShell = options.runtimeShell || null;
         this.clients = new Set();
         this.port = options.port || null;
         this.server = null;
@@ -18,6 +19,10 @@ class WsBridge {
             const clientId = crypto.randomUUID();
             this.clients.add(ws);
             ws._tarsClientId = clientId;
+
+            if (this.runtimeShell && typeof this.runtimeShell.handleConnection === "function") {
+                this.runtimeShell.handleConnection(ws, { clientId });
+            }
 
             ws.send(JSON.stringify({
                 id: crypto.randomUUID(),
@@ -45,6 +50,8 @@ class WsBridge {
                     }));
                     return;
                 }
+
+                if (this.runtimeShell && this.runtimeShell.handleMessage(ws, parsed)) return;
 
                 if (parsed.subscribe) {
                     ws._tarsFilter = parsed.subscribe;
@@ -81,10 +88,16 @@ class WsBridge {
             });
 
             ws.on("close", () => {
+                if (this.runtimeShell && typeof this.runtimeShell.handleDisconnect === "function") {
+                    this.runtimeShell.handleDisconnect(ws);
+                }
                 this.clients.delete(ws);
             });
 
             ws.on("error", () => {
+                if (this.runtimeShell && typeof this.runtimeShell.handleDisconnect === "function") {
+                    this.runtimeShell.handleDisconnect(ws);
+                }
                 this.clients.delete(ws);
             });
         });

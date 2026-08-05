@@ -2,7 +2,7 @@
 
 ## Overview
 
-TARS Face is a browser-based 3D face/animation system with a Node.js runtime server. The face runs in the browser (Three.js), the brain runs on the server.
+TARS Face is a browser-based 3D face/animation system with a Node.js runtime server. In the current legacy mode, the browser owns the simulation and the server provides infrastructure and observability. A Phase 10.1 canonical runtime shell now defines the future identity/snapshot/renderer contract without moving authority.
 
 ## Development and Deployment Topology
 
@@ -27,6 +27,7 @@ edit / inspect / commit / push                                      Docker / Nod
 
 ### 2. Runtime Server (`pi-server/server.js`)
 - HTTP + WebSocket server
+- **Canonical runtime shell (Phase 10.1)**: server-owned runtime identity, placeholder snapshot, renderer registry, version tracker, and `renderer.hello` protocol validation. It is non-authoritative while `TARS_RUNTIME_MODE=legacy`.
 - **Event Bus**: In-process pub/sub event system
 - **Status Reporter**: Service registry with heartbeat/staleness detection
 - **Health Monitor**: CPU, memory, disk, temperature, uptime
@@ -51,6 +52,77 @@ edit / inspect / commit / push                                      Docker / Nod
 - **Offline-capable**: Three.js served locally from `/three.module.js`; zero CDN dependency.
 - **Deployment provenance**: `/health` reports the Git SHA, Docker image digest, UTC deployment timestamp, and validation status injected by the deployment workflow.
 - See `docs/PHASE_9_2_DEPLOYMENT_RESULT.md`, `docs/PHASE_9_3_RECOVERY_TEST_REPORT.md`, `docs/PI_NODE_AUDIT.md`, `docs/CURRENT_SERVICE_MAP.md`.
+
+## Phase 10.1 Canonical Runtime Shell
+
+```text
+Pi server
+  └── CanonicalRuntimeShell
+      ├── RuntimeIdentityProvider
+      ├── SnapshotProvider (canonical:false, authority:frontend)
+      ├── RendererRegistry (connection metadata only)
+      ├── VersionTracker (runtimeEpoch, worldVersion)
+      └── ProtocolValidator (renderer.hello)
+```
+
+The shell is an empty contract layer. It does not read or write browser
+`worldState`, autonomy, weather, persistence, or behavioral memory. The
+current mode is explicitly:
+
+```text
+TARS_RUNTIME_MODE=legacy
+authority=frontend
+```
+
+Renderer connections receive a placeholder `world.snapshot` after a valid
+handshake. The placeholder is marked `canonical: false` and `status: shadow`.
+Future migration phases may relocate authority only after their acceptance
+gates pass.
+
+## Phase 10 Current State
+
+- Phase 10.1 shell implementation is complete locally.
+- `TARS_RUNTIME_MODE=legacy` is the active mode and defaults when unset.
+- Frontend remains authoritative for worldState, autonomy, needs, activity and
+  location selection, weather, persistence, behavioral memory, and rendering.
+- The Pi shell is infrastructure only: identity, placeholder snapshots,
+  renderer metadata, version ordering, and protocol validation.
+- Runtime mode guards reject canonical persistence/world mutation attempts.
+- `ShadowStateObserver`, `FrontendObservationAdapter`, and `ComparisonEngine`
+  are diagnostic-only interfaces; live frontend observation is not activated.
+- Canonical migration has not started and canonical mode is not enabled.
+
+## Phase 10.2 Shadow Mode
+
+Phase 10.2 adds an observation-only foundation:
+
+```text
+FrontendObservationAdapter
+        ↓ read-only observation
+ShadowStateObserver (bounded memory)
+        ↓ normalized state
+ComparisonEngine (diagnostic only)
+        ↓
+/health.shadow
+```
+
+The adapter reads the existing frontend world state but does not call
+autonomy, trigger updates, mutate rendering, or write persistence. A separate
+1 Hz timer sends observations; it is not part of the requestAnimationFrame
+loop or simulation clock. The Pi accepts only `source: "frontend"`
+observations over the diagnostic WebSocket message path; observations are
+bounded in memory and are never used to create world state, behavioral memory,
+or canonical snapshots.
+
+Comparison categories are behavioral (activity, location, emotion, needs),
+environment (weather, time of day, lighting), objects, and metadata versions.
+Camera, FPS, particles, interpolation, and visual effects are intentionally
+ignored. A missing shadow observation produces `status: "waiting"` rather than
+inventing a comparison.
+
+`GET /health.shadow` reports `authority: "frontend"`, observer status, bounded
+observation count, comparison count, and last-observation metadata. It is a
+diagnostic receipt, not an authority or persistence API.
 
 ## Data Pipeline
 ```
@@ -152,6 +224,18 @@ All 22 data-action values wired to real handlers. Zero dead controls.
 - `pi-server/server.js` — runtime server entry point
 - `pi-server/event-bus.js` — in-process event bus
 - `pi-server/ws-bridge.js` — WebSocket event broadcast
+- `pi-server/canonical-runtime-shell.js` — Phase 10.1 non-authoritative shell coordinator
+- `pi-server/runtime-identity.js` — server-owned shell identity
+- `pi-server/snapshot-provider.js` — placeholder shell snapshot
+- `pi-server/renderer-registry.js` — renderer connection metadata
+- `pi-server/version-tracker.js` — epoch/version ordering
+- `pi-server/protocol-validator.js` — renderer handshake validation
+- `pi-server/runtime-mode.js` — legacy/shadow/canonical authority guard
+- `pi-server/snapshot-validator.js` — public snapshot contract and forbidden-field validation
+- `pi-server/shadow-state-observer.js` — Phase 10.2 diagnostic observer interface
+- `pi-server/comparison-engine.js` — Phase 10.2 diagnostic comparison interface
+- `frontend-observation-adapter.js` — read-only frontend observation boundary
+- `fixtures/shadow-session.json` — deterministic shadow comparison fixture
 - `pi-server/services/status-reporter.js` — service heartbeat registry
 - `pi-server/services/health-monitor.js` — system health polling
 - `pi-server/services/alert-manager.js` — threshold-based alert evaluation

@@ -10,6 +10,9 @@ const { StatusReporter } = require("./services/status-reporter");
 const { AlertManager } = require("./services/alert-manager");
 const { DockerMonitor } = require("./services/infra/docker-monitor");
 const { NetworkMonitor } = require("./services/infra/network-monitor");
+const { CanonicalRuntimeShell } = require("./canonical-runtime-shell");
+const { ShadowStateObserver } = require("./shadow-state-observer");
+const { ComparisonEngine } = require("./comparison-engine");
 
 const ROOT = path.resolve(__dirname, "..");
 const CONFIG_PATH = path.resolve(ROOT, "config", "tars-config.json");
@@ -54,6 +57,22 @@ const MIME_TYPES = {
 };
 
 const eventBus = new EventBus(config.eventBus);
+
+// Phase 10.2: bounded, diagnostic-only observation. It never owns or mutates
+// worldState, autonomy, persistence, environment, or behavioral memory.
+const shadowObserver = new ShadowStateObserver(config.shadow?.observer);
+const comparisonEngine = new ComparisonEngine();
+
+// Phase 10.1: infrastructure-only canonical runtime shell. It exposes the
+// frozen identity/snapshot/handshake contract but intentionally does not own
+// worldState, autonomy, persistence, or behavioral memory yet.
+const canonicalRuntime = new CanonicalRuntimeShell({
+    runtimeId: config.runtime?.runtimeId,
+    mode: config.runtime?.mode || process.env.TARS_RUNTIME_MODE || "legacy",
+    schemaVersion: 1,
+    provenance: deploymentProvenance,
+    shadowObserver
+});
 
 // Phase 9.4: bounded, non-authoritative mirror of frontend behavioral
 // summaries. The browser remains the source of behavioral memory truth;
@@ -115,10 +134,17 @@ const server = http.createServer((req, res) => {
             timestamp: Date.now(),
             deployment: deploymentProvenance,
             eventBus: eventBus.getStats(),
+            canonicalRuntime: canonicalRuntime.getHealth(),
             behavioralMemory: behavioralMemoryMirror.health,
             services: statusReporter ? statusReporter.getStatus() : [],
             alerts: alertManager ? alertManager.getAlertStats() : {}
         }));
+        return;
+    }
+
+    if (url.pathname === "/health.shadow") {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(canonicalRuntime.getShadowHealth(comparisonEngine.getHealth().comparisons)));
         return;
     }
 
@@ -187,7 +213,7 @@ const server = http.createServer((req, res) => {
     });
 });
 
-const wsBridge = new WsBridge(eventBus);
+const wsBridge = new WsBridge(eventBus, { runtimeShell: canonicalRuntime });
 wsBridge.attach(server);
 
 const statusReporter = new StatusReporter(eventBus);
@@ -220,6 +246,16 @@ eventBus.publish({
     priority: "normal"
 });
 
+eventBus.publish({
+    id: crypto.randomUUID(),
+    source: "tars.runtime",
+    type: "runtime.started",
+    timestamp: Date.now(),
+    data: canonicalRuntime.getIdentity(),
+    domain: "tars",
+    priority: "normal"
+});
+
 server.listen(PORT, HOST, () => {
     console.log(`[TARS] Server running at http://${HOST === "0.0.0.0" ? "localhost" : HOST}:${PORT}`);
     console.log(`[TARS] WebSocket at ws://${HOST === "0.0.0.0" ? "localhost" : HOST}:${PORT}/ws`);
@@ -236,6 +272,16 @@ function shutdown(signal) {
         timestamp: Date.now(),
         data: { reason: signal, uptime: Math.floor(process.uptime()) },
         domain: "system",
+        priority: "normal"
+    });
+
+    eventBus.publish({
+        id: crypto.randomUUID(),
+        source: "tars.runtime",
+        type: "runtime.stopped",
+        timestamp: Date.now(),
+        data: { ...canonicalRuntime.getIdentity(), reason: signal },
+        domain: "tars",
         priority: "normal"
     });
 
