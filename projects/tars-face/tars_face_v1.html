@@ -1518,7 +1518,7 @@ windowEnvProvider.initWindow(
     buildLeftProceduralFallback,
     new THREE.Vector3(-10.5, 5, 0), // Positioned between window and sky
     new THREE.Euler(0, Math.PI / 2, 0),
-    { height: 8 } // Minimal overscan for the 6x4 left opening while keeping parallax margin.
+    { height: 10 } // Small side-window overscan for parallax without returning to a room-sized backdrop.
 );
 
 // Left window rain
