@@ -1298,6 +1298,7 @@ class WindowEnvironmentProvider {
                 
                 mesh.position.copy(position);
                 if (rotation) mesh.rotation.copy(rotation);
+                if (options.rollDeg) mesh.rotateZ(THREE.MathUtils.degToRad(options.rollDeg));
                 
                 group.add(mesh);
                 console.log(`[WindowEnvironmentProvider] Loaded ${side} background`);
@@ -1513,7 +1514,7 @@ windowEnvProvider.initWindow(
     buildLeftProceduralFallback,
     new THREE.Vector3(0.5, LWIN_Y, 0), // Local to lexterior; world x ~= -10.5, just outside the side window.
     new THREE.Euler(0, Math.PI / 2, 0),
-    { height: 6.5 } // Small side-window overscan for the 6x4 opening while preserving parallax.
+    { height: 6.5, rollDeg: -18 } // Align the city street with the side-window sill.
 );
 
 // Left window rain

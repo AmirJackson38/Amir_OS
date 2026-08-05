@@ -8,9 +8,9 @@
 ## Active Staged Action
 
 - **Timestamp:** 2026-08-04 UTC
-- **Target Component:** TARS left-window static environment placement
-- **Planned Action:** Correct the left static image mesh from double-offset exterior coordinates to local `lexterior` coordinates and remove the left-window center bars that read as a diagonal obstruction at the Pi camera angle. Preserve outer trim, glass, ball fix, rear window scale, weather, source-color rendering, and autonomy/UI systems.
-- **Status:** Complete — deployed as `968c37e` to `tars.local`; production Chromium reload confirmed visible 800x480 WebGL canvas, loaded left/rear window assets, no startup exceptions, restored left image visibility, and no diagonal center-bar obstruction.
+- **Target Component:** TARS left-window static environment alignment
+- **Planned Action:** Roll the left static background plane by -18 degrees so the street perspective aligns with the side-window sill. Preserve placement, scale, outer trim, glass, ball fix, rear window scale, weather, source-color rendering, and autonomy/UI systems.
+- **Status:** In Progress.
 
 ---
 
