@@ -8,9 +8,9 @@
 ## Active Staged Action
 
 - **Timestamp:** 2026-08-04 UTC
-- **Target Component:** TARS static window environment geometry
-- **Planned Action:** Reduce the oversized Gemini image planes while retaining enough overscan for camera parallax. Preserve source-color rendering, assets, and existing lighting; defer monitor/game and collision/telemetry work.
-- **Status:** Complete — committed as `ce46433`, deployed to `tars.local`, and confirmed through a clean Chromium reload with a visible 800×480 WebGL canvas and no startup exceptions.
+- **Target Component:** TARS left-window view
+- **Planned Action:** Remove the two legacy framed-art meshes that occupy the left-window opening. Preserve its frame, glass, rain, static environment image, and source-color rendering; defer monitor/game and collision/telemetry work.
+- **Status:** In Progress.
 
 ---
 

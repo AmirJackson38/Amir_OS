@@ -1823,8 +1823,7 @@ function createFramedArt({ x, y, z, rotY = 0, width = 1.6, height = 1.1, draw, g
 }
 
 createFramedArt({ x: -3.2, y: 4.6, z: -5.83, width: 2.1, height: 1.5, draw: drawSchematic, glow: 0.35 });
-createFramedArt({ x: -7.83, y: 4.7, z: -2.3, rotY: Math.PI / 2, width: 1.5, height: 2, draw: drawNebula, glow: 0.4 });
-createFramedArt({ x: -7.83, y: 2.7, z: 0.8, rotY: Math.PI / 2, width: 1.2, height: 1.2, draw: drawCircuit, glow: 0.3 });
+// The left-wall opening is now an exterior view; do not place legacy framed art across it.
 createFramedArt({ x: 7.83, y: 4.8, z: -3.6, rotY: -Math.PI / 2, width: 1.6, height: 1.1, draw: drawCircuit, glow: 0.3 });
 
 // ============================================================
