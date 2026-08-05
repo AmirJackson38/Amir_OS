@@ -9,7 +9,7 @@
 
 - **Timestamp:** 2026-08-04 UTC
 - **Target Component:** TARS left-window static environment alignment
-- **Planned Action:** Roll the left static background plane by -18 degrees so the street perspective aligns with the side-window sill. Preserve placement, scale, outer trim, glass, ball fix, rear window scale, weather, source-color rendering, and autonomy/UI systems.
+- **Planned Action:** Rotate the left static background texture by -16 degrees inside its aligned side-window plane so the street perspective lines up with the window sill. Preserve placement, scale, outer trim, glass, ball fix, rear window scale, weather, source-color rendering, and autonomy/UI systems.
 - **Status:** In Progress.
 
 ---

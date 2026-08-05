@@ -1284,6 +1284,10 @@ class WindowEnvironmentProvider {
             configPath,
             (texture) => {
                 texture.colorSpace = THREE.SRGBColorSpace;
+                if (options.textureRotationDeg) {
+                    texture.center.set(0.5, 0.5);
+                    texture.rotation = THREE.MathUtils.degToRad(options.textureRotationDeg);
+                }
                 const aspect = texture.image.width / texture.image.height;
                 const height = options.height || 16;
                 const width = height * aspect;
@@ -1298,7 +1302,6 @@ class WindowEnvironmentProvider {
                 
                 mesh.position.copy(position);
                 if (rotation) mesh.rotation.copy(rotation);
-                if (options.rollDeg) mesh.rotateZ(THREE.MathUtils.degToRad(options.rollDeg));
                 
                 group.add(mesh);
                 console.log(`[WindowEnvironmentProvider] Loaded ${side} background`);
@@ -1514,7 +1517,7 @@ windowEnvProvider.initWindow(
     buildLeftProceduralFallback,
     new THREE.Vector3(0.5, LWIN_Y, 0), // Local to lexterior; world x ~= -10.5, just outside the side window.
     new THREE.Euler(0, Math.PI / 2, 0),
-    { height: 6.5, rollDeg: -18 } // Align the city street with the side-window sill.
+    { height: 6.5, textureRotationDeg: -16 } // Align the city street with the side-window sill.
 );
 
 // Left window rain
