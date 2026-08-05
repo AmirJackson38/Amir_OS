@@ -34,11 +34,18 @@ edit / inspect / commit / push                                      Docker / Nod
 - **Network Monitor**: Pings configured hosts
 - **Alert Manager**: Threshold evaluation from health events
 
-### 3. Communications
-- WebSocket: Server pushes events to browser (health updates, alerts, docker/network data)
-- REST API: `/health`, `/api/events`, `/api/alerts` endpoints
+### 3. Behavioral Memory (`behavioral-memory.js`)
+- Derived from selected frontend runtime events only.
+- Stores versioned session and daily summaries in a separate two-slot localStorage namespace.
+- Carries memory classification and provenance for derived entries.
+- Exposes inspection/export APIs and a behavioral-memory health receipt.
+- Mirrors selected summaries to the backend for inspection only; the frontend remains authoritative.
 
-### 4. Deployment Layer (Phase 9+)
+### 4. Communications
+- WebSocket: Server pushes events to browser (health updates, alerts, docker/network data)
+- REST API: `/health`, `/api/events`, `/api/alerts`, and non-authoritative `/api/behavioral-memory` inspection endpoint
+
+### 5. Deployment Layer (Phase 9+)
 - **Docker**: `tars_backend` container (image `tars-backend:1.0.0`, non-root `node` user, `/srv/tars`, `EXPOSE 8080`, healthcheck) on isolated `tars_net` bridge, `restart: unless-stopped`, published port `8080` only.
 - **Layered isolation**: Frontend (browser) → Backend (container :8080) → Cognition (LLM, separate, not wired) → Deployment (Docker/kiosk). Recovery-gated so container restart / daemon restart / reboot / network loss all self-heal (Phase 9.3).
 - **Offline-capable**: Three.js served locally from `/three.module.js`; zero CDN dependency.
@@ -55,6 +62,18 @@ health-monitor.js (tick every 10s)
   → TARS_EVENTS onmessage → dispatchEvent(new CustomEvent("tars-event", { detail: event }))
   → TARS_UI.renderInfra handler → document.getElementById("tars-infra-cpu").querySelector(".tars-data-value")
 ```
+
+Behavioral memory is a separate derived path:
+
+```text
+selected frontend lifecycle events
+  → BehavioralMemory session accumulator
+  → two-slot localStorage session/daily summaries
+  → optional selected WebSocket mirror
+  → backend bounded inspection mirror (/api/behavioral-memory)
+```
+
+This path never writes world state and does not participate in autonomy selection.
 
 ## Monitors and Their Events
 

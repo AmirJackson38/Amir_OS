@@ -133,6 +133,15 @@ localStorage (browser)           Server memory              Future (Phase 8.5+)
 └── objects (Phase 8.5: dynamic transforms + sleep)
 ```
 
+### Phase 9.4 Behavioral Memory Enhancement
+
+- **Implemented incrementally**: `behavioral-memory.js` maintains versioned session and daily factual summaries in a separate two-slot browser-local namespace.
+- **Derived only**: summaries consume selected lifecycle events and never become world-state or autonomy authority.
+- **Provenance**: derived highlights identify source sessions/facts, generator version, confidence, and schema version.
+- **Inspection/export**: browser APIs plus the non-authoritative backend `/api/behavioral-memory` mirror.
+- **Health**: `/health` includes behavioral-memory schema, storage, write, rollup, corruption, and mirror status.
+- **Not included**: reflection, embeddings, LLM memory, personality mutation, permanent decision storage, and physics telemetry persistence.
+
 ### Future Persistence (Phase 9+)
 
 | Feature | Storage | Purpose |
@@ -159,12 +168,12 @@ localStorage (browser)           Server memory              Future (Phase 8.5+)
 - **Richer object interaction**: tap/flick impulse works; grab/knock/roll gestures, multi-tier collision response (COLLISION_TIERS), capsule-capsule, compound shapes incomplete
 - **Advanced collision response**: multi-tier (COLLISION_TIERS) response, capsule-capsule, and compound shapes incomplete
 - **SQLite event log / alert history**: still in-memory server buffers (see Future Persistence)
-- **Episodic / semantic memory**: not started
+- **Reflection / semantic memory**: not started; Phase 9.4 provides factual summaries only
 - **LLM connection**: chat is placeholder, Brain tab shows "Cognitive layer offline"
 - **Home Assistant bridge**: not started
 - **Network monitors for Optiplex/TrueNAS/Plex**: not implemented (ICMP ping only for 3 hosts)
 - **Frontend modularization**: single file still ~9040 lines
-- **Automated test suite**: `test_observatory.js` regression (Phase 7.4.4 + Phase 8.5 world-event tests) run via Node directly
+- **Automated test suite**: `test_observatory.js` regression (59 tests) plus `test_behavioral_memory.mjs`, run via Node directly
 
 ## Stabilization Audit (Phase 8.3.4)
 All findings categorized:

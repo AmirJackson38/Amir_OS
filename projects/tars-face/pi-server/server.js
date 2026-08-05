@@ -55,6 +55,52 @@ const MIME_TYPES = {
 
 const eventBus = new EventBus(config.eventBus);
 
+// Phase 9.4: bounded, non-authoritative mirror of frontend behavioral
+// summaries. The browser remains the source of behavioral memory truth;
+// this mirror exists for inspection and operational visibility only.
+const behavioralMemoryMirror = {
+    sessions: new Map(),
+    dailySummaries: new Map(),
+    health: {
+        enabled: true,
+        schemaVersion: 1,
+        storageAvailable: false,
+        activeSession: null,
+        lastSuccessfulWrite: null,
+        lastDailyRollup: null,
+        corruptionDetected: false,
+        lastSeenAt: null,
+        mirroredSessions: 0,
+        mirroredDailySummaries: 0
+    }
+};
+
+eventBus.subscribe({ types: ["behavior.*"] }, (event) => {
+    const data = event.data || {};
+    const payload = data.payload || {};
+    if (event.type === "behavior.memory.health") {
+        behavioralMemoryMirror.health = {
+            ...behavioralMemoryMirror.health,
+            ...payload,
+            lastSeenAt: new Date(event.timestamp).toISOString()
+        };
+    }
+    if (event.type === "behavior.session.summary" && payload.memoryId) {
+        behavioralMemoryMirror.sessions.set(payload.memoryId, payload);
+    }
+    if (event.type === "behavior.daily.summary" && payload.memoryId) {
+        behavioralMemoryMirror.dailySummaries.set(payload.memoryId, payload);
+    }
+    while (behavioralMemoryMirror.sessions.size > 90) {
+        behavioralMemoryMirror.sessions.delete(behavioralMemoryMirror.sessions.keys().next().value);
+    }
+    while (behavioralMemoryMirror.dailySummaries.size > 365) {
+        behavioralMemoryMirror.dailySummaries.delete(behavioralMemoryMirror.dailySummaries.keys().next().value);
+    }
+    behavioralMemoryMirror.health.mirroredSessions = behavioralMemoryMirror.sessions.size;
+    behavioralMemoryMirror.health.mirroredDailySummaries = behavioralMemoryMirror.dailySummaries.size;
+});
+
 const MIME_TYPES_KEYS = Object.keys(MIME_TYPES);
 
 const server = http.createServer((req, res) => {
@@ -69,8 +115,27 @@ const server = http.createServer((req, res) => {
             timestamp: Date.now(),
             deployment: deploymentProvenance,
             eventBus: eventBus.getStats(),
+            behavioralMemory: behavioralMemoryMirror.health,
             services: statusReporter ? statusReporter.getStatus() : [],
             alerts: alertManager ? alertManager.getAlertStats() : {}
+        }));
+        return;
+    }
+
+    if (url.pathname === "/api/behavioral-memory") {
+        const sessionId = url.searchParams.get("sessionId");
+        const date = url.searchParams.get("date");
+        const sessions = [...behavioralMemoryMirror.sessions.values()]
+            .filter(summary => !sessionId || summary.sessionId === sessionId);
+        const dailySummaries = [...behavioralMemoryMirror.dailySummaries.values()]
+            .filter(summary => !date || summary.date === date);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({
+            schemaVersion: 1,
+            authoritative: false,
+            health: behavioralMemoryMirror.health,
+            sessions,
+            dailySummaries
         }));
         return;
     }

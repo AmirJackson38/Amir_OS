@@ -416,6 +416,7 @@
 <script type="module">
 
 import * as THREE from "/three.module.js";
+import { createBehavioralMemory } from "/behavioral-memory.js";
 
 // ============================================================
 // RENDER QUALITY PROFILES
@@ -4424,6 +4425,21 @@ window.logActivityEvent = logActivityEvent;
 window.setTARSActivity = setTARSActivity;
 window.getTARSActivitySummary = getTARSActivitySummary;
 window.getPreference = getPreference;
+
+// Phase 9.4: behavioral memory is derived from runtime events and remains
+// separate from authoritative worldState and disposable debug telemetry.
+const TARS_BEHAVIORAL_MEMORY = createBehavioralMemory();
+TARS_BEHAVIORAL_MEMORY.attach();
+TARS_BEHAVIORAL_MEMORY.startSession({
+    sessionId: worldState.session.id,
+    activity: worldState.tars.activity,
+    location: worldState.tars.location,
+    worldLoaded: !!savedData,
+    rendererReady: !!renderer,
+    coldStart: !savedData
+});
+window.TARS_BEHAVIORAL_MEMORY = TARS_BEHAVIORAL_MEMORY;
+window.getTARSBehavioralMemoryHealth = TARS_BEHAVIORAL_MEMORY.getHealth;
 
 // Log offline event and session return
 if (worldState._offlineEvent) {

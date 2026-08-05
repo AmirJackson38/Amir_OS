@@ -19,7 +19,8 @@ Browser (tars_face_v1.html)           Server (pi-server/)
 │   ├── Brain                         └── Infra monitors (services/infra/)
 │   ├── System                            ├── docker-monitor.js
 │   └── Settings                          └── network-monitor.js
-└── WorldPersistence (localStorage)
+├── WorldPersistence (world-state localStorage)
+└── BehavioralMemory (separate versioned localStorage namespace)
 ```
 
 Communication: Event bus → WS bridge → WebSocket → TARS_EVENTS → DOM events → TARS_UI
@@ -40,6 +41,7 @@ Communication: Event bus → WS bridge → WebSocket → TARS_EVENTS → DOM eve
 - Phase 9.2: **Complete** — TARS deployed to Pi node (`tars_backend` :8080) `97636ab`
 - Phase 9.3: **Complete** — recovery validation (container/daemon/reboot/network-loss/persistence) `3124ec1`
 - **Current: Phase 9.4** — physical embodiment and reliability work is in progress. Kiosk service verification is complete; display/touch validation and hardware reliability remain open.
+- **Phase 9.4 behavioral memory enhancement** — session/daily summaries, provenance, bounded persistence, inspection, and selected backend mirroring are implemented incrementally; this does not alter autonomy or world-state authority.
 
 ## Development Environment Reality
 
@@ -95,12 +97,13 @@ Before writing any code:
 1. [ ] Read this file (AGENTS.md)
 2. [ ] Read `docs/CURRENT_STATE.md` — what works, known issues
 3. [ ] Read `docs/ARCHITECTURE.md` — current architecture reference
-4. [ ] Read `docs/PHASE_HISTORY.md` — what was built and when
-5. [ ] Read `docs/TARS_LESSONS_LEARNED.md` — mistakes to avoid
-6. [ ] Read `docs/DECISIONS.md` — why key decisions were made
-7. [ ] Inspect `git log --oneline -20` — recent context
-8. [ ] Verify actual services: `ls pi-server/services/infra/` — don't trust planning docs
-9. [ ] Check `docs/ARCHITECTURE.md` Documentation Status Map — know which docs are current vs historical
+4. [ ] Read `docs/BEHAVIORAL_MEMORY.md` when working on session/daily memory or telemetry bridges
+5. [ ] Read `docs/PHASE_HISTORY.md` — what was built and when
+6. [ ] Read `docs/TARS_LESSONS_LEARNED.md` — mistakes to avoid
+7. [ ] Read `docs/DECISIONS.md` — why key decisions were made
+8. [ ] Inspect `git log --oneline -20` — recent context
+9. [ ] Verify actual services: `ls pi-server/services/infra/` — don't trust planning docs
+10. [ ] Check `docs/ARCHITECTURE.md` Documentation Status Map — know which docs are current vs historical
 
 ## Documentation Status
 

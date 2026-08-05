@@ -8,6 +8,7 @@ class WsBridge {
         this.port = options.port || null;
         this.server = null;
         this.wss = null;
+        this.inboundEventIds = new Set();
     }
 
     attach(httpServer) {
@@ -65,9 +66,15 @@ class WsBridge {
                 }
 
                 if (parsed.source && parsed.type) {
+                    const eventId = parsed.id || crypto.randomUUID();
+                    if (this.inboundEventIds.has(eventId)) return;
+                    this.inboundEventIds.add(eventId);
+                    if (this.inboundEventIds.size > 2000) {
+                        this.inboundEventIds = new Set([...this.inboundEventIds].slice(-1000));
+                    }
                     this.eventBus.publish({
                         ...parsed,
-                        id: parsed.id || crypto.randomUUID(),
+                        id: eventId,
                         timestamp: parsed.timestamp || Date.now()
                     });
                 }

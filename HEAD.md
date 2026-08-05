@@ -11,7 +11,7 @@ This is the first file to read before working on TARS. It records the current op
 - **Last verified production runtime:** `ba9559011f5493ba866c101715a6d31c7cf569a9` — `/health` validated on `tars.local`
 - **Current phase:** Phase 9.4 physical embodiment and reliability stabilization. Phase 9.5 release hardening is proposed, not an immutable completed release unless a future tag records it.
 - **Last validated milestone marker:** `tars-v9.3.2` — TARS Phase 9.3.2 kiosk startup regression recovery.
-- **Active workstream:** preserve the trusted production baseline, make current state discoverable, then continue Raspberry Pi display/kiosk/touch/render reliability work.
+- **Active workstream:** Phase 9.4 behavioral memory implementation alongside Raspberry Pi display/kiosk/touch/render reliability work; behavioral memory must remain derived and non-authoritative.
 
 ## Important Version Note
 
@@ -44,6 +44,7 @@ git rev-parse HEAD
 - Version/release rules: `VERSIONING_POLICY.md`
 - Known issues: `KNOWN_ISSUES.md`
 - TARS architecture: `projects/tars-face/docs/ARCHITECTURE.md`
+- Behavioral memory: `projects/tars-face/docs/BEHAVIORAL_MEMORY.md`
 - TARS current state detail: `projects/tars-face/docs/CURRENT_STATE.md`
 - Phase history / roadmap: `projects/tars-face/docs/PHASE_HISTORY.md`
 - Deployment runbook: `projects/tars-face/docs/DEPLOYMENT_RUNBOOK.md`
