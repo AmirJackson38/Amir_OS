@@ -1,40 +1,33 @@
-# Active Project (v2 — Compressed to 1,500 chars max)
+# Active Project (v2 — TARS synchronized)
 
-**Last Updated:** July 29, 2026  
-**Character Budget:** 1,500 chars | **Current:** ~1,450 chars | **Status:** ✅ Within limit
+**Last Updated:** August 4, 2026
+**Status:** Active — Phase 9.3 complete; Phase 9.4 next
 
----
+## Current priority
 
-## Current Priority
+**TARS Physical Presence Layer** in `projects/tars-face/`.
 
-**TARS Observatory Layer** — Stop behavioral tuning. Build comprehensive observability.
+TARS is Amir OS's offline-first autonomous 3D world engine: a browser-based Three.js Face with authoritative `worldState`, autonomous scheduling, persistence, telemetry, and an optional Node runtime.
 
----
+## Completed baseline
 
-## Current Phase
+- **Phase 7:** activity effects, needs/fatigue, scoring, autonomy telemetry
+- **Phase 8:** event bus/WS bridge, monitoring, Observatory, spatial physics, embodied interaction, persistence v3
+- **Phase 9.1–9.3:** offline Docker build, Pi deployment (`tars_backend` on `:8080`), recovery validation
+- **Environment:** static backgrounds, procedural fallbacks, Docker asset pipeline
 
-**Observability & Telemetry System** (Phase 7.4)
+## Architecture that must remain true
 
-Completed (Phase 7.3):
-- Fatigue, scoring rebalance, wander, experience buffer, persistence v2
-- **Clock delta bug fix**: getElapsedTime/getDelta order froze loop since creation
-- Scoring: continuation bypass → decaying bias, NEED_RESTORATION 0.003→3-6pts, noise ±7.5→±3
+- The frontend autonomy engine works without an LLM, server, or internet.
+- `worldState` is authoritative; the scheduler selects normal behavior.
+- An LLM is future optional consultation, not control.
+- `WorldPersistence` v3 preserves browser world state; telemetry explains decisions.
 
-Objective:
-1. **Repair activity log** — reliable starts, completions, moves, durations
-2. **Developer Observatory** — F3 toggle: needs, fatigue, scores, intent, runner-up, countdowns
-3. **Upgrade telemetry** — full score breakdown per decision
-4. **Timeline view** — chronological record of movement, activity changes, weather, events
-5. **Subsystem design** — browser/Pi/phone subscribe to same event stream
+## Next milestone — Phase 9.4
 
----
+1. Connect the 7-inch Pi touchscreen and verify display detection.
+2. Validate touch/pointer input.
+3. Configure browser kiosk mode for `http://127.0.0.1:8080`.
+4. Configure Pi autostart for automatic TARS visual boot.
 
-## Recent Progress
-
-Phases 7.1-7.3: Full autonomy (needs, fatigue, wander, scoring, persistence). Scoring fixes applied.
-
----
-
-## Next Milestone
-
-**Phase 7.4: Observatory Layer** — Answer *why*, not just *what*.
+Authoritative project handoff: `projects/tars-face/docs/CURRENT_STATE.md`.
