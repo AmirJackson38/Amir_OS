@@ -53,7 +53,17 @@ grep -Fq "\"deployedAt\":\"$DEPLOYED_AT\"" "$HEALTH_FILE" || { echo "Deployment 
 
 export TARS_VALIDATION_STATUS="validated"
 docker compose up -d --force-recreate
-curl -fsS http://127.0.0.1:8080/health > "$HEALTH_FILE"
+
+FINAL_HEALTHY=false
+for attempt in 1 2 3 4 5 6; do
+  if curl -fsS http://127.0.0.1:8080/health > "$HEALTH_FILE"; then
+    FINAL_HEALTHY=true
+    break
+  fi
+  sleep 5
+done
+
+[ "$FINAL_HEALTHY" = true ] || { echo "TARS did not become healthy after validation recreation."; exit 1; }
 grep -Fq "\"gitSha\":\"$DEPLOY_SHA\"" "$HEALTH_FILE" || { echo "Running Git SHA changed after validation."; exit 1; }
 grep -Fq "\"imageDigest\":\"$IMAGE_DIGEST\"" "$HEALTH_FILE" || { echo "Running image digest changed after validation."; exit 1; }
 grep -Fq "\"deployedAt\":\"$DEPLOYED_AT\"" "$HEALTH_FILE" || { echo "Deployment timestamp changed after validation."; exit 1; }
