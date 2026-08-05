@@ -24,11 +24,11 @@ The purpose is to quickly restore context, maintain consistency, and continue wo
 That file establishes the explicit priority order for loading agent instructions. This ensures consistency.
 
 **TL;DR:**
-1. Local project AGENTS.md (if exists)
-2. Amir OS AGENT_RULES.md (universal rules)
-3. .agents/AGENTS_GLOBAL.md (personality)
-4. identity/ files (COACH_MODE, PROFILE)
-5. memory/ files (CURRENT_STATE_v2, SESSION_LOG_v2, etc.)
+1. Root `HEAD.md` establishes operational truth.
+2. Documents referenced by `HEAD.md` provide release, roadmap, architecture, and known-issue detail.
+3. Git history verifies live branch/HEAD/tags.
+4. Historical memory/current-state files provide context only.
+5. Agent rules/personality files govern behavior and communication.
 
 ---
 
@@ -53,15 +53,23 @@ Your role is to help Amir:
 
 When starting a new session:
 
-## Step 1 — Identify Version
+## Step 1 — Establish Operational Truth
 
 Read:
 
 ```
-VERSION.md
+HEAD.md
 ```
 
-Understand the current Amir OS milestone.
+Understand the current project truth, current release marker, last verified development state, production state, active workstream, and navigation targets.
+
+Then verify live Git state before making version, release, or deployment claims:
+
+```bash
+git rev-parse HEAD
+git status --short --branch
+git log --oneline --decorate -20
+```
 
 ---
 
@@ -101,7 +109,15 @@ Understand long-term priorities.
 
 ---
 
-## Step 5 — Load Current Context
+## Step 5 — Load HEAD-Referenced Context
+
+Read the documents referenced by root `HEAD.md` that are relevant to the task. For TARS, this usually includes release state, roadmap reconciliation, architecture, current state, known issues, and versioning policy.
+
+Older memory files are not authoritative if they conflict with root `HEAD.md`, Git history, release tags, or verified production runtime.
+
+---
+
+## Step 6 — Load Historical Memory Context
 
 Read:
 
@@ -109,11 +125,11 @@ Read:
 memory/CURRENT_STATE_v2.md
 ```
 
-Understand current status and recent progress (1,500 chars limit).
+Use this as historical context only. It may lag behind current repository truth.
 
 ---
 
-## Step 6 — Load Active Work
+## Step 7 — Load Historical Active Work
 
 Read:
 
@@ -121,11 +137,11 @@ Read:
 projects/ACTIVE_PROJECT_v2.md
 ```
 
-Understand current priority (1,500 chars limit).
+Use this as historical active-project context only. It may lag behind current repository truth.
 
 ---
 
-## Step 7 — Load Session Log (Flight Recorder)
+## Step 8 — Load Session Log (Flight Recorder)
 
 Read:
 
@@ -137,7 +153,7 @@ Understand the active session journal and last recorded actions (2,500 chars lim
 
 ---
 
-## Step 8 — Load Project Inventory
+## Step 9 — Load Project Inventory
 
 Read:
 
@@ -149,7 +165,7 @@ Understand all active, paused, and archived project locations.
 
 ---
 
-## Step 9 — Understand Skill System
+## Step 10 — Understand Skill System
 
 Skills are located in:
 
@@ -167,7 +183,7 @@ Currently available skills:
 
 ---
 
-## Step 10 — Understand Workflow System
+## Step 11 — Understand Workflow System
 
 Workflows are located in:
 
@@ -193,11 +209,11 @@ Do not load everything automatically.
 
 Prioritize:
 
-1. Current state.
-2. Active project.
-3. Relevant goals.
-4. Relevant memory.
-5. Historical information only when needed.
+1. Root `HEAD.md`.
+2. Documents referenced by `HEAD.md`.
+3. Verified Git/runtime state.
+4. Relevant goals.
+5. Historical memory only when needed.
 
 The goal is efficient context usage.
 

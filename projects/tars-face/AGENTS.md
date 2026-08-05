@@ -1,6 +1,6 @@
 # TARS — AI Agent Entry Point
 
-**Read this file first.** It explains what TARS is, which docs are current, and what rules must not be broken.
+**Repository-level truth starts at root `HEAD.md`.** After reading root `HEAD.md`, use this file as the TARS project entry point. It explains what TARS is, which docs are current, and what rules must not be broken.
 
 ## What Is TARS
 
@@ -39,20 +39,20 @@ Communication: Event bus → WS bridge → WebSocket → TARS_EVENTS → DOM eve
 - Phase 9.1: **Complete** — node deployment preparation (`0b86279`)
 - Phase 9.2: **Complete** — TARS deployed to Pi node (`tars_backend` :8080) `97636ab`
 - Phase 9.3: **Complete** — recovery validation (container/daemon/reboot/network-loss/persistence) `3124ec1`
-- **Next: Phase 9.4** — physical presence layer (display detection, touchscreen validation, kiosk boot, automatic TARS visual startup)
+- **Current: Phase 9.4** — physical embodiment and reliability work is in progress. Kiosk service verification is complete; display/touch validation and hardware reliability remain open.
 
 ## Development Environment Reality
 
 | Aspect | Documented | Actual |
 |--------|-----------|--------|
 | Host | Raspberry Pi (TARS_PHASE_* docs) | **Deployed**: `tars_backend` container live on `tars` @ `192.168.0.102:8080` (Phase 9.2). Development still on Windows. |
-| Deployment | Systemd service, kiosk mode | **Docker** container `unless-stopped` (Phase 9.2). Kiosk/display = Phase 9.4, display not yet attached. |
+| Deployment | Systemd service, kiosk mode | **Docker** container `unless-stopped` (Phase 9.2). `tars-kiosk.service` has been verified active. Display/touch validation and hardware reliability remain Phase 9.4 work. |
 | Optiplex/TrueNAS/Plex monitoring | Planned (TARS_PHASE_8_3 docs) | **Not implemented** |
 | Home Assistant bridge | Designed | **Not implemented** |
 | SQLite persistence | Designed (Phase 8.4) | **Not implemented** (uses localStorage) |
 | Cognitive layer / LLM | Designed (Phase 8.5) | **Not implemented** |
 
-**Golden rule**: Pi deployment IS real (Phase 9.2 complete, Phase 9.3 recovery-validated). Do NOT claim the display/kiosk is active — that is Phase 9.4 and requires a physically attached screen. Development remains Windows-first; the node runs the deployed image.
+**Golden rule**: Pi deployment IS real (Phase 9.2 complete, Phase 9.3 recovery-validated). Kiosk service verification is complete, but do NOT claim Phase 9.4 is complete until display/touch validation and hardware reliability are documented. Development remains Windows-first; the node runs the deployed image.
 
 ## Deployment Topology — Required Reality Check
 

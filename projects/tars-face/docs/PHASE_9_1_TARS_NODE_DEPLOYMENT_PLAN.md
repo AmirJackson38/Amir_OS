@@ -1,7 +1,7 @@
 # Phase 9.1 — TARS Node Deployment Preparation Plan
 
 **Date**: 2026-08-04
-**Status**: **SUPERSEDED BY EXECUTION** — Phase 9.1 artifacts created/validated, then deployed (Phase 9.2) and recovery-validated (Phase 9.3). See `PHASE_9_2_DEPLOYMENT_RESULT.md` and `PHASE_9_3_RECOVERY_TEST_REPORT.md`. This plan is retained as the historical design; kiosk steps remain the pending Phase 9.4 item.
+**Status**: **SUPERSEDED BY EXECUTION** — Phase 9.1 artifacts created/validated, then deployed (Phase 9.2) and recovery-validated (Phase 9.3). See `PHASE_9_2_DEPLOYMENT_RESULT.md` and `PHASE_9_3_RECOVERY_TEST_REPORT.md`. This plan is retained as the historical design; Phase 9.4 is now in progress with kiosk service verification complete and display/touch/hardware reliability validation still open.
 **Base commit**: `d32d81f` (Phase 8.5)
 **Node reality**: `docs/PI_NODE_AUDIT.md` (verified live 2026-08-04)
 

@@ -1,5 +1,7 @@
 # Amir OS
 
+> **Start here:** For current operational truth, read `HEAD.md` before relying on older memory, changelog, or project-status documents.
+
 ## Overview
 
 Amir OS is a portable AI operating environment designed to provide continuity across AI models, projects, learning, and time.

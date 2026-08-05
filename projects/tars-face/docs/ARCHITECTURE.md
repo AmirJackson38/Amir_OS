@@ -176,7 +176,6 @@ class SomeMonitor {
 | `docs/PHASE_9_1_TARS_NODE_DEPLOYMENT_PLAN.md` | Phase 9.1 deployment preparation plan (implemented) |
 | `docs/PHASE_9_2_DEPLOYMENT_RESULT.md` | Phase 9.2 node deployment result (success) |
 | `docs/PHASE_9_3_RECOVERY_TEST_REPORT.md` | Phase 9.3 recovery validation report (all pass) |
-| `docs/PI_NODE_AUDIT.md` | Live Pi node introspection |
 | `docs/CURRENT_SERVICE_MAP.md` | Current service inventory on node |
 | `docs/PHASE_9_DEPLOYMENT_BLUEPRINT.md` | High-level deployment blueprint |
 | `docs/DEPLOYMENT_RUNBOOK.md` | Preflight/redeploy/rollback runbook |
@@ -197,3 +196,4 @@ class SomeMonitor {
 | `TARS_PHASE_7_5_ROADMAP.md` | Phase 7.5-9 roadmap | Phase 8 scope diverged from original roadmap |
 | `TARS_PHASE_7_5_P1_COMPLETE.md` | Phase 7.5 P1 results | Specific to sub-phase, not general reference |
 | `TARS_PHASE_8_3_1_AUDIT.md` | Alert manager audit | Specific to component, not general reference |
+| `docs/PI_NODE_AUDIT.md` | Pre-install Pi hardware/runtime audit | Superseded for current production state by root `HEAD.md`, `RELEASE_STATE.md`, and live `/health`/SSH verification |

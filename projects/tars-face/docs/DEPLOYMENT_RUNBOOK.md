@@ -143,6 +143,8 @@ export NVM_DIR=/home/admin/.nvm && . "$NVM_DIR/nvm.sh" && node server.js
 
 ---
 
-## 6. Kiosk / display — NOT in this phase
+## 6. Kiosk / display — Phase 9.4 in progress
 
-Touchscreen/Chromium kiosk is deferred (hardware-gated: no display attached). The backend is fully deployable without it; the face may be opened in any browser pointing at `http://<node>:8080`.
+Kiosk service verification has been completed on `tars.local` (`tars-kiosk.service` verified active). Phase 9.4 is still in progress: display detection, touch validation, cold visual startup evidence, and hardware reliability need to remain validated and documented after deployments.
+
+The backend is still fully deployable without physical display acceptance; the face may be opened in any browser pointing at `http://<node>:8080`.

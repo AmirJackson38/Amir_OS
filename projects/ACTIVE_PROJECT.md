@@ -1,5 +1,7 @@
 # Active Project
 
+> **Historical context only:** Current project truth is maintained in root `HEAD.md`. This document predates the repository truth governance system and must not be used as authority for current version, phase, release, or production runtime.
+
 ## Purpose
 
 This file identifies the highest-priority current work and provides enough context for quickly resuming progress after interruptions, model changes, or long periods away.

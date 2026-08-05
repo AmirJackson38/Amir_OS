@@ -1,5 +1,7 @@
 # Amir OS Session Resume Bootstrap (TARS synchronized)
 
+> **Historical context only:** Current project truth is maintained in root `HEAD.md`. Use this file only as background memory, and verify live state through `HEAD.md`, Git history, release tags, and production runtime evidence before acting.
+
 > **Synchronized:** 2026-08-04
 > **Amir OS:** v0.9.0
 > **TARS status:** Phase 9.3 complete; Phase 9.4 is next.

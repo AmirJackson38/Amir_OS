@@ -1,5 +1,7 @@
 # Active Project (v2 — TARS synchronized)
 
+> **Historical context only:** Current project truth is maintained in root `HEAD.md`. Use this file only as background context; verify current phase, release, branch, and production runtime through `HEAD.md`, Git history, and release/provenance records.
+
 **Last Updated:** August 4, 2026
 **Status:** Active — Phase 9.3 complete; Phase 9.4 next
 

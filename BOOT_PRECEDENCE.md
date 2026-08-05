@@ -23,6 +23,19 @@ When starting a new session, agents must follow this order:
 
 ---
 
+## Operational Truth Authority Order
+
+Instruction/personality files still govern behavior, but project state and version truth must be established in this order:
+
+1. `Amir_OS/HEAD.md` — operational entry point and current truth pointer.
+2. Documents referenced by `HEAD.md` — release state, roadmap reconciliation, architecture, known issues, and version policy.
+3. Git history — verify live state with commands such as `git rev-parse HEAD`, `git status --short --branch`, `git log --oneline --decorate -20`, and relevant tags.
+4. Historical memory files — `memory/*`, `projects/ACTIVE_PROJECT*`, old bootstraps, and session logs are context only.
+
+Older memory/current-state files are not authoritative when they conflict with root `HEAD.md`, release tags, or verified Git/runtime state.
+
+---
+
 ## Priority 1: Local Project AGENTS.md (if exists)
 
 **Location:** `{project_root}/AGENTS.md`
@@ -99,16 +112,19 @@ When starting a new session, agents must follow this order:
 **Location:** Various
 
 **Load Order:**
-1. `Amir_OS/version.md` — Current milestone
-2. `Amir_OS/memory/CURRENT_STATE_v2.md` — What Amir is focused on NOW (1,500 chars max)
-3. `Amir_OS/projects/ACTIVE_PROJECT_v2.md` — Current priority (1,500 chars max)
-4. `Amir_OS/memory/SESSION_LOG_v2.md` — Flight recorder (2,500 chars max)
-5. `Amir_OS/memory/PROJECT_REGISTRY.md` — List of all active projects
-6. `./{project_root}/AGENTS.md` — Project context (if not already loaded)
+1. `Amir_OS/HEAD.md` — Current operational truth and navigation
+2. Documents referenced by `HEAD.md` — Release state, roadmap reconciliation, architecture, known issues, version policy
+3. Git history — Live branch/HEAD/tags must be verified directly
+4. `Amir_OS/version.md` — Amir OS platform version only; not TARS runtime release truth
+5. `Amir_OS/memory/CURRENT_STATE_v2.md` — Historical/current-context memory, not authority
+6. `Amir_OS/projects/ACTIVE_PROJECT_v2.md` — Historical active-project memory, not authority
+7. `Amir_OS/memory/SESSION_LOG_v2.md` — Flight recorder/history
+8. `Amir_OS/memory/PROJECT_REGISTRY.md` — Project inventory
+9. `./{project_root}/AGENTS.md` — Project context (if not already loaded)
 
 **Purpose:** Provide active working context.
 
-**Behavior:** These files are read-only for startup. They are updated by session-end procedures.
+**Behavior:** `HEAD.md` and verified Git/runtime state are authoritative. Older memory/current-state files are read-only startup context and may lag behind active development.
 
 ---
 
@@ -197,10 +213,17 @@ def bootstrap_agent():
     config['coach_mode'] = load_file("Amir_OS/identity/COACH_MODE.md")
     config['profile'] = load_file("Amir_OS/identity/PROFILE.md")
     
-    # Priority 5: Context (loaded in order)
+    # Priority 5: Operational truth/context (loaded in order)
+    config['head'] = load_file("Amir_OS/HEAD.md")
+    config['head_references'] = load_referenced_docs(config['head'])
+    config['git_state'] = run_read_only_git_checks([
+        "git rev-parse HEAD",
+        "git status --short --branch",
+        "git log --oneline --decorate -20",
+    ])
     config['version'] = load_file("Amir_OS/version.md")
-    config['current_state'] = load_file("Amir_OS/memory/CURRENT_STATE_v2.md")
-    config['active_project'] = load_file("Amir_OS/projects/ACTIVE_PROJECT_v2.md")
+    config['current_state_history'] = load_file("Amir_OS/memory/CURRENT_STATE_v2.md")
+    config['active_project_history'] = load_file("Amir_OS/projects/ACTIVE_PROJECT_v2.md")
     config['session_log'] = load_file("Amir_OS/memory/SESSION_LOG_v2.md")
     config['project_registry'] = load_file("Amir_OS/memory/PROJECT_REGISTRY.md")
     
@@ -260,8 +283,11 @@ After loading, verify:
 - [ ] AGENT_RULES.md loaded (10 rules acknowledged)
 - [ ] AGENTS_GLOBAL.md loaded ("Coldest Engineer" understood)
 - [ ] COACH_MODE.md + PROFILE.md loaded
-- [ ] Version understood (currently v0.8.0+)
-- [ ] Current context loaded (CURRENT_STATE_v2, ACTIVE_PROJECT_v2)
+- [ ] Root HEAD.md loaded first for operational truth
+- [ ] Documents referenced by HEAD.md loaded as needed
+- [ ] Git HEAD/branch/tags verified directly
+- [ ] Version understood as Amir OS platform version, not TARS release truth
+- [ ] Historical context loaded only after HEAD.md (CURRENT_STATE_v2, ACTIVE_PROJECT_v2)
 - [ ] Project registry understood
 - [ ] Skills directory aware (loaded on-demand via when_to_use)
 - [ ] Workflows directory aware (triggered via slash commands)
@@ -283,7 +309,7 @@ Precedence Pyramid (top = highest priority):
                     ↑
         [Identity Framework]
                     ↑
-        [Active Context Files]
+        [HEAD.md + Verified Git/Runtime State]
                     ↑
         [Skills — loaded on-demand]
                     ↑

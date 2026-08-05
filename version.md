@@ -1,5 +1,7 @@
 # Amir OS Version
 
+> **Scope note:** This file records the Amir OS platform version. TARS runtime releases are tracked by `tars-v*` Git tags and summarized in `HEAD.md`. Do not use this file alone to determine the current TARS production version.
+
 ## Current Version
 **v0.9.0**
 

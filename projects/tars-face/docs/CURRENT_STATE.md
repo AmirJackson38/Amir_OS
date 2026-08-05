@@ -4,7 +4,7 @@
 **Version**: v7.5 + Phase 8.3.4 stabilization + Phase 8.4 Observable Spatial Runtime Base + Phase 8.5 Embodied Interaction Layer + Phase 9.1 Deployment Preparation + Phase 9.2 Node Deployment + Phase 9.3 Recovery Validation
 
 ## Completed
-All behavior described below is delivered and verified. TARS frontend, backend, autonomy, world engine, and persistence are now **deployed and running on the Raspberry Pi node** (`tars_backend` on `:8080`) and have passed power-loss, Docker-restart, network-loss, and persistence recovery validation (Phase 9.3). Phase 9.4 next = physical presence layer (display, touchscreen, kiosk). See `docs/PHASE_9_3_RECOVERY_TEST_REPORT.md` and `docs/PHASE_9_2_DEPLOYMENT_RESULT.md`.
+All behavior described below is delivered and verified. TARS frontend, backend, autonomy, world engine, and persistence are now **deployed and running on the Raspberry Pi node** (`tars_backend` on `:8080`) and have passed power-loss, Docker-restart, network-loss, and persistence recovery validation (Phase 9.3). Phase 9.4 physical embodiment work is now in progress: kiosk service verification has been completed, while display/touch validation and hardware reliability acceptance remain open. See `docs/PHASE_9_3_RECOVERY_TEST_REPORT.md`, `docs/PHASE_9_2_DEPLOYMENT_RESULT.md`, and root `HEAD.md`.
 
 ## Newly Integrated (Phase 9.3 — Recovery Validation)
 - **Test-only phase** (no runtime/Docker/arch changes): validated `tars_backend` survives real hardware lifecycle events on the node.
@@ -96,15 +96,15 @@ All 10 event types (`health.cpu`, `.memory`, `.disk`, `.uptime`, `system.heartbe
 | Autonomy engine | **Working** | Full autonomy in browser, no server dependency |
 | Raspberry Pi deployment | **✅ DEPLOYED (Phase 9.2)** | `tars_backend` container live on `tars` @ `tars.local:8080`, image `tars-backend:1.0.0`, `tars_net` bridge, `unless-stopped` |
 | Recovery validation | **✅ PASSED (Phase 9.3)** | container restart / daemon restart / Pi reboot / network loss / persistence v3 all self-recovered |
-| Pi kiosk mode | **Not started** | No Chromium kiosk config, no `--kiosk` flags (Phase 9.4 — display currently not attached) |
-| systemd service | **Not started** | No service file created (Docker `unless-stopped` covers restart policy today) |
-| Physical display testing | **Not started** | Touch targets not verified on 7" display (Phase 9.4 — hardware-gated) |
-| Display/touchscreen attached | **No** | 7" Hosyond display documented but not physically attached as of Phase 9.3 |
+| Pi kiosk mode | **In progress** | Kiosk service verification completed on `tars.local`; full hardware acceptance is still Phase 9.4 work |
+| systemd service | **Verified for kiosk startup** | `tars-kiosk.service` has been verified active; repo/runbook capture should remain aligned with production |
+| Physical display testing | **In progress** | Browser/canvas startup has been validated; display/touch acceptance criteria still need formal validation |
+| Display/touchscreen attached | **Needs validation record** | Confirm and document display detection, touch mapping, and hardware reliability during Phase 9.4 |
 | Optiplex/TrueNAS/Plex monitoring | **Not implemented** | Monitors not yet built (future) |
 | Home Assistant bridge | **Not implemented** | No ha-bridge created |
 | Deployment documentation | **✅ Complete** | `DEPLOYMENT_RUNBOOK.md`, `PHASE_9_1_*_PLAN.md`, `PHASE_9_2_DEPLOYMENT_RESULT.md`, `PHASE_9_3_RECOVERY_TEST_REPORT.md`, `PI_NODE_AUDIT.md`, `CURRENT_SERVICE_MAP.md` |
 
-**Golden rule**: Pi deployment IS now real (Phase 9.2 complete, Phase 9.3 validated). Display/kiosk remains unstarted until a screen is attached (Phase 9.4).
+**Golden rule**: Pi deployment IS real (Phase 9.2 complete, Phase 9.3 validated). Kiosk service verification has started Phase 9.4 physical embodiment work, but Phase 9.4 is not complete until display/touch validation and hardware reliability are documented.
 
 ## Persistence Boundaries
 
@@ -154,7 +154,7 @@ localStorage (browser)           Server memory              Future (Phase 8.5+)
 - **Single-file frontend**: `tars_face_v1.html` ~9040 lines
 
 ## Not Yet Complete
-- **Physical presence (Phase 9.4 — next)**: display detection, touchscreen validation, kiosk boot, automatic TARS visual startup. Display not yet attached.
+- **Physical presence (Phase 9.4 — in progress)**: kiosk service verification is complete; display detection, touchscreen validation, automatic visual startup evidence, and hardware reliability documentation remain incomplete.
 - **Full ball dynamics**: interaction impulses + collision/sleep/wake events work, but rolling, contact resolution, friction, and compound shapes remain incomplete
 - **Richer object interaction**: tap/flick impulse works; grab/knock/roll gestures, multi-tier collision response (COLLISION_TIERS), capsule-capsule, compound shapes incomplete
 - **Advanced collision response**: multi-tier (COLLISION_TIERS) response, capsule-capsule, and compound shapes incomplete
@@ -189,11 +189,12 @@ All findings categorized:
 - Phase 8.5: LLM integration, Home Assistant, alert notifications, modularization
 
 ## Next Steps (Phase 9.4 — Physical Presence Layer)
-1. **Display detection** — attach 7" touchscreen, verify HDMI/DVI output + `xrandr`/`vcgencmd` detection
+1. **Display detection** — record HDMI/DVI output + `xrandr`/`vcgencmd` detection on the Pi
 2. **Touchscreen validation** — touch input calibration, pointer events end-to-end
-3. **Kiosk boot** — autostart browser/Chromium in kiosk mode (or lightweight display server), auto-open `http://127.0.0.1:8080`
-4. **Automatic TARS visual startup** — TARS face appears on boot without manual interaction
-5. Then: improve touch/world interaction (grab/knock/roll, richer gestures), camera/sensors when appropriate, deeper embodiment features
+3. **Kiosk startup record** — keep `tars-kiosk.service` verification aligned with repo/runbook state
+4. **Automatic TARS visual startup** — preserve cold browser startup evidence showing the Face appears without manual interaction
+5. **Hardware reliability** — validate reboot/restart behavior with display and touch attached
+6. Then: improve touch/world interaction (grab/knock/roll, richer gestures), camera/sensors when appropriate, deeper embodiment features
 
 ### After Phase 9.4
 - Ball dynamics completion + richer gestures

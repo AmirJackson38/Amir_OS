@@ -1,7 +1,7 @@
 # Phase 9 — T.A.R.S. Appliance Deployment Layer
 
 **Date**: 2026-08-03
-**Status**: ACTIVE. Steps 1–2 (offline frontend, containerized backend) implemented in Phase 9.1 + validated. Steps 3–6 pending (deploy to node, kiosk unit, provisioning, Pi bring-up).
+**Status**: HISTORICAL DESIGN WITH EXECUTION UPDATES. Steps 1–3 were completed through Phase 9.3. Phase 9.4 physical embodiment is now in progress: kiosk service verification has been completed, while display/touch validation and hardware reliability remain open. Current truth is maintained in root `HEAD.md` and `RELEASE_STATE.md`.
 **Base commit**: `d32d81f` (Phase 8.5 Embodied Interaction Layer)
 **Target**: Raspberry Pi 4 (future production node); current development on Windows
 
@@ -9,7 +9,7 @@
 
 ## 0. Executive Summary
 
-TARS is a fully functional **development project** but is not yet a **self-booting appliance**. Today the runtime requires a human to open a terminal and run `node server.js`, then manually open a browser to `http://localhost:8080`. The frontend has exactly one hard external dependency — Three.js loaded from a **remote CDN at module-parse time** — which would break the entire face on a WiFi outage. There is **no Docker, no systemd, no kiosk mode, no startup script, and no container** anywhere in the repository (verified, not assumed).
+At the time this blueprint was written, TARS was a fully functional **development project** but was not yet a **self-booting appliance**. That original state has been superseded by later Phase 9 execution: Docker deployment, local Three.js serving, deployment provenance, recovery validation, and kiosk service verification now exist. Preserve this blueprint as historical design context, not current runtime truth.
 
 The goal of Phase 9 is: power on → TARS boots → screen shows TARS → state restored → runs unattended, surviving power loss, reboot, WiFi loss, service crashes, and Docker restarts.
 
@@ -238,7 +238,8 @@ Approved and executed in order (each step independently verifiable):
 ### Step 5 — Provisioning runbook
 - Document on-Pi steps: install Docker, enable units, copy repo to `/opt/tars`, set config, first-boot check.
 - **Verify**: documented, not executed (no Pi hardware yet).
-  - **UPDATE (Phase 9.2/9.3, executed 2026-08-04)**: Steps 1–3 (Dockerfile, compose, restart policy) and the deployment were **completed and validated** on the Pi node; see `docs/PHASE_9_1_TARS_NODE_DEPLOYMENT_PLAN.md`, `docs/PHASE_9_2_DEPLOYMENT_RESULT.md`, `docs/PHASE_9_3_RECOVERY_TEST_REPORT.md`. Kiosk (Step 4) remains the pending Phase 9.4 item, gated on a physically attached display.
+- **UPDATE (Phase 9.2/9.3, executed 2026-08-04)**: Steps 1–3 (Dockerfile, compose, restart policy) and the deployment were **completed and validated** on the Pi node; see `docs/PHASE_9_1_TARS_NODE_DEPLOYMENT_PLAN.md`, `docs/PHASE_9_2_DEPLOYMENT_RESULT.md`, `docs/PHASE_9_3_RECOVERY_TEST_REPORT.md`.
+- **UPDATE (Phase 9.4, post-release stabilization)**: kiosk service verification has been completed. Phase 9.4 remains open until display detection, touch validation, cold visual startup evidence, and hardware reliability are documented.
 
 ### Step 6 — Windows-side dev harness (optional)
 - A `dev-start.ps1`/`dev-start.sh` helper that starts server + opens the browser — **development convenience only**, not a dependency.

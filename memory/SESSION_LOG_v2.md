@@ -1,5 +1,7 @@
 # Session Log (v2 — Flight Recorder, 2,500 chars max)
 
+> **Historical context only:** Current project truth is maintained in root `HEAD.md`. Use this file as a chronological flight recorder, not as authority for current version, phase, release, or production runtime.
+
 **Last Updated:** August 4, 2026  
 **Character Budget:** 2,500 chars | **Current:** ~2,100 chars | **Status:** ✅ Within limit
 

@@ -1,5 +1,7 @@
 # TARS Raspberry Pi Node — Physical Reality Audit
 
+> **Historical pre-install snapshot:** This audit records the Pi before TARS deployment and before later kiosk verification. Current project truth is maintained in root `HEAD.md`, `RELEASE_STATE.md`, and live production checks against `tars.local`.
+
 **Date**: 2026-08-04 (session: 2026-08-03/04)
 **Node**: `tars` @ `192.168.0.102`
 **Method**: Live SSH inspection (`admin@192.168.0.102`) — **read-only, nothing modified**
@@ -9,11 +11,11 @@
 
 ## 0. Executive Summary
 
-The Raspberry Pi at `192.168.0.102` is a **healthy, long-running homelab node** — but it is **NOT running any piece of the TARS face system**. Specifically:
+At the time of this pre-install audit, the Raspberry Pi at `192.168.0.102` was a **healthy, long-running homelab node** — but it was **NOT running any piece of the TARS face system**. Specifically:
 
 - The `tars-face` project (and `Amir_OS` itself) is **completely absent** from this Pi. `find` returned zero results for `tars_face_v1.html`, `tars-face`, and `Amir_OS`.
 - The Pi runs a **production homelab stack**: TSE FastAPI backend + Postgres, a "World Monitor" docker stack, DuckDNS, and a local Ollama LLM.
-- **No Chromium**, **no kiosk mode**, **no display server**, **no X11** — the Pi is **headless** (both HDMI connectors report disconnected, no DSI panel detected, no touch device).
+- At audit time: **no Chromium**, **no kiosk mode**, **no display server**, **no X11** — the Pi was **headless** (both HDMI connectors reported disconnected, no DSI panel detected, no touch device).
 - **No TARS backend container** and **no node server on port 8080** (nothing listening on 8080/5000).
 - Node.js exists **only via `nvm`** (`v24.11.0`) in the `admin` user profile — not on PATH, not a system service.
 

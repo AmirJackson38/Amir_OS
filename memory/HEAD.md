@@ -1,33 +1,9 @@
-# Documentation HEAD
+# Memory HEAD Pointer
 
-Current Phase:
-Phase 9.5
+The authoritative operational entry point is now:
 
-Git Commit:
-ef6c8c0
+```text
+../HEAD.md
+```
 
-Last Memory Sync:
-ef6c8c0
-
-Current Objective:
-Replace procedural exterior with static window background images through WindowBackgroundProvider while preserving weather, parallax, viewport effects, and fallback rendering.
-
-Pi Status:
-Running
-Kiosk operational
-Touch operational
-Physical Presence complete
-Embodied Interaction complete
-World interaction working
-
-Next:
-Background integration
-Verify Pi
-Commit
-
-NETWORK TRUTH:
-- TARS hostname: tars.local
-- SSH hostname preferred over IP
-- DuckDNS = external access only
-- Local discovery = mDNS/DHCP/DNS
-- Static IP migration planned
+Do not treat older memory HEAD content as current truth. Before acting, read root `HEAD.md`, inspect Git branch/HEAD/tags, and verify production runtime if the task depends on live behavior.

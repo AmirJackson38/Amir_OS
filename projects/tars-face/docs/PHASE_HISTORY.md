@@ -121,12 +121,12 @@
 - **Observatory telemetry**: world interaction section + ODL world ingest cases + `getWorldInteractionSummary()`
 - **Tests**: `test_observatory.js` extended with world.interaction / collision / impulse ingestion + category tests (59 total, all passing)
 
-## Phase 8.5 — Planned (not started)
+## Phase 8.5 — Historical planning snapshot
 - Ball rolling / contact resolution / friction completion
 - Richer gestures (grab/knock/roll), compound collision shapes
 - SQLite event log + persistent alert/service history
 - LLM cognitive layer (Brain + Chat), Home Assistant bridge
-- Raspberry Pi deployment (kiosk, systemd, physical display)
+- Raspberry Pi deployment moved into Phase 9.x; kiosk/systemd/display work is now tracked under Phase 9.4 physical embodiment.
 
 ## Phase 9.1 — TARS Node Deployment Preparation (committed `0b86279`)
 - **Artifacts created + validated on Windows**: `Dockerfile` (node:20-alpine, non-root `node` user, `/srv/tars`, `EXPOSE 8080`, healthcheck), `docker-compose.yml` (service `tars-backend`, image `tars-backend:1.0.0`, `restart: unless-stopped`, isolated `tars_net` bridge, port `8080:8080` only), `.dockerignore` (excludes scratch tests + node_modules)
@@ -150,6 +150,7 @@
 - **Test 5** network loss (iptables egress DROP on container): ✅ frontend/module 200 during drop, /health ok, monitors kept publishing (328→345), autonomy client-side (287 refs), 0 CDN refs; rule removed cleanly; internet restored
 - **Report**: `docs/PHASE_9_3_RECOVERY_TEST_REPORT.md`
 
-## Phase 9.4 — Planned (next milestone)
-- Physical presence layer: display detection (attach 7" touchscreen, verify HDMI detection), touchscreen validation, kiosk boot, automatic TARS visual startup on boot
-- After: improve touch/world interaction (grab/knock/roll), camera/sensors when appropriate, deeper embodiment
+## Phase 9.4 — Physical Embodiment Reliability (in progress)
+- **Completed within Phase 9.4:** kiosk service verification (`tars-kiosk.service` active on `tars.local`) and production browser startup evidence.
+- **Remaining before Phase 9.4 completion:** display detection record, touchscreen validation, touch-to-browser pointer validation, hardware reliability checks, and documented cold-start visual acceptance.
+- After: improve touch/world interaction (grab/knock/roll), camera/sensors when appropriate, deeper embodiment.
