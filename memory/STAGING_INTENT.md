@@ -10,7 +10,7 @@
 - **Timestamp:** 2026-08-04 UTC
 - **Target Component:** TARS static window environment geometry
 - **Planned Action:** Reduce the oversized Gemini image planes while retaining enough overscan for camera parallax. Preserve source-color rendering, assets, and existing lighting; defer monitor/game and collision/telemetry work.
-- **Status:** In Progress.
+- **Status:** Complete — committed as `ce46433`, deployed to `tars.local`, and confirmed through a clean Chromium reload with a visible 800×480 WebGL canvas and no startup exceptions.
 
 ---
 
