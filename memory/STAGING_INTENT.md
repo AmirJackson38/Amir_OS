@@ -8,9 +8,9 @@
 ## Active Staged Action
 
 - **Timestamp:** 2026-08-04 UTC
-- **Target Component:** TARS browser startup / day-night bridge-light state
-- **Planned Action:** Repair the verified `bridgeLights` scope regression introduced by the WindowEnvironmentProvider refactor. Restore the shared collection at module scope without changing environment behavior, then validate a cold kiosk startup on the Pi through Chromium DevTools before release.
-- **Status:** Complete — deployed as `tars-v9.3.2`; Chromium DevTools cold-start validation on the Pi reported zero post-load exceptions, a visible 800×480 WebGL canvas, loaded environment assets, and an active render-loop diagnostic.
+- **Target Component:** TARS kiosk autonomy status layout
+- **Planned Action:** Move the autonomy header below the TARS title with clearance from the right toolbar. Preserve the verified Gemini background assets unchanged and defer collision/telemetry work.
+- **Status:** In Progress.
 
 ---
 
