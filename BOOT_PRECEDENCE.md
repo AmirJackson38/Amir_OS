@@ -34,6 +34,8 @@ Instruction/personality files still govern behavior, but project state and versi
 
 Older memory/current-state files are not authoritative when they conflict with root `HEAD.md`, release tags, or verified Git/runtime state.
 
+Agents should run `node tools/agent_bootstrap.mjs` to generate a compact live-state packet before acting.
+
 ---
 
 ## Priority 1: Local Project AGENTS.md (if exists)

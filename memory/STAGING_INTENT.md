@@ -7,10 +7,10 @@
 
 ## Active Staged Action
 
-- **Timestamp:** 2026-08-04 UTC
-- **Target Component:** TARS left-window static environment alignment
-- **Planned Action:** Increase the left static background plane about 15% from the prior validated crop so the image covers the far-right side of the left window. Preserve the current `textureRotationDeg: 12`, placement, outer trim/glass behavior, ball fix, rear window scale, weather, source-color rendering, and autonomy/UI systems.
-- **Status:** Complete — deployed as `ba9559011f5493ba866c101715a6d31c7cf569a9` to `tars.local`; production Chromium reload confirmed the 800x480 WebGL canvas is visible, `assets/window_left.png` and `assets/window_rear.png` return HTTP 200, no failed requests or startup exceptions were observed, and the left-window crop is tuned to `height: 8.7` with `textureRotationDeg: 12`.
+- **Timestamp:** 2026-08-05 UTC
+- **Target Component:** Amir OS / TARS agent boot and governance rails
+- **Planned Action:** Convert existing passive memory/governance documents into enforceable agent-entry rails by adding root `AGENTS.md`, machine-readable `PROJECT_STATE.json`, an agent bootstrap script, staged-file guard, and documentation for Pi/ThinkPad placement strategy. Preserve application/runtime code and do not touch debug HTML files.
+- **Status:** Complete — root `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `PROJECT_STATE.json`, Node-based `tools/agent_bootstrap.mjs`, Node-based `tools/check_staged_files.mjs`, `.gitignore` scratch-file guards, and placement documentation were added locally. Validation: `node tools/agent_bootstrap.mjs`, `node tools/check_staged_files.mjs`, and `node --check` passed.
 
 ---
 

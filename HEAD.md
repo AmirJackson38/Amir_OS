@@ -33,6 +33,10 @@ git rev-parse HEAD
 
 ## Navigation
 
+- Agent contract: `AGENTS.md`
+- Machine-readable state: `PROJECT_STATE.json`
+- Agent bootstrap: `tools/agent_bootstrap.mjs`
+- Staged-file guard: `tools/check_staged_files.mjs`
 - Mission: `NORTH_STAR.md`
 - Release state: `RELEASE_STATE.md`
 - Roadmap reconciliation: `ROADMAP_RECONCILIATION.md`

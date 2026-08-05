@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "project": "Amir_OS / TARS",
+  "entrypoint": "HEAD.md",
+  "agent_contract": "AGENTS.md",
+  "machine_bootstrap": "tools/agent_bootstrap.mjs",
+  "staged_file_guard": "tools/check_staged_files.mjs",
+  "truth_model": {
+    "development": "Verify live state with git commands; do not hardcode current HEAD as permanent truth.",
+    "release": "TARS releases are immutable git tags.",
+    "production": "Verify production on tars.local through git state and /health provenance.",
+    "memory": "memory/* files are historical context unless referenced by HEAD.md."
+  },
+  "tars": {
+    "latest_release": "tars-v9.3.2",
+    "latest_release_commit": "92adc86b965c8fa23b99b8f635900ce20b16665e",
+    "development_branch": "master",
+    "current_phase": "Phase 9.4",
+    "phase_status": "in_progress",
+    "phase_9_4_completed": [
+      "kiosk service verification"
+    ],
+    "phase_9_4_remaining": [
+      "display detection record",
+      "touch validation",
+      "hardware reliability validation",
+      "cold visual startup acceptance record"
+    ],
+    "production_host": "tars.local"
+  },
+  "agent_entrypoints": {
+    "repo_root": [
+      "AGENTS.md",
+      "HEAD.md",
+      "PROJECT_STATE.json",
+      "CLAUDE.md",
+      "GEMINI.md"
+    ],
+    "tars_project": [
+      "projects/tars-face/AGENTS.md"
+    ],
+    "pi_sparse_checkout_expectation": "Root files should remain visible in the sparse checkout root; TARS-specific AGENTS.md is also inside projects/tars-face."
+  },
+  "do_not_stage": [
+    "projects/tars-face/minimal_test.html",
+    "projects/tars-face/simple_test.html",
+    "projects/tars-face/tars_debug.html",
+    "projects/tars-face/test.html",
+    "projects/tars-face/test1_fcss_sbody.html",
+    "projects/tars-face/test2_scss_fbody.html",
+    "projects/tars-face/*debug*.html",
+    "projects/tars-face/test*.html"
+  ]
+}

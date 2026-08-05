@@ -1,6 +1,6 @@
 # TARS — AI Agent Entry Point
 
-**Repository-level truth starts at root `HEAD.md`.** After reading root `HEAD.md`, use this file as the TARS project entry point. It explains what TARS is, which docs are current, and what rules must not be broken.
+**Repository-level truth starts at root `HEAD.md` and root `AGENTS.md`.** After reading those files, use this file as the TARS project entry point. If running from a Pi sparse checkout where root files are unavailable, this file is the local fallback entry point. It explains what TARS is, which docs are current, and what rules must not be broken.
 
 ## What Is TARS
 

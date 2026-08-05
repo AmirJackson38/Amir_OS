@@ -2,6 +2,8 @@
 
 > **Start here:** For current operational truth, read `HEAD.md` before relying on older memory, changelog, or project-status documents.
 
+> **Agent startup:** AI agents and CLI models should read `AGENTS.md` and run `node tools/agent_bootstrap.mjs` before acting.
+
 ## Overview
 
 Amir OS is a portable AI operating environment designed to provide continuity across AI models, projects, learning, and time.

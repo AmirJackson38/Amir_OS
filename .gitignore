@@ -18,3 +18,13 @@ ENV/
 .DS_Store
 Thumbs.db
 /.tars-deployment-provenance.json
+
+# TARS scratch/debug HTML artifacts
+projects/tars-face/minimal_test.html
+projects/tars-face/simple_test.html
+projects/tars-face/tars_debug.html
+projects/tars-face/test.html
+projects/tars-face/test1_fcss_sbody.html
+projects/tars-face/test2_scss_fbody.html
+projects/tars-face/*debug*.html
+projects/tars-face/test*.html
