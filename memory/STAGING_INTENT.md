@@ -10,7 +10,7 @@
 - **Timestamp:** 2026-08-04 UTC
 - **Target Component:** TARS left-window view
 - **Planned Action:** Remove the two legacy framed-art meshes that occupy the left-window opening. Preserve its frame, glass, rain, static environment image, and source-color rendering; defer monitor/game and collision/telemetry work.
-- **Status:** In Progress.
+- **Status:** Complete — committed as `d0edffa`, deployed to `tars.local`, and confirmed through a production Chromium reload with a visible 800x480 WebGL canvas, loaded window assets, and no startup exceptions.
 
 ---
 
