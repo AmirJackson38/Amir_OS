@@ -8,9 +8,9 @@
 ## Active Staged Action
 
 - **Timestamp:** 2026-08-04 UTC
-- **Target Component:** TARS left-window view and energy orb visibility
-- **Planned Action:** Reduce only the left static environment plane to the smallest practical parallax overscan and make the existing ball easier to see on the 800x480 production view. Preserve rear window scale, physics registration, weather, source-color rendering, and autonomy/UI systems.
-- **Status:** Complete — deployed as `97c1fe9` to `tars.local`; production Chromium reload confirmed visible 800x480 WebGL canvas, loaded window assets, no startup exceptions, and visible energy orb.
+- **Target Component:** TARS left-window static environment placement
+- **Planned Action:** Correct the left static image mesh from double-offset exterior coordinates to local `lexterior` coordinates, keeping the image small while restoring visibility through the side-window opening. Preserve ball fix, rear window scale, weather, source-color rendering, and autonomy/UI systems.
+- **Status:** In Progress.
 
 ---
 

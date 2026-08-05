@@ -1516,9 +1516,9 @@ windowEnvProvider.initWindow(
     WINDOW_ENVIRONMENT.left,
     lexterior,
     buildLeftProceduralFallback,
-    new THREE.Vector3(-10.5, 5, 0), // Positioned between window and sky
+    new THREE.Vector3(0.5, LWIN_Y, 0), // Local to lexterior; world x ~= -10.5, just outside the side window.
     new THREE.Euler(0, Math.PI / 2, 0),
-    { height: 10 } // Small side-window overscan for parallax without returning to a room-sized backdrop.
+    { height: 6.5 } // Small side-window overscan for the 6x4 opening while preserving parallax.
 );
 
 // Left window rain
