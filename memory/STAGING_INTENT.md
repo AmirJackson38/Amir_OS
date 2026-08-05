@@ -9,8 +9,8 @@
 
 - **Timestamp:** 2026-08-04 UTC
 - **Target Component:** TARS left-window static environment alignment
-- **Planned Action:** Increase the left static background plane slightly for a more zoomed-in crop and ease texture rotation back to +12 degrees so the street perspective better lines up with the window sill. Preserve placement, outer trim, glass, ball fix, rear window scale, weather, source-color rendering, and autonomy/UI systems.
-- **Status:** Complete — deployed as `4bd1b10c734f958cb08d55962e1003450a5491b8` to `tars.local`; production Chromium reload confirmed the 800x480 WebGL canvas is visible, `assets/window_left.png` and `assets/window_rear.png` return HTTP 200, no failed requests or startup exceptions were observed, and the left-window crop is tuned to `height: 7.6` with `textureRotationDeg: 12`.
+- **Planned Action:** Increase the left static background plane about 15% from the prior validated crop so the image covers the far-right side of the left window. Preserve the current `textureRotationDeg: 12`, placement, outer trim/glass behavior, ball fix, rear window scale, weather, source-color rendering, and autonomy/UI systems.
+- **Status:** In Progress.
 
 ---
 
