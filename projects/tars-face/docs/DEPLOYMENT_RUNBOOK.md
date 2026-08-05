@@ -46,7 +46,27 @@ ls projects/tars-face
 
 ---
 
-## 3. Build & Start (Phase 9.2)
+## 3. Deploy with provenance (required for updates)
+
+From the full Amir_OS checkout on the Windows development machine, run:
+
+```bash
+bash scripts/deploy_tars.sh
+```
+
+The helper refuses a Pi checkout with tracked local changes, resolves the exact
+remote Git commit, rebuilds `tars-backend:1.0.0`, and only marks the deployment
+`validated` after `/health` confirms its Git SHA, immutable local image ID,
+and UTC deployment timestamp. It also records the same verified values at
+`/home/admin/tars-face/.tars-deployment-provenance.json` on the Pi.
+
+Do not use a bare `docker compose up -d` for an update: it leaves provenance
+as `unknown` and cannot establish what revision is running.
+
+### Initial provisioning / manual recovery
+
+Use this only to establish the first runtime or diagnose the deployment helper.
+For a normal update, return to the provenance-aware helper above.
 
 ```bash
 cd /home/admin/tars-face/projects/tars-face
@@ -77,6 +97,7 @@ docker compose logs -f --tail=50
 |-------|---------|------|
 | Container healthy | `docker compose ps` | `tars_backend` `healthy` |
 | REST health | `curl -s http://127.0.0.1:8080/health` | `ok` |
+| Deployment provenance | `curl -s http://127.0.0.1:8080/health` | `deployment.gitSha`, `imageDigest`, `deployedAt`, and `validationStatus=validated` match the intended release |
 | Frontend served | `curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/` | `200` |
 | Local Three.js served | `curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/three.module.js` | `200` |
 | No CDN in served page | `curl -s http://127.0.0.1:8080/ \| grep -c cdn.jsdelivr` | `0` |

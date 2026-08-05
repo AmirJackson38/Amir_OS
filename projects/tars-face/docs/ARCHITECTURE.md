@@ -42,6 +42,7 @@ edit / inspect / commit / push                                      Docker / Nod
 - **Docker**: `tars_backend` container (image `tars-backend:1.0.0`, non-root `node` user, `/srv/tars`, `EXPOSE 8080`, healthcheck) on isolated `tars_net` bridge, `restart: unless-stopped`, published port `8080` only.
 - **Layered isolation**: Frontend (browser) → Backend (container :8080) → Cognition (LLM, separate, not wired) → Deployment (Docker/kiosk). Recovery-gated so container restart / daemon restart / reboot / network loss all self-heal (Phase 9.3).
 - **Offline-capable**: Three.js served locally from `/three.module.js`; zero CDN dependency.
+- **Deployment provenance**: `/health` reports the Git SHA, Docker image digest, UTC deployment timestamp, and validation status injected by the deployment workflow.
 - See `docs/PHASE_9_2_DEPLOYMENT_RESULT.md`, `docs/PHASE_9_3_RECOVERY_TEST_REPORT.md`, `docs/PI_NODE_AUDIT.md`, `docs/CURRENT_SERVICE_MAP.md`.
 
 ## Data Pipeline

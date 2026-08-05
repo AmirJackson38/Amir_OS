@@ -7,10 +7,10 @@
 
 ## Active Staged Action
 
-- **Timestamp:** 2026-07-27 22:42:00 UTC
-- **Target Component:** TARS Architecture Evolution — Agent/Skill/Workflow Separation
-- **Planned Action:** Adopt AG Kit architectural patterns: skill modules with progressive loading, workflow definitions, YAML frontmatter, manifest.json component registry, enhanced health_check.py validation. Preserve all existing boot precedence, memory architecture, and TARS runtime.
-- **Status:** Completed. Skills/workflows/manifest created. BOOT_PRECEDENCE.md and Boot.md updated with skill/workflow awareness. health_check.py extended with manifest validation. Frontmatter added to agent config files. AGENTS_GLOBAL.md created.
+- **Timestamp:** 2026-08-04 UTC
+- **Target Component:** TARS deployment provenance contract
+- **Planned Action:** Inject the deployed Git SHA, Docker image digest, UTC deployment timestamp, and validation status into `tars_backend`; expose them through `/health`; record the same facts on the Pi during deployment. Preserve offline-first frontend behavior and the no-Docker-socket runtime boundary.
+- **Status:** Complete — local syntax, Observatory (59/59), and isolated `/health` provenance checks passed. Pi deployment intentionally not run in this change.
 
 ---
 

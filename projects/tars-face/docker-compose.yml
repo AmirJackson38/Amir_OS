@@ -12,6 +12,11 @@ services:
     image: tars-backend:1.0.0
     container_name: tars_backend
     restart: unless-stopped
+    environment:
+      TARS_GIT_SHA: ${TARS_GIT_SHA:-unknown}
+      TARS_IMAGE_DIGEST: ${TARS_IMAGE_DIGEST:-unknown}
+      TARS_DEPLOYED_AT: ${TARS_DEPLOYED_AT:-unknown}
+      TARS_VALIDATION_STATUS: ${TARS_VALIDATION_STATUS:-unknown}
     networks:
       - tars_net
     ports:

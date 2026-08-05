@@ -25,6 +25,20 @@ function loadConfig() {
     return {};
 }
 
+function deploymentValue(name) {
+    const value = process.env[name];
+    if (typeof value !== "string") return "unknown";
+    const normalized = value.trim();
+    return normalized.length > 0 && normalized.length <= 256 ? normalized : "unknown";
+}
+
+const deploymentProvenance = Object.freeze({
+    gitSha: deploymentValue("TARS_GIT_SHA"),
+    imageDigest: deploymentValue("TARS_IMAGE_DIGEST"),
+    deployedAt: deploymentValue("TARS_DEPLOYED_AT"),
+    validationStatus: deploymentValue("TARS_VALIDATION_STATUS")
+});
+
 const config = loadConfig();
 const PORT = config.server?.port || 8080;
 const HOST = config.server?.host || "0.0.0.0";
@@ -53,6 +67,7 @@ const server = http.createServer((req, res) => {
             status: "ok",
             uptime: Math.floor(process.uptime()),
             timestamp: Date.now(),
+            deployment: deploymentProvenance,
             eventBus: eventBus.getStats(),
             services: statusReporter ? statusReporter.getStatus() : [],
             alerts: alertManager ? alertManager.getAlertStats() : {}
