@@ -8,9 +8,9 @@
 ## Active Staged Action
 
 - **Timestamp:** 2026-08-04 UTC
-- **Target Component:** TARS kiosk autonomy status layout
-- **Planned Action:** Move the autonomy header below the TARS title with clearance from the right toolbar. Preserve the verified Gemini background assets unchanged and defer collision/telemetry work.
-- **Status:** Complete — deployed and verified through Chromium DevTools: the title, autonomy header, and toolbar have no bounding-box overlap at the 800×480 kiosk viewport. Gemini environment assets were verified byte-for-byte against Downloads and left unchanged.
+- **Target Component:** TARS static window environment rendering
+- **Planned Action:** Render the verified Gemini PNG backgrounds without scene fog or tone mapping so their source colors remain intact. Do not add lighting effects or change assets; defer monitor/game and collision/telemetry work.
+- **Status:** In Progress.
 
 ---
 

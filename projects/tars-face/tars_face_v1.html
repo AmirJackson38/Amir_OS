@@ -1292,11 +1292,12 @@ class WindowEnvironmentProvider {
                 const aspect = texture.image.width / texture.image.height;
                 const height = 40; // Generous overscan
                 const width = height * aspect;
-                // Use MeshStandardMaterial or MeshBasicMaterial. Basic ensures it's always visible without lights, but fog still applies.
+                // Static PNGs are source artwork, not weather geometry: preserve their authored color.
                 const mat = new THREE.MeshBasicMaterial({ 
                     map: texture, 
-                    fog: true, 
-                    transparent: true 
+                    fog: false,
+                    toneMapped: false,
+                    transparent: false
                 });
                 const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, height), mat);
                 
