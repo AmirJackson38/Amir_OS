@@ -8,9 +8,9 @@
 ## Active Staged Action
 
 - **Timestamp:** 2026-08-04 UTC
-- **Target Component:** TARS static window environment rendering
-- **Planned Action:** Render the verified Gemini PNG backgrounds without scene fog or tone mapping so their source colors remain intact. Do not add lighting effects or change assets; defer monitor/game and collision/telemetry work.
-- **Status:** Complete — committed as `0f66ec5`, deployed to `tars.local`, and validated by the production health endpoint. The Gemini source assets were not changed.
+- **Target Component:** TARS static window environment geometry
+- **Planned Action:** Reduce the oversized Gemini image planes while retaining enough overscan for camera parallax. Preserve source-color rendering, assets, and existing lighting; defer monitor/game and collision/telemetry work.
+- **Status:** In Progress.
 
 ---
 

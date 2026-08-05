@@ -1290,7 +1290,9 @@ class WindowEnvironmentProvider {
             (texture) => {
                 texture.colorSpace = THREE.SRGBColorSpace;
                 const aspect = texture.image.width / texture.image.height;
-                const height = 40; // Generous overscan
+                // Overscan the 6×4 window openings without turning the image into a room-sized backdrop.
+                // At this exterior depth, 16 units leaves enough margin for camera parallax.
+                const height = 16;
                 const width = height * aspect;
                 // Static PNGs are source artwork, not weather geometry: preserve their authored color.
                 const mat = new THREE.MeshBasicMaterial({ 
