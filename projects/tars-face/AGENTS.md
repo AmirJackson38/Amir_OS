@@ -54,6 +54,20 @@ Communication: Event bus → WS bridge → WebSocket → TARS_EVENTS → DOM eve
 
 **Golden rule**: Pi deployment IS real (Phase 9.2 complete, Phase 9.3 recovery-validated). Do NOT claim the display/kiosk is active — that is Phase 9.4 and requires a physically attached screen. Development remains Windows-first; the node runs the deployed image.
 
+## Deployment Topology — Required Reality Check
+
+| Role | Environment | Responsibility |
+|------|-------------|----------------|
+| Development machine | Windows workstation | Edit files, inspect code, run local development checks, commit, and push |
+| Source of truth | Git repository | Versioned source and deployable commits |
+| Production target | Raspberry Pi `tars.local` | Docker runtime, Node server, frontend serving, physical display, kiosk mode, and future touch/sensor hardware |
+
+Windows is **not** the production runtime. Do not assume Windows Docker exists, that `localhost` is the deployed TARS service, or that a local render proves physical-hardware behavior.
+
+**Deployment workflow:** make changes on Windows → commit → push → SSH to `tars.local` → pull the intended commit → rebuild/restart Docker only when required → validate the running service and physical hardware on the Pi.
+
+Before runtime testing, explicitly identify the development environment, deployment target, and production status. Runtime validation belongs on `tars.local`; local checks validate source only.
+
 ## Golden Architecture Rules
 
 1. **Frontend runs independently** — The face, autonomy, and world simulation must work without the server.

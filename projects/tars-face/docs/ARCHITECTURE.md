@@ -4,6 +4,18 @@
 
 TARS Face is a browser-based 3D face/animation system with a Node.js runtime server. The face runs in the browser (Three.js), the brain runs on the server.
 
+## Development and Deployment Topology
+
+```
+Windows workstation (development) → Git repository (source of truth) → tars.local (production Pi)
+edit / inspect / commit / push                                      Docker / Node / Face / kiosk / hardware
+```
+
+- **Development:** Windows is for source edits, code inspection, commits, and local development checks.
+- **Production:** Raspberry Pi host `tars.local` runs the Docker container, Node server, served frontend, physical display, kiosk mode, and future touch/sensor hardware.
+- **Validation rule:** `localhost` on Windows is not the production environment and Windows Docker is not assumed. Before runtime testing, identify the development environment, deployment target, and live production status.
+- **Deploy path:** commit and push on Windows; SSH to `tars.local`; pull the intended commit; rebuild/restart Docker when required; validate on the Pi and its physical hardware.
+
 ## Architecture Layers
 
 ### 1. Frontend (`tars_face_v1.html`)

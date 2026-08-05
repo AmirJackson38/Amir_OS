@@ -22,6 +22,10 @@ TARS is not an LLM wrapper. The frontend autonomy engine runs locally and indepe
 
 Read those records before changing TARS. Planning documents are not implementation truth; Git history and `CURRENT_STATE.md` are.
 
+## Deployment reality
+
+Windows is the development machine (edit, commit, push); Git is the source of truth; Raspberry Pi `tars.local` is production (Docker, Node, served Face, display/kiosk, future hardware). `localhost` on Windows is not production. For runtime validation: identify dev/deploy/prod status, then push, SSH to `tars.local`, pull, rebuild/restart when needed, and validate on Pi hardware.
+
 ## Architecture invariants
 
 1. `worldState` is authoritative for TARS/world/environment state.
