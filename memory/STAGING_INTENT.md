@@ -8,9 +8,9 @@
 ## Active Staged Action
 
 - **Timestamp:** 2026-08-04 UTC
-- **Target Component:** TARS left-window view
-- **Planned Action:** Remove the two legacy framed-art meshes that occupy the left-window opening. Preserve its frame, glass, rain, static environment image, and source-color rendering; defer monitor/game and collision/telemetry work.
-- **Status:** Complete — committed as `d0edffa`, deployed to `tars.local`, and confirmed through a production Chromium reload with a visible 800x480 WebGL canvas, loaded window assets, and no startup exceptions.
+- **Target Component:** TARS left-window view and energy orb visibility
+- **Planned Action:** Reduce only the left static environment plane to the smallest practical parallax overscan and make the existing ball easier to see on the 800x480 production view. Preserve rear window scale, physics registration, weather, source-color rendering, and autonomy/UI systems.
+- **Status:** In Progress.
 
 ---
 

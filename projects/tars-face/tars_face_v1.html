@@ -1279,7 +1279,7 @@ class WindowEnvironmentProvider {
         this.textureLoader = new THREE.TextureLoader();
     }
     
-    initWindow(side, configPath, group, fallbackFn, position, rotation) {
+    initWindow(side, configPath, group, fallbackFn, position, rotation, options = {}) {
         if (!configPath) {
             fallbackFn();
             return;
@@ -1290,9 +1290,7 @@ class WindowEnvironmentProvider {
             (texture) => {
                 texture.colorSpace = THREE.SRGBColorSpace;
                 const aspect = texture.image.width / texture.image.height;
-                // Overscan the 6×4 window openings without turning the image into a room-sized backdrop.
-                // At this exterior depth, 16 units leaves enough margin for camera parallax.
-                const height = 16;
+                const height = options.height || 16;
                 const width = height * aspect;
                 // Static PNGs are source artwork, not weather geometry: preserve their authored color.
                 const mat = new THREE.MeshBasicMaterial({ 
@@ -1519,7 +1517,8 @@ windowEnvProvider.initWindow(
     lexterior,
     buildLeftProceduralFallback,
     new THREE.Vector3(-10.5, 5, 0), // Positioned between window and sky
-    new THREE.Euler(0, Math.PI / 2, 0)
+    new THREE.Euler(0, Math.PI / 2, 0),
+    { height: 8 } // Minimal overscan for the 6x4 left opening while keeping parallax margin.
 );
 
 // Left window rain
@@ -7361,26 +7360,27 @@ initializeWorldObjects();
 // TARS ENERGY ORB (Ball)
 // ============================================================
 
-const ballGeo = new THREE.SphereGeometry(0.22, 16, 16);
+const BALL_RADIUS = 0.3;
+const ballGeo = new THREE.SphereGeometry(BALL_RADIUS, 16, 16);
 const ballMat = new THREE.MeshStandardMaterial({
     color: 0x5fd0ff,
     emissive: 0x5fd0ff,
-    emissiveIntensity: 0.3,
+    emissiveIntensity: 0.45,
     roughness: 0.2,
     metalness: 0.1
 });
 const ballMesh = new THREE.Mesh(ballGeo, ballMat);
 ballMesh.castShadow = true;
 ballMesh.receiveShadow = true;
-ballMesh.position.set(3, 4, 1.5);
+ballMesh.position.set(3, 3.2, 1.4);
 scene.add(ballMesh);
 
-const ballCoreGeo = new THREE.SphereGeometry(0.08, 12, 12);
+const ballCoreGeo = new THREE.SphereGeometry(0.11, 12, 12);
 const ballCoreMat = new THREE.MeshBasicMaterial({ color: 0xa0f0ff });
 const ballCoreMesh = new THREE.Mesh(ballCoreGeo, ballCoreMat);
 ballMesh.add(ballCoreMesh);
 
-const ballRingGeo = new THREE.RingGeometry(0.18, 0.22, 24);
+const ballRingGeo = new THREE.RingGeometry(0.24, BALL_RADIUS, 24);
 const ballRingMat = new THREE.MeshBasicMaterial({
     color: 0x5fd0ff,
     transparent: true,
@@ -7400,7 +7400,7 @@ TARS_WORLD_OBJECTS.register({
     presence: "physics",
     collisionTier: COLLISION_TIERS.INTERACTIVE,
     transform: { position: ballMesh.position },
-    bounds: { type: "sphere", radius: 0.22 },
+    bounds: { type: "sphere", radius: BALL_RADIUS },
     collision: { enabled: true, static: false, margin: 0.05 },
     interaction: { enabled: true, canPush: true, canObserve: true, actions: ["push", "observe"] },
     state: { active: true, visible: true, condition: 1.0, lastInteraction: 0 },
@@ -7418,9 +7418,9 @@ TARS_PHYSICS.register({
         enabled: true,
         type: "dynamic",
         shape: "sphere",
-        radius: 0.22,
+        radius: BALL_RADIUS,
         mass: 1,
-        velocity: new THREE.Vector3(1.5, -2, 1),
+        velocity: new THREE.Vector3(0.55, -1.4, 0.25),
         restitution: 0.7,
         friction: 0.35,
         sleeping: false,
