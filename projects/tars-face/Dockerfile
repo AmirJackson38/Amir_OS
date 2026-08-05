@@ -20,6 +20,7 @@ RUN npm ci --omit=dev --prefix ./pi-server \
 # assets must live one level above pi-server: /srv/tars/tars_face_v1.html
 COPY --chown=node:node pi-server/ ./pi-server/
 COPY --chown=node:node tars_face_v1.html ./tars_face_v1.html
+COPY --chown=node:node frontend-observation-adapter.js ./frontend-observation-adapter.js
 COPY --chown=node:node behavioral-memory.js ./behavioral-memory.js
 COPY --chown=node:node three.module.js ./three.module.js
 COPY --chown=node:node config/ ./config/
