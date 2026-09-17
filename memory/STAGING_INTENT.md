@@ -20,7 +20,7 @@
   5. Push commits cleanly to remote `origin/master`.
   6. Provide Amir with exact, idempotent pull/clone instructions for the HP Omarchy laptop.
   7. Update `memory/STAGING_INTENT.md` (Status: Completed).
-- **Status:** In-Progress
+- **Status:** Completed
 
 ---
 
