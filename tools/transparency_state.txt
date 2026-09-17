@@ -1,0 +1,7 @@
+{
+    "AccentColor":  "0xC400B7C3",
+    "DropShadows":  true,
+    "AeroPeek":  true,
+    "DarkTheme":  true,
+    "Enabled":  true
+}
