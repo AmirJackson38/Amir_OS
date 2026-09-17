@@ -24,6 +24,22 @@
                 : state => state?.session?.id || null;
         }
 
+        ingest(observation, consumer) {
+            const event = observation && observation.event ? observation.event : observation;
+            if (!event || typeof event !== "object" || typeof event.type !== "string" || !event.type) return false;
+            const normalized = {
+                schemaVersion: OBSERVATION_SCHEMA_VERSION,
+                source: "frontend",
+                timestamp: observation?.timestamp || event.timestamp || this.clock(),
+                sessionId: observation?.sessionId ?? null,
+                event: clone(event)
+            };
+            if (consumer && typeof consumer.ingest === "function") {
+                consumer.ingest(normalized);
+            }
+            return normalized;
+        }
+
         capture(metadata = {}) {
             const state = this.stateReader();
             if (!state || typeof state !== "object") return null;

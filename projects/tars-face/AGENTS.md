@@ -55,8 +55,8 @@ phase explicitly changes this mode.
 - Phase 9.3: **Complete** — recovery validation (container/daemon/reboot/network-loss/persistence) `3124ec1`
 - **Phase 9.4 baseline** — physical embodiment and reliability work remains in progress. Kiosk service verification is complete; display/touch validation and hardware reliability remain open.
 - **Phase 9.4 behavioral memory enhancement** — session/daily summaries, provenance, bounded persistence, inspection, and selected backend mirroring are implemented incrementally; this does not alter autonomy or world-state authority.
-- **Current: Phase 10.2.1** — live shadow observation connected locally at 1 Hz; observation is diagnostic/non-authoritative and no authority has moved.
-- **Next gate: Phase 10.2 validation review** — verify live receipts and bounded behavior before any Phase 10.3 extraction; do not enable canonical mode.
+- **Current: Phase 10.3.1 checkpoint** — candidate ObservatoryDataLayer implemented locally with shadow wiring; legacy observatory remains authoritative and shadow mode is disabled by default.
+- **Next gate: Phase 10.3.1 manual shadow validation** — review the diff, run `?observatoryMode=shadow`, verify live comparisons, and preserve rollback before any diagnostic cutover; do not enable canonical mode.
 
 ## Development Environment Reality
 
@@ -102,6 +102,19 @@ named; authority migration requires a later approved phase.
 5. **New integrations are adapters** — Each monitor is a standalone module registered in `server.js`. No hardcoded features.
 6. **Layers stay separated** — Frontend, backend (runtime server), cognition (LLM/consultant), and deployment (Docker/kiosk) must remain isolated so each can be changed independently. Keep the deployed node reproducible via git + image tags.
 7. **Runtime dependencies must be offline-capable** — No hard CDN/external requirement in the frontend (three.js is served locally). Everything shipped must degrade gracefully with no network.
+
+## TARS Architectural Invariants
+
+- Browser runtime is canonical.
+- Pi runtime is observational.
+- Shadow systems never become authorities.
+- Candidate modules receive observations, never runtime objects.
+- New subsystems must prove parity before ownership transfer.
+- `worldState` ownership does not move casually.
+- Persistence has one writer.
+- Behavioral memory has one writer.
+- The legacy observatory remains the UI source until diagnostic parity and cutover are explicitly approved.
+- `finalizeExperience()` remains dependent on the legacy interaction count until that dependency is separately migrated.
 
 ## Files Requiring Caution
 

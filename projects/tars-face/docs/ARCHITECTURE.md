@@ -89,7 +89,8 @@ gates pass.
   renderer metadata, version ordering, and protocol validation.
 - Runtime mode guards reject canonical persistence/world mutation attempts.
 - `ShadowStateObserver`, `FrontendObservationAdapter`, and `ComparisonEngine`
-  are diagnostic-only interfaces; live frontend observation is not activated.
+  are diagnostic-only interfaces; live frontend observation is active at 1 Hz
+  while comparison output remains non-authoritative.
 - Canonical migration has not started and canonical mode is not enabled.
 
 ## Phase 10.2 Shadow Mode
@@ -123,6 +124,12 @@ inventing a comparison.
 `GET /health.shadow` reports `authority: "frontend"`, observer status, bounded
 observation count, comparison count, and last-observation metadata. It is a
 diagnostic receipt, not an authority or persistence API.
+
+Comparison results classify missing fields, unexpected fields, value drift,
+transition drift, session mismatches, timing drift, and version mismatches.
+Each difference includes a category, severity, expected value, observed value,
+and an explanation where applicable. See
+`docs/EXTRACTION_METHODOLOGY.md` before beginning any Phase 10.3 extraction.
 
 ## Data Pipeline
 ```
@@ -236,6 +243,8 @@ All 22 data-action values wired to real handlers. Zero dead controls.
 - `pi-server/comparison-engine.js` — Phase 10.2 diagnostic comparison interface
 - `frontend-observation-adapter.js` — read-only frontend observation boundary
 - `fixtures/shadow-session.json` — deterministic shadow comparison fixture
+- `fixtures/phase94-behavior.json` — recorded Phase 9.4 behavior scenarios
+- `docs/EXTRACTION_METHODOLOGY.md` — archaeology, parallel-run, and migration gates
 - `pi-server/services/status-reporter.js` — service heartbeat registry
 - `pi-server/services/health-monitor.js` — system health polling
 - `pi-server/services/alert-manager.js` — threshold-based alert evaluation

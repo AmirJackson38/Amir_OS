@@ -1,0 +1,101 @@
+{
+  "schemaVersion": 1,
+  "description": "Recorded Phase 9.4 behavior states for deterministic extraction regression checks.",
+  "scenarios": [
+    {
+      "id": "idle",
+      "observations": [
+        {
+          "schemaVersion": 1,
+          "source": "frontend",
+          "timestamp": "2026-08-05T13:00:00.000Z",
+          "sessionId": "phase94-fixture",
+          "worldVersion": 1,
+          "state": { "activity": "idle", "location": "spawn", "needs": { "energy": 0.7 }, "weather": { "condition": "clear" }, "emotion": { "mood": "neutral" }, "timeOfDay": 9 }
+        }
+      ]
+    },
+    {
+      "id": "activity-start",
+      "transition": { "from": "idle", "to": "computer_work" },
+      "observations": [
+        {
+          "schemaVersion": 1,
+          "source": "frontend",
+          "timestamp": "2026-08-05T13:01:00.000Z",
+          "sessionId": "phase94-fixture",
+          "worldVersion": 2,
+          "state": { "activity": "computer_work", "location": "workstation", "needs": { "energy": 0.69 }, "weather": { "condition": "clear" }, "emotion": { "mood": "focused" }, "timeOfDay": 9 }
+        }
+      ]
+    },
+    {
+      "id": "activity-complete",
+      "transition": { "from": "computer_work", "to": "idle" },
+      "observations": [
+        {
+          "schemaVersion": 1,
+          "source": "frontend",
+          "timestamp": "2026-08-05T13:05:00.000Z",
+          "sessionId": "phase94-fixture",
+          "worldVersion": 3,
+          "state": { "activity": "idle", "location": "workstation", "needs": { "energy": 0.65 }, "weather": { "condition": "clear" }, "emotion": { "mood": "neutral" }, "timeOfDay": 9 }
+        }
+      ]
+    },
+    {
+      "id": "location-transition",
+      "transition": { "from": "workstation", "to": "window_left" },
+      "observations": [
+        {
+          "schemaVersion": 1,
+          "source": "frontend",
+          "timestamp": "2026-08-05T13:06:00.000Z",
+          "sessionId": "phase94-fixture",
+          "worldVersion": 4,
+          "state": { "activity": "weather_observation", "location": "window_left", "needs": { "energy": 0.64 }, "weather": { "condition": "rain", "intensity": "moderate" }, "emotion": { "mood": "curious" }, "timeOfDay": 9 }
+        }
+      ]
+    },
+    {
+      "id": "object-interaction",
+      "observations": [
+        {
+          "schemaVersion": 1,
+          "source": "frontend",
+          "timestamp": "2026-08-05T13:07:00.000Z",
+          "sessionId": "phase94-fixture",
+          "worldVersion": 5,
+          "state": { "activity": "play_with_ball", "location": "main_room", "needs": { "energy": 0.63 }, "weather": { "condition": "rain", "intensity": "moderate" }, "emotion": { "mood": "playful" }, "timeOfDay": 9, "objects": { "ball": { "position": { "x": 1, "y": 0.5, "z": -1 }, "sleeping": false } } }
+        }
+      ]
+    },
+    {
+      "id": "weather-transition",
+      "transition": { "from": "rain", "to": "clear" },
+      "observations": [
+        {
+          "schemaVersion": 1,
+          "source": "frontend",
+          "timestamp": "2026-08-05T13:10:00.000Z",
+          "sessionId": "phase94-fixture",
+          "worldVersion": 6,
+          "state": { "activity": "weather_observation", "location": "window_left", "needs": { "energy": 0.61 }, "weather": { "condition": "clear", "intensity": "light" }, "emotion": { "mood": "calm" }, "timeOfDay": 9 }
+        }
+      ]
+    },
+    {
+      "id": "persistence-state",
+      "observations": [
+        {
+          "schemaVersion": 1,
+          "source": "frontend",
+          "timestamp": "2026-08-05T13:11:00.000Z",
+          "sessionId": "phase94-fixture",
+          "worldVersion": 7,
+          "state": { "activity": "weather_observation", "location": "window_left", "needs": { "energy": 0.61 }, "weather": { "condition": "clear", "intensity": "light" }, "emotion": { "mood": "calm" }, "timeOfDay": 9, "objects": { "ball": { "position": { "x": 1, "y": 0.5, "z": -1 }, "sleeping": true } } }
+        }
+      ]
+    }
+  ]
+}

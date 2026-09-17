@@ -39,8 +39,8 @@
   ],
   "expected": {
     "differences": [
-      { "field": "activity", "frontend": "server_check", "shadow": "idle" },
-      { "field": "metadata.worldVersion", "frontend": 10, "shadow": 11 }
+      { "field": "activity", "category": "behavioral", "kind": "value", "severity": "error", "expected": "server_check", "observed": "idle" },
+      { "field": "metadata.worldVersion", "category": "metadata", "kind": "version", "severity": "warning", "expected": 10, "observed": 11, "detail": "frontend and shadow world versions differ" }
     ]
   }
 }

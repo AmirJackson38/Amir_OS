@@ -71,11 +71,40 @@ const divergent = engine.compare(observation, {
 });
 assert.equal(divergent.status, "compared");
 assert.deepEqual(divergent.differences.slice(0, 3), [
-    { field: "activity", frontend: "server_check", shadow: "idle" },
-    { field: "location", frontend: "rack-a", shadow: "window_left" },
-    { field: "metadata.worldVersion", frontend: 7, shadow: 8 }
+    { field: "activity", category: "behavioral", kind: "value", severity: "error", expected: "server_check", observed: "idle" },
+    { field: "location", category: "behavioral", kind: "value", severity: "error", expected: "rack-a", observed: "window_left" },
+    { field: "metadata.worldVersion", category: "metadata", kind: "version", severity: "warning", expected: 7, observed: 8, detail: "frontend and shadow world versions differ" }
 ]);
+assert.equal(divergent.summary.bySeverity.error, 2);
 assert.equal(engine.getHealth().comparisons, 3);
+
+// Missing and unexpected fields are explicit; renderer-only fields are ignored.
+const incomplete = engine.compare(observation, {
+    ...observation,
+    state: { activity: "server_check", camera: { x: 1 }, fps: 60, futureField: true }
+});
+assert.ok(incomplete.differences.some(item => item.kind === "missing" && item.field === "location"));
+assert.ok(incomplete.differences.some(item => item.kind === "unexpected" && item.field === "state.futureField"));
+assert.ok(!incomplete.differences.some(item => item.field === "state.camera" || item.field === "state.fps"));
+
+// Session, timing, and transition drift are independently classified.
+const sessionTiming = engine.compare(observation, {
+    ...observation,
+    sessionId: "other-session",
+    timestamp: "2026-08-05T12:00:20.000Z"
+});
+assert.ok(sessionTiming.differences.some(item => item.kind === "session"));
+assert.ok(sessionTiming.differences.some(item => item.kind === "timing"));
+
+const transition = engine.compare(
+    observation,
+    observation,
+    {
+        previousFrontendObservation: { ...observation, state: { ...observation.state, activity: "idle" } },
+        previousShadowObservation: { ...observation, state: { ...observation.state, activity: "server_check" } }
+    }
+);
+assert.ok(transition.differences.some(item => item.kind === "transition" && item.field === "activity"));
 
 const fixturePath = path.join(process.cwd(), "fixtures", "shadow-session.json");
 const fixture = JSON.parse(fs.readFileSync(fixturePath, "utf8"));
@@ -86,5 +115,20 @@ assert.deepEqual(
     new ComparisonEngine().compare(fixture.observations[0], fixture.observations[1]).differences,
     fixture.expected.differences
 );
+
+const phase94Fixture = JSON.parse(fs.readFileSync(path.join(process.cwd(), "fixtures", "phase94-behavior.json"), "utf8"));
+assert.equal(phase94Fixture.schemaVersion, 1);
+assert.deepEqual(phase94Fixture.scenarios.map(scenario => scenario.id), [
+    "idle",
+    "activity-start",
+    "activity-complete",
+    "location-transition",
+    "object-interaction",
+    "weather-transition",
+    "persistence-state"
+]);
+assert.ok(phase94Fixture.scenarios.every(scenario => scenario.observations[0].source === "frontend"));
+assert.equal(phase94Fixture.scenarios[4].observations[0].state.objects.ball.sleeping, false);
+assert.equal(phase94Fixture.scenarios[6].observations[0].state.objects.ball.sleeping, true);
 
 console.log("Shadow observation tests: PASS");

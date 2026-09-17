@@ -38,6 +38,12 @@ weather, or behavioral memory. No production authority has moved.
 - **Diagnostic endpoint**: `/health.shadow` reports observer status with `authority: frontend`.
 - **Fixture support**: deterministic `fixtures/shadow-session.json` covers waiting and divergent comparisons.
 
+## Phase 10.2.2 Comparison Hardening
+
+- Comparison results classify missing/unexpected fields, value drift, transitions, session mismatches, timing drift, and version mismatches with severity plus expected/observed values.
+- Recorded Phase 9.4 scenarios cover idle, activity start/completion, location movement, object interaction, weather transition, and persistence-related state.
+- `docs/EXTRACTION_METHODOLOGY.md` defines archaeology, parallel implementation, comparison, and migration gates for Phase 10.3.
+
 ## Phase 10.2 Authority Boundary
 
 Phase 10.2.1 live observation is connected locally through a separate 1 Hz
@@ -46,6 +52,65 @@ has changed. `TARS_RUNTIME_MODE` defaults to `legacy`;
 canonical persistence and world mutations are rejected by the shell guard.
 Shadow data is bounded, diagnostic-only, and cannot influence autonomy,
 worldState, persistence, or behavioral memory.
+
+## Phase 10.3.1 Observatory Extraction Checkpoint
+
+### Completed
+
+- Contract archaeology complete.
+- Contract freeze approved.
+- Candidate `ObservatoryDataLayer` implemented.
+- Shadow-mode wiring added behind `?observatoryMode=shadow`.
+- Legacy observatory remains authoritative for UI output.
+
+### Current architecture state
+
+- Browser remains the canonical runtime.
+- Legacy `ObservatoryDataLayer` owns UI output.
+- Candidate `ObservatoryDataLayer` receives observations only.
+- `FrontendObservationAdapter.ingest()` is the only candidate bridge.
+- `finalizeExperience()` still depends on the legacy interaction count.
+
+### Files introduced/changed
+
+- `observatory-data-layer-candidate.js`
+- `frontend-observation-adapter.js`
+- `test_observatory_candidate.mjs`
+- `tars_face_v1.html` shadow wiring
+- `Dockerfile` packaging change
+
+### Validation status
+
+Passing gates: candidate tests, fixture parity, mutation protection, isolation checks, observatory regression (59/59), behavioral-memory tests, canonical-shell tests, shadow tests, syntax checks, `git diff --check`, and local HTTP asset smoke tests.
+
+### Explicitly not done
+
+- No Pi deployment.
+- No commit.
+- No cutover.
+- No UI migration.
+- No authority movement.
+- Candidate mode is not enabled by default.
+
+### Next approved action
+
+1. Review the diff.
+2. Run TARS manually with `?observatoryMode=shadow`.
+3. Verify live candidate comparisons.
+4. Preserve the legacy rollback path.
+5. Only after evidence consider diagnostic cutover.
+
+## TARS Architectural Invariants
+
+- Browser runtime is canonical.
+- Pi runtime is observational.
+- Shadow systems never become authorities.
+- Candidate modules receive observations, never runtime objects.
+- New subsystems must prove parity before ownership transfer.
+- `worldState` ownership does not move casually.
+- Persistence has one writer.
+- Behavioral memory has one writer.
+- `finalizeExperience()` remains legacy-owned until its interaction-count dependency is explicitly migrated.
 
 ## Newly Integrated (Phase 9.3 — Recovery Validation)
 - **Test-only phase** (no runtime/Docker/arch changes): validated `tars_backend` survives real hardware lifecycle events on the node.

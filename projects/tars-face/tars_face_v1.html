@@ -1150,7 +1150,7 @@ const lwinBottomY = LWIN_Y - LWIN_H / 2; // 2.2
 
 // Top wall segment (above window) - spans full Z
 const lwallTopSeg = new THREE.Mesh(
-    new THREE.BoxGeometry(LEFT_WALL_THICK, 8 - lwinTopY, 14), 
+    new THREE.BoxGeometry(LEFT_WALL_THICK, 8 - lwinTopY, 14),
     backWallMat
 );
 lwallTopSeg.position.set(LEFT_WALL_X + LEFT_WALL_THICK/2, (lwinTopY + 8) / 2, 0);
@@ -1159,7 +1159,7 @@ room.add(lwallTopSeg);
 
 // Bottom wall segment (below window) - spans full Z
 const lwallBottomSeg = new THREE.Mesh(
-    new THREE.BoxGeometry(LEFT_WALL_THICK, lwinBottomY, 14), 
+    new THREE.BoxGeometry(LEFT_WALL_THICK, lwinBottomY, 14),
     backWallMat
 );
 lwallBottomSeg.position.set(LEFT_WALL_X + LEFT_WALL_THICK/2, lwinBottomY / 2, 0);
@@ -1168,7 +1168,7 @@ room.add(lwallBottomSeg);
 
 // Left wall segment (left of window along Z)
 const lwallLeftSeg = new THREE.Mesh(
-    new THREE.BoxGeometry(LEFT_WALL_THICK, 8, lwinLeftZ - (-7)), 
+    new THREE.BoxGeometry(LEFT_WALL_THICK, 8, lwinLeftZ - (-7)),
     backWallMat
 );
 lwallLeftSeg.position.set(LEFT_WALL_X + LEFT_WALL_THICK/2, 4, (-7 + lwinLeftZ) / 2);
@@ -1177,7 +1177,7 @@ room.add(lwallLeftSeg);
 
 // Right wall segment (right of window along Z)
 const lwallRightSeg = new THREE.Mesh(
-    new THREE.BoxGeometry(LEFT_WALL_THICK, 8, 7 - lwinRightZ), 
+    new THREE.BoxGeometry(LEFT_WALL_THICK, 8, 7 - lwinRightZ),
     backWallMat
 );
 lwallRightSeg.position.set(LEFT_WALL_X + LEFT_WALL_THICK/2, 4, (lwinRightZ + 7) / 2);
@@ -1275,13 +1275,13 @@ class WindowEnvironmentProvider {
     constructor() {
         this.textureLoader = new THREE.TextureLoader();
     }
-    
+
     initWindow(side, configPath, group, fallbackFn, position, rotation, options = {}) {
         if (!configPath) {
             fallbackFn();
             return;
         }
-        
+
         this.textureLoader.load(
             configPath,
             (texture) => {
@@ -1294,17 +1294,17 @@ class WindowEnvironmentProvider {
                 const height = options.height || 16;
                 const width = height * aspect;
                 // Static PNGs are source artwork, not weather geometry: preserve their authored color.
-                const mat = new THREE.MeshBasicMaterial({ 
-                    map: texture, 
+                const mat = new THREE.MeshBasicMaterial({
+                    map: texture,
                     fog: false,
                     toneMapped: false,
                     transparent: false
                 });
                 const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, height), mat);
-                
+
                 mesh.position.copy(position);
                 if (rotation) mesh.rotation.copy(rotation);
-                
+
                 group.add(mesh);
                 console.log(`[WindowEnvironmentProvider] Loaded ${side} background`);
             },
@@ -1389,7 +1389,7 @@ function buildLeftProceduralFallback() {
         tower.position.set(0, 7, t * 8);
         tower.castShadow = true;
         lbridgeGroup.add(tower);
-        
+
         const topGeo = new THREE.BoxGeometry(1.6, 1.5, 1.6);
         const top = new THREE.Mesh(topGeo, towerMat);
         top.position.set(0, 14.7, t * 8);
@@ -1474,37 +1474,37 @@ function buildLeftProceduralFallback() {
     for (let i = 0; i < 6; i++) {
         const carGroup = new THREE.Group();
         const carGeo = new THREE.BoxGeometry(1.6, 0.6, 3.2);
-        const carMat = new THREE.MeshStandardMaterial({ 
-            color: new THREE.Color().setHSL(Math.random(), 0.5, 0.3), roughness: 0.4, metalness: 0.6 
+        const carMat = new THREE.MeshStandardMaterial({
+            color: new THREE.Color().setHSL(Math.random(), 0.5, 0.3), roughness: 0.4, metalness: 0.6
         });
         const carBody = new THREE.Mesh(carGeo, carMat);
         carBody.position.y = 1.9;
         carGroup.add(carBody);
-        
+
         const headlightGeo = new THREE.SphereGeometry(0.08, 8, 8);
         const headlightMat = new THREE.MeshBasicMaterial({ color: 0xffffee, transparent: true, opacity: 1 });
         const leftLight = new THREE.Mesh(headlightGeo, headlightMat.clone());
         leftLight.position.set(-0.5, 1.9, 1.7);
         carGroup.add(leftLight);
-        
+
         const rightLight = new THREE.Mesh(headlightGeo, headlightMat.clone());
         rightLight.position.set(0.5, 1.9, 1.7);
         carGroup.add(rightLight);
-        
+
         const tailMat = new THREE.MeshBasicMaterial({ color: 0xff2222, transparent: true, opacity: 1 });
         const leftTail = new THREE.Mesh(headlightGeo, tailMat.clone());
         leftTail.position.set(-0.5, 1.9, -1.7);
         carGroup.add(leftTail);
-        
+
         const rightTail = new THREE.Mesh(headlightGeo, tailMat.clone());
         rightTail.position.set(0.5, 1.9, -1.7);
         carGroup.add(rightTail);
-        
+
         const lane = (i % 4) < 2 ? -1.5 : 1.5;
         const startZ = -9 + (i % 4) * 5 + Math.random() * 2;
         carGroup.position.set(0, 0, startZ);
         carGroup.userData = { speed: 0.08 + Math.random() * 0.06, lane: lane, offset: startZ };
-        
+
         lbridgeGroup.add(carGroup);
         lcars.push(carGroup);
         lcarLights.push({ left: leftLight, right: rightLight, leftTail: leftTail, rightTail: rightTail });
@@ -1988,13 +1988,13 @@ function drawWaveform(ctx, w, h, time) {
 function drawTARSOS(ctx, w, h, time) {
     ctx.fillStyle = "#02060a";
     ctx.fillRect(0, 0, w, h);
-    
+
     // Scanline effect
     ctx.fillStyle = "rgba(0, 0, 0, 0.15)";
     for (let y = 0; y < h; y += 3) {
         ctx.fillRect(0, y + (time * 30) % 3, w, 1);
     }
-    
+
     // Header bar
     const headerH = 36;
     const grad = ctx.createLinearGradient(0, 0, 0, headerH);
@@ -2008,12 +2008,12 @@ function drawTARSOS(ctx, w, h, time) {
     ctx.moveTo(0, headerH);
     ctx.lineTo(w, headerH);
     ctx.stroke();
-    
+
     // TARS logo
     ctx.fillStyle = "#5fd0ff";
     ctx.font = "bold 16px monospace";
     ctx.fillText("T.A.R.S. OS v0.9", 16, 24);
-    
+
     // Status indicator
     const statusColor = currentState.emotion === "critical" ? "#ff2200" :
                         currentState.emotion === "warning" ? "#ff8800" :
@@ -2026,11 +2026,11 @@ function drawTARSOS(ctx, w, h, time) {
     ctx.fillStyle = "rgba(255,255,255,0.8)";
     ctx.font = "11px monospace";
     ctx.fillText(currentState.emotion.toUpperCase(), w - 120, headerH / 2 + 4);
-    
+
     // Main content area
     const contentY = headerH + 20;
     const lineH = 22;
-    
+
     // System metrics
     ctx.fillStyle = "#5fd0ff";
     ctx.font = "12px monospace";
@@ -2042,30 +2042,30 @@ function drawTARSOS(ctx, w, h, time) {
         `PROCESSES: ${Math.floor(47 + Math.sin(time * 0.4) * 3)}`,
         `UPTIME: ${Math.floor(time / 3600)}h ${Math.floor((time % 3600) / 60)}m ${Math.floor(time % 60)}s`
     ];
-    
+
     metrics.forEach((m, i) => {
         ctx.fillText(m, 20, contentY + i * lineH);
     });
-    
+
     // Activity log
     ctx.fillStyle = "rgba(95, 208, 255, 0.6)";
     ctx.fillText("ACTIVITY LOG:", 20, contentY + 7 * lineH);
-    
+
     const activities = [
         "> neural_net.optimize()",
-        "> memory.consolidate()", 
+        "> memory.consolidate()",
         "> sensors.poll()",
         "> network.sync()",
         "> idle.monitor()"
     ];
-    
+
     ctx.font = "11px monospace";
     activities.forEach((a, i) => {
         const alpha = 0.3 + 0.7 * Math.sin(time * 2 + i) * 0.5 + 0.5;
         ctx.fillStyle = `rgba(95, 208, 255, ${alpha})`;
         ctx.fillText(a, 28, contentY + 8.5 * lineH + i * 18);
     });
-    
+
     // Bottom bar
     ctx.fillStyle = "rgba(10, 20, 40, 0.9)";
     ctx.fillRect(0, h - 30, w, 30);
@@ -2075,12 +2075,12 @@ function drawTARSOS(ctx, w, h, time) {
     ctx.moveTo(0, h - 30);
     ctx.lineTo(w, h - 30);
     ctx.stroke();
-    
+
     ctx.fillStyle = "#5fd0ff";
     ctx.font = "10px monospace";
     const cursor = Math.floor(time * 2) % 2 === 0 ? "_" : " ";
     ctx.fillText(`tars@desktop:~$ awaiting input${cursor}`, 16, h - 12);
-    
+
     // Border
     ctx.strokeStyle = "rgba(95, 208, 255, 0.3)";
     ctx.lineWidth = 2;
@@ -2109,7 +2109,7 @@ function updateMonitorDrawFunctions() {
     const m1 = animatedScreens.find(s => s.drawFn === drawTerminal || s.drawFn === drawTARSOS || s.drawFn === drawMatrix || s.drawFn === drawStarfield || s.drawFn === drawSysLogs || s.drawFn === drawCodeReview || s.drawFn === drawLogCleanup);
     const m2 = animatedScreens.find(s => s.drawFn === drawWaveform || s.drawFn === drawMatrix || s.drawFn === drawStarfield || s.drawFn === drawSysLogs);
     if (!m1 || !m2) return;
-    
+
     // Monitor 1
     switch (monitor1State) {
         case 'terminal': m1.drawFn = drawTerminal; break;
@@ -2120,7 +2120,7 @@ function updateMonitorDrawFunctions() {
         case 'codeReview': m1.drawFn = drawCodeReview; break;
         case 'logCleanup': m1.drawFn = drawLogCleanup; break;
     }
-    
+
     // Monitor 2
     switch (monitor2State) {
         case 'waveform': m2.drawFn = drawWaveform; break;
@@ -2193,7 +2193,7 @@ function drawCodeReview(ctx, w, h, time) {
     const lines = [
         "> git diff main.cpp",
         "+  optimized pathfinding algo",
-        "-  legacy A* implementation", 
+        "-  legacy A* implementation",
         "~  refactored node expansion",
         "> PR #2341 approved"
     ];
@@ -2638,11 +2638,11 @@ for (let i = 0; i < birdCount; i++) {
 }
 birdGeometry.setAttribute("position", new THREE.BufferAttribute(birdPositions, 3));
 
-const birdMat = new THREE.MeshBasicMaterial({ 
-    color: 0xffffff, 
-    transparent: true, 
+const birdMat = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
     opacity: 0.7,
-    side: THREE.DoubleSide 
+    side: THREE.DoubleSide
 });
 
 // Simple bird - two wings
@@ -3367,6 +3367,62 @@ const ObservatoryDataLayer = {
 // Initialize on script load
 ObservatoryDataLayer.init();
 window.ObservatoryDataLayer = ObservatoryDataLayer;
+
+// Phase 10.3.1 — candidate observatory shadow wiring.
+// Legacy mode remains the default and the legacy layer remains the only
+// observatory/UI source. The candidate receives copied observations only.
+const OBSERVATORY_MODE = (() => {
+    const requested = new URLSearchParams(window.location.search).get("observatoryMode");
+    return requested === "shadow" ? "shadow" : "legacy";
+})();
+
+const observatoryCandidateShadow = (() => {
+    let candidate = null;
+    let unsubscribers = [];
+    let stopped = false;
+
+    const stop = () => {
+        stopped = true;
+        unsubscribers.forEach(unsubscribe => unsubscribe());
+        unsubscribers = [];
+        if (candidate) candidate.dispose();
+    };
+
+    if (OBSERVATORY_MODE !== "shadow") return Object.freeze({ stop, getCandidate: () => null });
+    const Adapter = window.FrontendObservationAdapter;
+    if (typeof Adapter !== "function") return Object.freeze({ stop, getCandidate: () => null });
+
+    import("/observatory-data-layer-candidate.js").then(({ createObservatoryDataLayerCandidate }) => {
+        if (stopped) return;
+        const adapter = new Adapter();
+        candidate = createObservatoryDataLayerCandidate();
+        const topics = [
+            "activity.started",
+            "activity.completed",
+            "activity.interrupted",
+            "decision.made",
+            "need.changed",
+            "weather.changed",
+            "world.loaded",
+            "world.saved",
+            "error.detected",
+            "world.interaction",
+            "world.physics.collision",
+            "world.physics.impulse"
+        ];
+        unsubscribers = topics.map(topic => subscribeTARSEvent(topic, event => {
+            try {
+                adapter.ingest({ event }, candidate);
+            } catch (error) {
+                // Candidate diagnostics must never affect the legacy runtime.
+            }
+        }));
+    }).catch(() => {
+        // Missing candidate assets must not affect the legacy runtime.
+    });
+
+    return Object.freeze({ stop, getCandidate: () => candidate });
+})();
 
 // ============================================================
 // PHASE 8.5: EMBODIED INTERACTION LAYER
@@ -4280,7 +4336,7 @@ function getPreference(category, target) {
 const weatherVisualEngine = {
     currentCondition: "rain",
     activeEffects: [],
-    
+
     // Map weather conditions to visual effect configurations
     effectConfigs: {
         clear: { rain: false, snow: false, fog: false, lightning: false, wind: false },
@@ -4296,7 +4352,7 @@ const weatherVisualEngine = {
         windy: { rain: false, snow: false, fog: false, lightning: false, wind: { intensity: "strong" } },
         storm: { rain: { intensity: "heavy" }, snow: false, fog: { density: 0.4 }, lightning: true, wind: { intensity: "severe" } }
     },
-    
+
     updateFromWeatherState() {
         const weather = worldState.environment.weather;
         const conditionKey = weather.condition === "thunderstorm" ? "thunderstorm" :
@@ -4305,7 +4361,7 @@ const weatherVisualEngine = {
         this.currentCondition = conditionKey;
         this.applyEffects(this.effectConfigs[conditionKey] || this.effectConfigs.clear);
     },
-    
+
     applyEffects(config) {
         // Rain
         if (config.rain) {
@@ -4349,7 +4405,7 @@ const weatherVisualEngine = {
             rainGroup.visible = false;
             lrainGroup.visible = false;
         }
-        
+
         // Fog (adjust scene fog)
         if (config.fog) {
             scene.fog.density = config.fog.density * TARS_RENDER.renderer.fogDensity;
@@ -4357,20 +4413,20 @@ const weatherVisualEngine = {
         } else {
             scene.fog.density = TARS_RENDER.renderer.fogDensity;
         }
-        
+
         // Lightning
         if (config.lightning) {
             this.startLightning();
         } else {
             this.stopLightning();
         }
-        
+
         // Wind (affects rain angle, particles, etc.)
         if (config.wind) {
             this.applyWind(config.wind.intensity);
         }
     },
-    
+
     lightningInterval: null,
     startLightning() {
         if (this.lightningInterval) return;
@@ -4385,14 +4441,14 @@ const weatherVisualEngine = {
             }
         }, 2000 + Math.random() * 3000);
     },
-    
+
     stopLightning() {
         if (this.lightningInterval) {
             clearInterval(this.lightningInterval);
             this.lightningInterval = null;
         }
     },
-    
+
     applyWind(intensity) {
         const windStrength = { light: 0.5, moderate: 1.0, strong: 2.0, severe: 3.0 }[intensity] || 1.0;
         // Wind affects rain angle - handled in rain update
@@ -4504,9 +4560,9 @@ const faceCtx = faceCanvas.getContext("2d");
 const faceTexture = new THREE.CanvasTexture(faceCanvas);
 faceTexture.colorSpace = THREE.SRGBColorSpace;
 const faceGeo = new THREE.PlaneGeometry(0.6, 0.6);
-const faceMat = new THREE.MeshBasicMaterial({ 
-    map: faceTexture, transparent: true, toneMapped: false, 
-    side: THREE.DoubleSide, depthTest: false 
+const faceMat = new THREE.MeshBasicMaterial({
+    map: faceTexture, transparent: true, toneMapped: false,
+    side: THREE.DoubleSide, depthTest: false
 });
 const tarsFaceMesh = new THREE.Mesh(faceGeo, faceMat);
 tarsFaceMesh.position.z = 0.35; // In front of core
@@ -4529,11 +4585,11 @@ function drawFace(time) {
     const ctx = faceCtx;
     const w = faceCanvas.width, h = faceCanvas.height;
     ctx.clearRect(0, 0, w, h);
-    
+
     const emotion = currentState.emotion;
     const intensity = currentState.intensity;
     const pulse = Math.sin(time * currentState.pulseSpeed) * 0.5 + 0.5;
-    
+
     // Update face state
     faceState.blinkTimer -= 1/60;
     if (faceState.blinkTimer <= 0) {
@@ -4543,40 +4599,40 @@ function drawFace(time) {
     if (faceState.eyeBlink > 0) {
         faceState.eyeBlink = Math.max(0, faceState.eyeBlink - 0.15);
     }
-    
+
     faceState.expressionTimer -= 1/60;
     if (faceState.expressionTimer <= 0) {
         faceState.expression = ["neutral", "curious", "focused", "amused"][Math.floor(Math.random() * 4)];
         faceState.expressionTimer = 3 + Math.random() * 5;
     }
-    
+
     // Emotion-driven face parameters
     const preset = BEHAVIOR_PRESETS[emotion] || BEHAVIOR_PRESETS.idle;
     const faceColor = new THREE.Color(preset.color);
     const r = Math.floor(faceColor.r * 255);
     const g = Math.floor(faceColor.g * 255);
     const b = Math.floor(faceColor.b * 255);
-    
+
     // Base face glow
     const glowAlpha = 0.2 + pulse * 0.3 + intensity * 0.2;
     ctx.fillStyle = `rgba(${r},${g},${b},${glowAlpha})`;
     ctx.beginPath();
     ctx.arc(w/2, h/2, 110, 0, Math.PI * 2);
     ctx.fill();
-    
+
     // Face shape
     ctx.fillStyle = `rgba(${Math.min(255, r+30)},${Math.min(255, g+30)},${Math.min(255, b+30)},0.15)`;
     ctx.beginPath();
     ctx.ellipse(w/2, h/2 + 10, 90, 100, 0, 0, Math.PI * 2);
     ctx.fill();
-    
+
     // ========== EYEBROWS ==========
     ctx.strokeStyle = `rgb(${r},${g},${b})`;
     ctx.lineWidth = 4;
     ctx.lineCap = "round";
     const browY = h/2 - 55;
     const browW = 35;
-    
+
     // Left eyebrow
     ctx.beginPath();
     if (emotion === "critical" || emotion === "warning" || emotion === "serious" || emotion === "disapproving") {
@@ -4601,7 +4657,7 @@ function drawFace(time) {
         ctx.quadraticCurveTo(w/2 - 27, browY - 5 + faceState.eyebrowOffset, w/2 - 10, browY + faceState.eyebrowOffset);
     }
     ctx.stroke();
-    
+
     // Right eyebrow
     ctx.beginPath();
     if (emotion === "critical" || emotion === "warning" || emotion === "serious" || emotion === "disapproving") {
@@ -4618,41 +4674,41 @@ function drawFace(time) {
         ctx.quadraticCurveTo(w/2 + 27, browY - 5 - faceState.eyebrowOffset, w/2 + 45, browY - faceState.eyebrowOffset);
     }
     ctx.stroke();
-    
+
     // ========== EYES ==========
     const eyeY = h/2 - 20;
     const eyeW = 28 - faceState.squint * 10;
     const eyeH = (32 - faceState.squint * 16) * (1 - faceState.eyeBlink);
     const pupilSize = (10 + intensity * 6) * faceState.pupilDilation;
-    
+
     // Eye whites / base
     ctx.fillStyle = `rgba(${r},${g},${b},0.9)`;
-    
+
     // Left eye
     ctx.beginPath();
     ctx.ellipse(w/2 - 35 + faceState.lookDir.x * 5, eyeY + faceState.lookDir.y * 3, eyeW, eyeH, 0, 0, Math.PI * 2);
     ctx.fill();
-    
+
     // Right eye
     ctx.beginPath();
     ctx.ellipse(w/2 + 35 + faceState.lookDir.x * 5, eyeY + faceState.lookDir.y * 3, eyeW, eyeH, 0, 0, Math.PI * 2);
     ctx.fill();
-    
+
     // Pupils (track look direction)
     ctx.fillStyle = `rgb(${Math.max(0, r-80)},${Math.max(0, g-80)},${Math.max(0, b-80)})`;
     const pupilOffsetX = faceState.lookDir.x * 8;
     const pupilOffsetY = faceState.lookDir.y * 6;
-    
+
     // Left pupil
     ctx.beginPath();
     ctx.ellipse(w/2 - 35 + pupilOffsetX, eyeY + pupilOffsetY, pupilSize, pupilSize * 1.2, 0, 0, Math.PI * 2);
     ctx.fill();
-    
+
     // Right pupil
     ctx.beginPath();
     ctx.ellipse(w/2 + 35 + pupilOffsetX, eyeY + pupilOffsetY, pupilSize, pupilSize * 1.2, 0, 0, Math.PI * 2);
     ctx.fill();
-    
+
     // Eye highlights (life!)
     ctx.fillStyle = "rgba(255,255,255,0.9)";
     ctx.beginPath();
@@ -4661,7 +4717,7 @@ function drawFace(time) {
     ctx.beginPath();
     ctx.ellipse(w/2 + 35 + pupilOffsetX - 4, eyeY + pupilOffsetY - 4, 4, 3, 0, 0, Math.PI * 2);
     ctx.fill();
-    
+
     // Eyelids (blink/squint)
     if (faceState.eyeBlink > 0.5 || faceState.squint > 0.5) {
         ctx.fillStyle = `rgba(10,20,40,${faceState.eyeBlink * 0.8 + faceState.squint * 0.5})`;
@@ -4672,16 +4728,16 @@ function drawFace(time) {
         ctx.ellipse(w/2 + 35, eyeY, eyeW + 4, eyeH * (faceState.eyeBlink + faceState.squint) * 0.8, 0, 0, Math.PI * 2);
         ctx.fill();
     }
-    
+
     // ========== MOUTH ==========
     const mouthY = h/2 + 40;
     const mouthW = 30 + intensity * 15;
     const baseMouthH = 8;
-    
+
     ctx.strokeStyle = `rgb(${r},${g},${b})`;
     ctx.lineWidth = 3;
     ctx.lineCap = "round";
-    
+
     if (emotion === "speak" || currentState.speaking) {
         // Speaking - mouth opens with amplitude
         const mouthOpen = 4 + currentState.speechAmplitude * 25 * (0.5 + 0.5 * Math.sin(time * 15));
@@ -4696,7 +4752,7 @@ function drawFace(time) {
         ctx.moveTo(w/2 - mouthW, mouthY);
         ctx.quadraticCurveTo(w/2, mouthY - 20 - faceState.mouthOffset, w/2 + mouthW, mouthY);
         ctx.stroke();
-        
+
         // Dimples
         ctx.fillStyle = `rgba(${r},${g},${b},0.5)`;
         ctx.beginPath();
@@ -4751,7 +4807,7 @@ function drawFace(time) {
         ctx.quadraticCurveTo(w/2, mouthY + 3, w/2 + mouthW * 0.5, mouthY);
         ctx.stroke();
     }
-    
+
     // ========== CHEEK BLUSH (for happy) ==========
     if (emotion === "amused" || emotion === "celebrate" || emotion === "excited") {
         ctx.fillStyle = `rgba(${Math.min(255, r+60)},${Math.max(0, g-20)},${Math.max(0, b-20)},0.2)`;
@@ -4762,7 +4818,7 @@ function drawFace(time) {
         ctx.arc(w/2 + 70, h/2 + 10, 25, 0, Math.PI * 2);
         ctx.fill();
     }
-    
+
     // ========== FOREHEAD WRINKLES (for thinking/concern) ==========
     if (emotion === "think" || emotion === "confused" || emotion === "critical" || emotion === "warning") {
         ctx.strokeStyle = `rgba(${r},${g},${b},0.4)`;
@@ -4774,7 +4830,7 @@ function drawFace(time) {
             ctx.stroke();
         }
     }
-    
+
     faceTexture.needsUpdate = true;
 }
 
@@ -4862,20 +4918,20 @@ function triggerFX(type, color = 0x5fd0ff, count = 40) {
     fxState.type = type;
     fxState.timer = 0;
     fxState.color.setHex(color);
-    
+
     const positions = fxParticleGeo.attributes.position.array;
     const velocities = fxParticleVelocities;
     const lifes = fxParticleLifes;
     const colors = fxParticleGeo.attributes.color.array;
     const sizes = fxParticleGeo.attributes.size.array;
-    
+
     for (let i = 0; i < count; i++) {
         const idx = i * 3;
         // Spawn at entity center
         positions[idx] = 0;
         positions[idx + 1] = 0;
         positions[idx + 2] = 0;
-        
+
         // Random velocity based on FX type
         let speed, spread;
         if (type === "burst") {
@@ -4888,19 +4944,19 @@ function triggerFX(type, color = 0x5fd0ff, count = 40) {
             speed = 0.4 + Math.random() * 0.6;
             spread = 0.8;
         }
-        
+
         const theta = Math.random() * Math.PI * 2;
         const phi = Math.acos(2 * Math.random() - 1);
         velocities[idx] = Math.sin(phi) * Math.cos(theta) * speed;
         velocities[idx + 1] = Math.cos(phi) * speed;
         velocities[idx + 2] = Math.sin(phi) * Math.sin(theta) * speed;
-        
+
         lifes[i] = 1.5 + Math.random() * 1.0; // life in seconds
-        
+
         colors[idx] = fxState.color.r;
         colors[idx + 1] = fxState.color.g;
         colors[idx + 2] = fxState.color.b;
-        
+
         sizes[i] = 0.05 + Math.random() * 0.08;
     }
     fxParticleGeo.attributes.position.needsUpdate = true;
@@ -4976,7 +5032,7 @@ class EmotionMixer {
         }
         // Color lerp
         this.current.color.lerp(this.target.color, this.lerpSpeed * dt * 60);
-        
+
         this.gesturePhase += dt * this.current.orbitSpeed * 0.5;
     }
 
@@ -5001,7 +5057,7 @@ class EmotionMixer {
     getGesture() {
         return this.current.gesture;
     }
-    
+
     setIntensity(intensity) {
         // Adjust target deformation and energy based on intensity
         const basePreset = Object.values(BEHAVIOR_PRESETS).find(p => p.color === this.target.color.getHex()) || BEHAVIOR_PRESETS.idle;
@@ -5023,22 +5079,22 @@ const currentState = {
     listening: false,
     gazeTarget: "user",
     targetPos: new THREE.Vector3(0, 2.6, 1.5),
-    
+
     // Speech reactivity
     speechAmplitude: 0,
     speechPitch: 1.0,
     lastSpeechTime: 0,
-    
+
     // FX system
     fx: "none",
     fxTimer: 0,
-    
+
     // Location interaction state
     atDesk: false,
     atRack: false,
     atWindow: false,
     atWindowSide: null,
-    
+
     // Lerped visual channels (driven by EmotionMixer)
     currentColor: new THREE.Color(0x5fd0ff),
     targetColor: new THREE.Color(0x5fd0ff),
@@ -5062,14 +5118,14 @@ window.TARS = {
         currentState.emotion = presetName;
         document.getElementById("current-emotion").innerText = presetName.toUpperCase();
         console.log(`[TARS] Trigger: ${presetName}`);
-        
+
         // Fire FX from preset
         const preset = BEHAVIOR_PRESETS[presetName];
         if (preset.fx && preset.fx !== "none") {
             currentState.fx = preset.fx;
             currentState.fxTimer = 0;
         }
-        
+
         // Use EmotionMixer for smooth transitions
         emotionMixer.setTarget(presetName, currentState.intensity);
     },
@@ -5131,13 +5187,13 @@ window.TARS = {
             const dz = targetVec.z - tarsEntityGroup.position.z;
             const angle = Math.atan2(dx, dz);
             tarsEntityGroup.rotation.y = angle;
-            
+
             triggerLocationBehavior(targetKey);
-            
+
             const activity = overrideActivity || (() => {
                 const activityMap = {
                     "window_left": "weather_observation",
-                    "window_right": "weather_observation", 
+                    "window_right": "weather_observation",
                     "desk": "computer_work",
                     "rack-a": "server_check",
                     "user": "user_interaction"
@@ -5203,7 +5259,7 @@ window.TARS = {
     // ============================================================
     // LOCATION-BEHAVIOR SYSTEM - Random animations per station
     // ============================================================
-    
+
     const locationBehaviors = {
         desk: [
             () => { // BIOS/boot sequence
@@ -5439,7 +5495,7 @@ window.TARS = {
                 currentState.scale = 1.4;
                 faceState.expression = "curious";
                 faceState.pupilDilation = 1.5;
-                setTimeout(() => { 
+                setTimeout(() => {
                     currentState.targetPos.set(0, 2.6, 1.5);
                     currentState.scale = 1.0;
                     faceState.pupilDilation = 1.0;
@@ -5474,22 +5530,22 @@ window.TARS = {
             }
         ]
     };
-    
+
     // Alias window side keys to shared window behaviors
     locationBehaviors["window_left"] = locationBehaviors["window"];
     locationBehaviors["window_right"] = locationBehaviors["window"];
-    
+
     function triggerLocationBehavior(locationKey) {
         const behaviors = locationBehaviors[locationKey];
         if (!behaviors) return;
-        
+
         // Pick random behavior for this location
         const behavior = behaviors[Math.floor(Math.random() * behaviors.length)];
         behavior();
-        
+
         console.log(`[TARS] At ${locationKey} - executing behavior`);
     }
-    
+
     function spawnSparks(position, color, count) {
         const positions = fxParticleGeo.attributes.position.array;
         const velocities = fxParticleVelocities;
@@ -5497,20 +5553,20 @@ window.TARS = {
         const colors = fxParticleGeo.attributes.color.array;
         const sizes = fxParticleGeo.attributes.size.array;
         const c = new THREE.Color(color);
-        
+
         for (let i = 0; i < count; i++) {
             const idx = i * 3;
             positions[idx] = position.x + (Math.random() - 0.5) * 0.5;
             positions[idx + 1] = position.y + (Math.random() - 0.5) * 0.5;
             positions[idx + 2] = position.z + (Math.random() - 0.5) * 0.5;
-            
+
             const speed = 0.5 + Math.random() * 1.0;
             const theta = Math.random() * Math.PI * 2;
             const phi = Math.acos(2 * Math.random() - 1);
             velocities[idx] = Math.sin(phi) * Math.cos(theta) * speed;
             velocities[idx + 1] = Math.cos(phi) * speed * 0.5;
             velocities[idx + 2] = Math.sin(phi) * Math.sin(theta) * speed;
-            
+
             lifes[i] = 0.5 + Math.random() * 1.0;
             colors[idx] = c.r;
             colors[idx + 1] = c.g;
@@ -5663,7 +5719,7 @@ function updateNeeds(dt) {
     for (const [need, rate] of Object.entries(NEED_DECAY_RATES)) {
         worldState.tars.needs[need] = Math.max(0, worldState.tars.needs[need] - rate * dt * 60);
     }
-    
+
     // Restore needs based on current location
     const loc = worldState.tars.location;
     if (NEED_RESTORATION[loc]) {
@@ -5671,10 +5727,10 @@ function updateNeeds(dt) {
             worldState.tars.needs[need] = Math.min(1, worldState.tars.needs[need] + amount * dt * 60);
         }
     }
-    
+
     // Activity effects — continuous need changes while engaged
     applyActivityEffects(dt);
-    
+
     // Time-of-day modifiers
     const hour = new Date().getHours();
     const isNight = hour < 6 || hour > 22;
@@ -5682,7 +5738,7 @@ function updateNeeds(dt) {
         worldState.tars.needs.energy = Math.max(0, worldState.tars.needs.energy - 0.00005 * dt * 60);
         worldState.tars.needs.comfort = Math.max(0, worldState.tars.needs.comfort - 0.00003 * dt * 60);
     }
-    
+
     // Weather modifiers
     const weather = worldState.environment.weather.condition;
     if (weather === "thunderstorm" || weather === "heavy_rain") {
@@ -5768,14 +5824,14 @@ function scoreLocation(location) {
     const prefs = worldState.tars.preferences;
     const currentLoc = worldState.tars.location;
     const now = Date.now();
-    
+
     // Need satisfaction potential — weighted by deficit magnitude
     const restoration = NEED_RESTORATION[location] || {};
     for (const [need, amount] of Object.entries(restoration)) {
         const deficit = 1 - needs[need];
         score += deficit * amount;
     }
-    
+
     // Hunger pressure — high hunger draws toward desk (future food proxy)
     if (needs.hunger > 0.5 && location === "desk") {
         score += (needs.hunger - 0.5) * 40;
@@ -5783,11 +5839,11 @@ function scoreLocation(location) {
     if (needs.hunger > 0.8) {
         score += 20; // Urgency bonus when starving — any location change is better
     }
-    
+
     // Location preference — use correct key mapping
     const prefKey = LOCATION_PREF_KEYS[location] || location;
     score += (prefs.locations[prefKey] || 0.5) * 10;
-    
+
     // Activity preference for likely activity at location
     const activityMap = {
         desk: "computer_work",
@@ -5799,21 +5855,21 @@ function scoreLocation(location) {
     };
     const activity = activityMap[location];
     if (activity) score += (prefs.activities[activity] || 0.5) * 10;
-    
+
     // Weather affinity — need-weighted: only interesting when curiosity is high
     if (location.includes("window")) {
         const weather = worldState.environment.weather.condition;
         const curiosityDeficit = 1 - needs.curiosity;
         score += curiosityDeficit * (prefs.conditions[weather] || 0.5) * 15;
     }
-    
+
     // Routine bonus
     const hour = new Date().getHours();
     const currentWeather = worldState.environment.weather.condition;
     if (hour >= 6 && hour < 10 && location === "rack-a") score += prefs.routines.morning_check * 20;
     if (hour >= 18 && hour < 22 && location === "desk") score += prefs.routines.evening_wind_down * 15;
     if (currentWeather === "thunderstorm" && location.includes("window")) score += prefs.routines.storm_watch * 25;
-    
+
     // Recency penalty — avoid returning to a location soon after leaving
     const lastLeft = worldState.tars.locationRecency[location];
     if (lastLeft) {
@@ -5822,7 +5878,7 @@ function scoreLocation(location) {
             score -= (45 - secondsSinceLeft) * 1.0;
         }
     }
-    
+
     // Distance penalty (prefer closer locations but not too strong)
     const currentPos = tarsEntityGroup.position;
     const targetPos = TARGET_POSITIONS[location];
@@ -5830,10 +5886,10 @@ function scoreLocation(location) {
         const dist = currentPos.distanceTo(targetPos);
         score -= dist * 1;
     }
-    
+
     // Add some randomness for organic behavior
     score += (Math.random() - 0.5) * 6;
-    
+
     return score;
 }
 
@@ -6693,21 +6749,21 @@ function animate() {
         // LIVE MODE: Smooth Spring Hovering with collision avoidance
         const hoverY = Math.sin(time * (1.2 + currentState.energy * 2.0)) * (0.12 + currentState.energy * 0.15);
         const hoverX = Math.cos(time * 0.8) * 0.08;
-        
+
         // Calculate desired velocity toward target
         const desiredVel = new THREE.Vector3(
             (currentState.targetPos.x + hoverX - tarsEntityGroup.position.x) * 0.05,
             (currentState.targetPos.y + hoverY - tarsEntityGroup.position.y) * 0.05,
             (currentState.targetPos.z - tarsEntityGroup.position.z) * 0.05
         );
-        
+
         // Add collision avoidance
         const avoidance = getAvoidanceVector(tarsEntityGroup.position, currentState.targetPos, dt);
         desiredVel.add(avoidance);
-        
+
         // Apply velocity
         tarsEntityGroup.position.add(desiredVel);
-        
+
         // Desk wiggle on near-collision
         const deskDist = tarsEntityGroup.position.distanceTo(new THREE.Vector3(1.7, 2.3, -2.2));
         if (deskDist < 1.8 && deskDist > 1.3) {
@@ -6720,7 +6776,7 @@ function animate() {
             }
             deskWiggle.prevDist = deskDist;
         }
-        
+
         // Apply desk wiggle
         if (deskWiggle.timer > 0) {
             deskWiggle.timer -= dt;
@@ -6731,7 +6787,7 @@ function animate() {
             desk.position.x += (1.7 - desk.position.x) * 0.1;
             desk.position.z += (-2.2 - desk.position.z) * 0.1;
         }
-        
+
         // Rack wiggle
         const rackDist = tarsEntityGroup.position.distanceTo(new THREE.Vector3(-4.7, 2.5, -4));
         if (rackDist < 1.6 && rackDist > 1.1) {
@@ -6741,7 +6797,7 @@ function animate() {
             }
             rackWiggle.prevDist = rackDist;
         }
-        
+
         // Apply rack wiggle
         if (rackWiggle.timer > 0) {
             rackWiggle.timer -= dt;
@@ -6752,7 +6808,7 @@ function animate() {
                 tarsLight.intensity += Math.sin(time * 40) * rackWiggle.intensity * 2;
             }
         }
-        
+
         // Orient / Lean towards Gaze Target
         if (TARGET_POSITIONS[currentState.gazeTarget]) {
             const targetVec = TARGET_POSITIONS[currentState.gazeTarget];
@@ -6778,7 +6834,7 @@ function animate() {
     const atWindowLeft = pos.distanceTo(new THREE.Vector3(-7.5, 4.2, 0)) < 2.0;
     const atWindowRight = pos.distanceTo(new THREE.Vector3(WIN_X, WIN_Y, WALL_Z)) < 2.0;
     const atWindow = atWindowLeft || atWindowRight;
-    
+
     // Desk interaction - switch monitor to TARS OS
     if (atDesk && !currentState.atDesk) {
         currentState.atDesk = true;
@@ -6796,7 +6852,7 @@ function animate() {
         const deskScreen = animatedScreens.find(s => s.drawFn === drawTARSOS);
         if (deskScreen) deskScreen.drawFn = drawTerminal;
     }
-    
+
     // Rack interaction - data transfer effect on server LEDs
     if (atRack && !currentState.atRack) {
         currentState.atRack = true;
@@ -6817,7 +6873,7 @@ function animate() {
             led.speed = 2 + Math.random() * 4;
         });
     }
-    
+
     // Window interaction - scan outside
     if (atWindow && !currentState.atWindow) {
         currentState.atWindow = true;
@@ -6864,7 +6920,7 @@ function animate() {
     // 8. T.A.R.S. EMBODIMENT PROCEDURAL SHADER & MESH ANIMATION
     // Update EmotionMixer for smooth transitions
     emotionMixer.update(dt);
-    
+
     // Apply mixed state to currentState
     const mixed = emotionMixer.getMixedState();
     currentState.targetColor.lerp(mixed.color, 0.1);
@@ -6883,7 +6939,7 @@ function animate() {
     orbParticleMat.color.copy(currentState.currentColor);
 
     // Pulse & Core Intensity (with speech reactivity)
-    const speechPulse = currentState.speaking 
+    const speechPulse = currentState.speaking
         ? (Math.sin(time * 12) * 0.4 + currentState.speechAmplitude * 0.6)
         : 0;
     const corePulse = Math.sin(time * currentState.pulseSpeed) * 0.15 + speechPulse;
@@ -6914,12 +6970,12 @@ function animate() {
         const bodyPosAttr = bodyGeo.attributes.position;
         const posArr = bodyPosAttr.array;
         const defAmount = currentState.deformation + (currentState.speaking ? 0.1 : 0) + currentState.speechAmplitude * 0.15;
-        
+
         for (let i = 0; i < posArr.length; i += 3) {
             const ox = originalBodyPositions[i];
             const oy = originalBodyPositions[i + 1];
             const oz = originalBodyPositions[i + 2];
-            
+
             // Multi-frequency wave deformation
             const noise = Math.sin(ox * 5 + time * 3) * Math.cos(oy * 5 + time * 2.5) * Math.sin(oz * 5 + time * 4);
             const asym = ox * currentState.asymmetry;
@@ -6955,10 +7011,10 @@ function animate() {
             fxPositions[idx] += fxVelocities[idx] * dt * 60;
             fxPositions[idx + 1] += fxVelocities[idx + 1] * dt * 60;
             fxPositions[idx + 2] += fxVelocities[idx + 2] * dt * 60;
-            
+
             // Gravity
             fxVelocities[idx + 1] -= 0.02 * dt * 60;
-            
+
             fxLifes[i] -= dt;
             fxSizes[i] *= 0.98;
         }
@@ -6972,21 +7028,21 @@ function animate() {
             birdActive[i] -= dt;
             const speed = birdSpeeds[i];
             const phase = birdPhases[i];
-            
+
             // Flap wings
             if (birdMeshes[i].userData.wings) {
                 const flap = Math.sin(time * 15 + i) * 0.5;
                 birdMeshes[i].userData.wings[0].rotation.z = -0.2 + flap;
                 birdMeshes[i].userData.wings[1].rotation.z = 0.2 - flap;
             }
-            
+
             // Fly in a path past the window
             const t = (1 - birdActive[i] / 15) * Math.PI * 2;
             birdMeshes[i].position.x = WIN_X + Math.sin(t) * 8;
             birdMeshes[i].position.y = WIN_Y + Math.cos(t * 0.7) * 3 + Math.sin(time * 2 + i) * 0.5;
             // Stay outside window: WALL_Z = -6, so keep z < -6 (outside)
             birdMeshes[i].position.z = WALL_Z - 12 - Math.cos(t) * 6;
-            
+
             // Look direction
             birdMeshes[i].rotation.y = Math.atan2(
                 Math.cos(t) * 8,
@@ -7014,13 +7070,13 @@ function animate() {
     // FX System - Special visual effects per emotion
     currentState.fxTimer += dt;
     const fxTime = currentState.fxTimer;
-    
+
     switch (currentState.fx) {
         case "strobe_orange": {  // WARNING - intense orange/red strobe
             const strobe = Math.sin(fxTime * 30) > 0 ? 1 : 0;
             const color = new THREE.Color().lerpColors(
-                new THREE.Color(0xff8800), 
-                new THREE.Color(0xff2200), 
+                new THREE.Color(0xff8800),
+                new THREE.Color(0xff2200),
                 (Math.sin(fxTime * 10) + 1) * 0.5
             );
             tarsLight.color.copy(color);
@@ -7047,8 +7103,8 @@ function animate() {
         case "strobe": {  // SPEAK - voice wave pulse
             const wave = (Math.sin(fxTime * 20) + 1) * 0.5;
             const color = new THREE.Color().lerpColors(
-                new THREE.Color(0x00d2ff), 
-                new THREE.Color(0xffffff), 
+                new THREE.Color(0x00d2ff),
+                new THREE.Color(0xffffff),
                 wave * 0.5
             );
             orbParticleMat.color.copy(color);
