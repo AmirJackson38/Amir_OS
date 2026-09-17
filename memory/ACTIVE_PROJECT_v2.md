@@ -14,7 +14,7 @@
 - **Next: Phase 9.4** — display detection, touchscreen validation, kiosk boot, auto TARS startup (display not yet attached)
 
 ### 2. Home Lab
-TrueNAS (`192.168.0.100`), TARS Pi (`tars.local`, `tars_backend` :8080), ER605 router, dual-subnet (`10.0.0.0/24` WAN + `192.168.0.0/24` LAN). VNC to iMac (`10.0.0.190`).
+Alarm Media Pi (`192.168.0.103` - Arch Linux ARM) hosting Immich (:2283), Plex (:32400), Node-Exporter (:9100) on 2TB external SSD (`/mnt/storage`). TARS Pi (`tars.local`, `192.168.0.104`, `tars_backend` :8080). TrueNAS / Lab OptiPlex (`192.168.0.100`), ER605 router, dual-subnet (`10.0.0.0/24` WAN + `192.168.0.0/24` LAN). VNC to iMac (`10.0.0.190`).
 
 ### 3. TSE-Production-Lab
 FastAPI + PostgreSQL homelab standalone (`Workspace/TSE-Production-Lab/`), container `tse_fastapi_backend` :8000 — unchanged by TARS deployment.

@@ -8,7 +8,7 @@
 
 1. **TARS (`projects/tars-face`)** — Fully implemented + deployed to Pi node (`tars_backend` @ `:8080`), recovery-validated. Next: physical display.
 2. **TSE-Production-Lab** — Homelab FastAPI + Postgres (unchanged).
-3. **Home Lab** — TrueNAS, TARS Pi, ER605, dual subnet.
+3. **Home Lab** — Alarm Media Pi (Immich/Plex on 2TB SSD, `192.168.0.103`), TARS Pi (`tars.local`), TrueNAS, ER605, dual subnet.
 
 ---
 

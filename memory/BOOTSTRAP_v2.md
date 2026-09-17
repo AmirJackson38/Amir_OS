@@ -1,75 +1,69 @@
-# Amir OS Session Resume Bootstrap (TARS synchronized)
+# Amir OS Session Resume Bootstrap (Dual-Track Synchronized)
 
-> **Historical context only:** Current project truth is maintained in root `HEAD.md`. Use this file only as background memory, and verify live state through `HEAD.md`, Git history, release tags, and production runtime evidence before acting.
+> **Current Project Truth:** Root `HEAD.md` maintains live operational TARS engine truth. `docs/home-lab-network.md` maintains authoritative homelab topology.
+>
+> **Synchronized:** 2026-09-08
+> **Amir OS Platform:** `v0.9.0`
+> **Active Engineering Tracks:**
+> - **Track 1 (TARS Engine):** Phase 9.4 / 10.3.1 Observatory extraction candidate (shadow validation). Baseline release `tars-v9.3.2`.
+> - **Track 2 (Home Lab & Media Stack):** Alarm Media Pi 4 (`192.168.0.103` - Immich, Plex, Node-Exporter) active and healthy. TrueNAS & Core 2.5G network unified with passwordless ed25519 SSH.
 
-> **Synchronized:** 2026-08-04
-> **Amir OS:** v0.9.0
-> **TARS status:** Phase 9.3 complete; Phase 9.4 is next.
+---
 
-## Active identity
+## 1. System File Index (Lazy Loading)
 
-**TARS (T.A.R.S. World Engine / Amir_OS)** is Amir OS's offline-first autonomous 3D world engine. Its browser-based Three.js **Face** is a persistent world simulation with an authoritative `worldState`, needs, activities, environment, physics objects, and telemetry. A Node.js runtime backend adds health/infrastructure awareness through an event bus and WebSocket bridge.
+Load secondary detail files on-demand based on the user's focus:
+- **Root & TARS Truth:** [`HEAD.md`](file:///C:/Users/Admin/OneDrive/Documents/Amir_OS/HEAD.md) | [`projects/tars-face/docs/CURRENT_STATE.md`](file:///C:/Users/Admin/OneDrive/Documents/Amir_OS/projects/tars-face/docs/CURRENT_STATE.md) | [`projects/tars-face/docs/ARCHITECTURE.md`](file:///C:/Users/Admin/OneDrive/Documents/Amir_OS/projects/tars-face/docs/ARCHITECTURE.md)
+- **Home Lab Topology & Credentials:** [`docs/home-lab-network.md`](file:///C:/Users/Admin/OneDrive/Documents/Amir_OS/docs/home-lab-network.md) | [`docs/SESSION_SUMMARY_2026-09-03.md`](file:///C:/Users/Admin/OneDrive/Documents/Amir_OS/docs/SESSION_SUMMARY_2026-09-03.md)
+- **Memory & Change History:** [`memory/SESSION_LOG_v2.md`](file:///C:/Users/Admin/OneDrive/Documents/Amir_OS/memory/SESSION_LOG_v2.md) | [`memory/STAGING_INTENT.md`](file:///C:/Users/Admin/OneDrive/Documents/Amir_OS/memory/STAGING_INTENT.md) | [`memory/ACTIVE_PROJECT_v2.md`](file:///C:/Users/Admin/OneDrive/Documents/Amir_OS/memory/ACTIVE_PROJECT_v2.md)
 
-TARS is not an LLM wrapper. The frontend autonomy engine runs locally and independently of the backend and LLM. The autonomous scheduler selects behavior from world state; an LLM is a future optional consultant, never the primary controller.
+---
 
-## Authoritative TARS sources
+## 2. Active Tracks & Live Node Matrix
 
-- Project root: `projects/tars-face/`
-- Entry rules: `projects/tars-face/AGENTS.md`
-- Current implementation/status: `projects/tars-face/docs/CURRENT_STATE.md`
-- Architecture: `projects/tars-face/docs/ARCHITECTURE.md`
-- Milestones: `projects/tars-face/docs/PHASE_HISTORY.md`
-- Recent proof: `docs/PHASE_9_2_DEPLOYMENT_RESULT.md`, `docs/PHASE_9_3_RECOVERY_TEST_REPORT.md`
-- Main frontend: `projects/tars-face/tars_face_v1.html`
+### Track 1: TARS Autonomous World Engine (`projects/tars-face`)
+* **Identity:** Offline-first autonomous 3D world engine (Three.js frontend + Node backend event bus). Authoritative `worldState`, local needs scheduler, physics objects, and telemetry.
+* **Current State:** Phase 10.3.1 candidate in shadow mode (`?observatoryMode=shadow`). Release baseline `tars-v9.3.2`. Behavior baseline `b07e063` (Phase 9.4 behavioral memory).
+* **Production Node:** `tars.local` (`192.168.0.104:8080`, Raspberry Pi 4 8GB). `tars_backend` Docker container.
 
-Read those records before changing TARS. Planning documents are not implementation truth; Git history and `CURRENT_STATE.md` are.
+### Track 2: Home Lab & Edge Infrastructure
+* **Alarm Media Pi 4 (`alarm.local` / `192.168.0.103`):**
+  - **Hardware/OS:** Raspberry Pi 4 Model B (4GB), Arch Linux ARM (`alarm`).
+  - **Storage:** 2TB Lexar External SSD (`/dev/sda1` ext4) mounted at `/mnt/storage`.
+  - **Immich Stack (`:2283`):** Photo/video cloud backed by PostgreSQL 14 with VectorChord (`ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0`), ML server (`:3003`), Redis (`:6379`). Library on SSD (`/mnt/storage/immich/library`).
+  - **Plex Media Server (`:32400`):** Host network mode, media at `/mnt/storage/media`.
+  - **Node Exporter (`:9100`):** System metrics for Prometheus.
+  - **Remote Mobile Sync:** WireGuard VPN on ER605 (`amirshomelab.duckdns.org:51820`, `10.10.0.2/32` iPhone client) routed to `192.168.0.0/24`.
+* **TrueNAS SCALE Node (`truenas.local` / `192.168.0.100`):**
+  - Dell OptiPlex 755. Web GUI (443), passwordless root SSH via API 2.0 key injection.
+* **Core Network Fabric:**
+  - **Gateway:** TP-Link ER605 v2 (`router.local` / `192.168.0.1`). Dual-subnet WAN `10.0.0.0/24` + LAN `192.168.0.0/24`.
+  - **Core 2.5G Switch #1:** RealHD SW8-25G-MGV2 (`switch1.local` / `192.168.0.2`).
+  - **Workstation 2.5G Switch #2:** RealHD SW8-25G-MGV2 (`switch2.local` / `192.168.0.3`).
 
-## Deployment reality
+---
 
-Windows is the development machine (edit, commit, push); Git is the source of truth; Raspberry Pi `tars.local` is production (Docker, Node, served Face, display/kiosk, future hardware). `localhost` on Windows is not production. For runtime validation: identify dev/deploy/prod status, then push, SSH to `tars.local`, pull, rebuild/restart when needed, and validate on Pi hardware.
+## 3. Fast-Boot Ready State Template
 
-## Architecture invariants
+When generating the session-opening **Ready State**, synthesize status across both active tracks:
 
-1. `worldState` is authoritative for TARS/world/environment state.
-2. `TARS_AUTONOMY` and the scheduler control normal behavior through activity and location selection.
-3. `WorldPersistence` v3 persists browser world state in localStorage across refreshes/restarts.
-4. Frontend autonomy must remain functional with no server, network, or LLM.
-5. The LLM layer is optional and constrained to consultation; it must not replace the scheduler or write primary state/events.
-6. The Node runtime observes and publishes through the event bus; frontend/backend/cognitive/deployment layers remain separate.
-7. Telemetry and the Observatory exist to explain decisions and behavior, not alter them.
+```text
+### Ready State: Amir OS
 
-## Completed state
+* Milestone: Amir OS v0.9.0 | TARS tars-v9.3.2 | Homelab Media Stack Live
+* Active Tracks:
+  1. TARS World Engine: Phase 10.3.1 Observatory extraction candidate (shadow mode). Next: Physical presence / display integration on tars.local (192.168.0.104).
+  2. Home Lab: Alarm Media Pi 4 (192.168.0.103) running Immich (:2283), Plex (:32400), Node Exporter (:9100) on 2TB SSD (/mnt/storage). WireGuard ingress verified.
+* Last Progress: Homelab service migration, VectorChord Postgres upgrade, and fleet-wide passwordless SSH deployment.
+* Next Action Candidates:
+  - Homelab: Configure ER605 static DHCP reservations for alarm/tars/truenas; set up automated backups or reverse proxy/SSL.
+  - TARS: Physical display panel integration or Phase 10.3.1 shadow candidate validation.
+```
 
-### Phase 7 — autonomous world behavior
-- Activity effects and needs feedback loop
-- Fatigue, scoring rebalance, wandering, experience buffer, and lifecycle/persistence fixes
-- Decision transparency: score breakdown, alternatives, `autonomyHistory`, and observability telemetry
+---
 
-### Phase 8 — observable runtime and embodiment
-- Node HTTP/WebSocket runtime, event bus, WS bridge, health/status/alert monitors
-- Docker and network awareness; INFRA UI and stabilization audit
-- Developer Observatory, spatial object/collision/physics foundation, render profiles
-- Embodied interaction: touch/pointer classifier, world sensor/agent, physics events, object persistence v3
+## 4. Key Invariants & Operational Rules
 
-### Phase 9 — resilient deployment
-- Phase 9.1: offline-capable Docker deployment; local Three.js, no CDN dependency
-- Phase 9.2: `tars_backend` deployed on Raspberry Pi `tars` (`192.168.0.102:8080`), isolated `tars_net`, `unless-stopped`
-- Phase 9.3: recovery validation passed for container restart, Docker restart, Pi reboot, network loss, and persistence boundaries
-- Environment update: `WindowEnvironmentProvider` provides static left/rear backgrounds with procedural fallbacks; assets are included in the Docker image
-
-## Current mission — Phase 9.4 Physical Presence
-
-1. Connect the 7-inch touchscreen to the Raspberry Pi and verify display detection.
-2. Validate/calibrate touch and browser pointer events end-to-end.
-3. Configure Chromium or equivalent kiosk mode for `http://127.0.0.1:8080`.
-4. Configure Raspberry Pi autostart so the TARS Face appears on boot without manual interaction.
-
-Do not claim kiosk/display readiness before the physical display is attached and tested.
-
-## Known persistence boundary
-
-Browser `localStorage` persists `worldState` (needs, activity history, environment, preferences, objects). Server event/alert/service history is intentionally in-memory and resets on a server/container restart; SQLite persistence is future work.
-
-## Worktree note
-
-As of synchronization, `master` is `90e1c26`. Scratch/debug HTML files in `projects/tars-face/` are untracked user artifacts and must not be removed without approval.
+1. **Dual-Track Awareness:** Amir OS encompasses both the autonomous 3D agent (TARS) and home lab systems architecture. Do not assume every session is solely about TARS.
+2. **Production Validation:** Windows is development; `alarm.local` and `tars.local` are production. Test live before claiming container health.
+3. **Write-Through Discipline:** When concluding a session on either track, update `memory/SESSION_LOG_v2.md` AND verify `memory/BOOTSTRAP_v2.md` reflects latest milestones.

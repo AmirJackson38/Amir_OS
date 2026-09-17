@@ -1,7 +1,7 @@
 # Project Registry (Auto-Generated)
 
-**Last Updated:** 2026-08-04 02:20:00 UTC  
-**Status:** Active registry  
+**Last Updated:** 2026-08-04 02:20:00 UTC
+**Status:** Active registry
 **Purpose:** Consolidated inventory of all active, paused, and archived projects
 
 ---
@@ -56,8 +56,9 @@ TSE-Production-Lab (T.A.R.S.)
 └── Uses Amir OS for continuity/memory
 
 Home Lab (Infrastructure)
-├── Hosts TARS Pi
-├── Hosts TrueNAS
+├── Hosts Alarm Media Pi (Immich, Plex, Node-Exporter on 2TB SSD, 192.168.0.103)
+├── Hosts TARS Pi (192.168.0.102 / tars.local)
+├── Hosts TrueNAS (192.168.0.100)
 └── Uses Amir OS for documentation
 ```
 

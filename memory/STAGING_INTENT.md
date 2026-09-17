@@ -7,10 +7,34 @@
 
 ## Active Staged Action
 
-- **Timestamp:** 2026-08-05 UTC
-- **Target Component:** Amir OS / TARS agent boot and governance rails
-- **Planned Action:** Convert existing passive memory/governance documents into enforceable agent-entry rails by adding root `AGENTS.md`, machine-readable `PROJECT_STATE.json`, an agent bootstrap script, staged-file guard, and documentation for Pi/ThinkPad placement strategy. Preserve application/runtime code and do not touch debug HTML files.
-- **Status:** Complete — root `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `PROJECT_STATE.json`, Node-based `tools/agent_bootstrap.mjs`, Node-based `tools/check_staged_files.mjs`, `.gitignore` scratch-file guards, and placement documentation were added locally. Validation: `node tools/agent_bootstrap.mjs`, `node tools/check_staged_files.mjs`, and `node --check` passed.
+- **Timestamp:** 2026-09-17 10:48 CDT
+- **Target Component:** Dual-Track Repository Synchronization & Fleet Alignment (Amir OS & TARS)
+- **Problem Statement:**
+  - Omarchy Linux installed on HP laptop; local Windows development workstation contains verified uncommitted state across homelab network topology, session memory, and Phase 10.3.1 candidate.
+  - Previous sessions encountered phase drift / mislabeling when documentation drifted from git commits.
+- **Planned Action:**
+  1. Record Intent WAL in `memory/STAGING_INTENT.md` (Status: In-Progress).
+  2. Verify all staged files against `tools/check_staged_files.mjs` and git diff integrity.
+  3. Commit homelab documentation and memory updates with precise, factual commit messages (no premature phase increments).
+  4. Checkpoint Phase 10.3.1 TARS candidate with explicit shadow-only status.
+  5. Push commits cleanly to remote `origin/master`.
+  6. Provide Amir with exact, idempotent pull/clone instructions for the HP Omarchy laptop.
+  7. Update `memory/STAGING_INTENT.md` (Status: Completed).
+- **Status:** In-Progress
+
+---
+
+## Completed Actions Archive
+
+- **Timestamp:** 2026-09-15 03:22 CDT
+- **Target Component:** Windows Shell & Desktop Customization Stack (ThinkPad `Amirwhitehat`)
+- **Planned Action:** Unregistered rogue scheduled tasks, restored medium-integrity Explorer and window hierarchy for Lively and TranslucentTB.
+- **Status:** Completed
+
+- **Timestamp:** 2026-09-14 22:15 CDT
+- **Target Component:** ThinkPad Admin Workstation (`Amirwhitehat`) / Local Virtualization Stack
+- **Planned Action:** Automated installation and provisioning of Type-2 hypervisor and Omarchy VM
+- **Status:** Completed — VirtualBox 7.2.16 installed, Omarchy 4.0.3 ISO verified, Omarchy VM fully provisioned.
 
 ---
 
@@ -577,3 +601,15 @@ Exposed as `window.getTARSContext`.
 - Location cooldowns preserved — TARS remembers which locations were recently visited
 
 ## Phase 7 (Planned) — Environmental Events, Ambient Life & Chat UI
+
+## Alarm Pi (192.168.0.103) - Immich Deployment Resolution
+- **Timestamp:** 2026-09-03
+- **Status:** Completed
+- **Objective:** Resolve Docker `/etc/localtime` volume collision, configure host timezone (`America/Chicago`), clean up compose file, update Postgres vector image to VectorChord, and successfully start and verify `immich_server` container on port 2283.
+- **Verification:** Verified all containers up (`immich_server`, `immich_postgres`, `immich_redis`, `immich_machine_learning`). Health check returned `healthy`. HTTP 200 OK verified on `http://192.168.0.103:2283`.
+
+## Fast-Boot Memory Synchronization & Dual-Track Schema Alignment
+- **Timestamp:** 2026-09-08
+- **Status:** Completed
+- **Objective:** Synchronize `memory/BOOTSTRAP_v2.md` with real-time project truth (TARS runtime state from `HEAD.md` and Home Lab infrastructure from September 3 session). Ensure Fast-Boot presents a unified dual-track Ready State (Track A: TARS World Engine, Track B: Home Lab & Media Node) to eliminate session startup blindspots.
+- **Verification:** Successfully wrote dual-track `BOOTSTRAP_v2.md`. Tested single-call readability. Fixed IP discrepancy in `ACTIVE_PROJECT_v2.md` (`tars.local` -> `192.168.0.104`). Verified live node ping and Alarm Pi Docker container health (`immich_server`, `immich_postgres`, `immich_redis`, `immich_machine_learning`, `plex`, `node-exporter` all Up 5 days healthy).
