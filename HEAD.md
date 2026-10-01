@@ -1,15 +1,16 @@
 # TARS Operational HEAD
 
-This is the first file to read before working on TARS. It records the current operational truth discovered from the repository, not from chat memory or stale summaries.
+This is the TARS navigation page. Begin general assistant sessions at START_HERE.md. PROJECT_STATE.json declares the software checkpoint and separate acceptance gates; Git and timestamped runtime checks verify actual state.
 
 ## Current State
 
 - **Current release version:** `tars-v9.3.2`
 - **Release tag target:** `92adc86b965c8fa23b99b8f635900ce20b16665e` — `TARS: guard fallback animation state`
-- **Last verified development HEAD:** `b07e0638f3f3d659d68d51025c25a2c66a9a1af8` — `TARS: implement Phase 9.4 behavioral memory`
+- **Development verification:** run `git rev-parse HEAD`; the foundation audit began at `b51260f` on 2026-10-01. A historical SHA is not a live branch pointer.
 - **Current branch:** `master`
-- **Last verified production runtime:** `ba9559011f5493ba866c101715a6d31c7cf569a9` — `/health` validated on `tars.local`
-- **Current phase:** Phase 10.3.1 Observatory extraction checkpoint. The candidate module is implemented locally, shadow-capable, and disabled by default. Phase 9.4 (`b07e063`) remains the production behavior baseline; no runtime authority has moved.
+- **Last verified production runtime:** `ad3f6f53a7d1a1990e4c57092fd377c9c11ee516` — `/health`, Pi checkout, and container image verified on 2026-10-01; see `docs/FOUNDATION_RUNTIME_CHECK_2026-10-01.md`.
+- **Current phase:** Phase 10.3.1 Observatory extraction checkpoint. The candidate is implemented in local source, shadow-capable, and disabled by default. The running Pi is at `ad3f6f5`, before candidate checkpoint commit `6de1858`; no runtime authority has moved.
+- **Independent hardware gate:** Phase 9.4 display/touch/reliability acceptance remains open in PROJECT_STATE.json. This does not move the software checkpoint backward.
 - **Last validated milestone marker:** `tars-v9.3.2` — TARS Phase 9.3.2 kiosk startup regression recovery.
 - **Active workstream:** Phase 10.3.1 candidate validation only. `TARS_RUNTIME_MODE=legacy`; frontend remains authoritative for worldState, autonomy, persistence, and behavioral memory.
 

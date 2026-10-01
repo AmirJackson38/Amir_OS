@@ -1,63 +1,17 @@
-# Agent Entrypoint Placement
+# Agent entrypoints
 
-This file explains how Amir OS exposes its agent instructions to different tools and environments.
+Portable entrypoint: `START_HERE.md`. Stable collaboration preferences: `identity/COLLABORATION.md`. Repository rules: `AGENTS.md`.
 
-## Canonical Repo Entrypoints
+On Windows, the repository is `C:/Users/Admin/OneDrive/Documents/Amir_OS`. The shared pointer is `C:/Users/Admin/.agents/AGENTS.md`. Claude and Gemini repository pointers route to the same contract.
 
-- `AGENTS.md` — primary cross-agent contract.
-- `HEAD.md` — current operational truth and navigation.
-- `PROJECT_STATE.json` — machine-readable project state pointer.
-- `CLAUDE.md` — Claude-style pointer back to `AGENTS.md`.
-- `GEMINI.md` — Gemini-style pointer back to `AGENTS.md`.
+For a new client, explicitly provide this instruction:
 
-## Normal Startup Command
+> Read C:/Users/Admin/OneDrive/Documents/Amir_OS/START_HERE.md and follow the route relevant to my request. Tell me if you cannot access it.
 
-From the repository root:
+Do not assume every client automatically discovers the shared pointer. A future local model needs file access or a caller that supplies the selected files; the model itself does not acquire persistent memory from a path.
 
-```bash
-node tools/agent_bootstrap.mjs
-```
+For TARS repository work run `node tools/agent_bootstrap.mjs`. For a bounded continuity view run `python tools/continuity_bootstrap_v2.py`. Neither verifies production.
 
-Before committing:
+On the Pi the checkout is `/home/admin/tars-face`; use the root entrypoint if present, otherwise `projects/tars-face/AGENTS.md`.
 
-```bash
-node tools/check_staged_files.mjs
-```
-
-For docs-only work:
-
-```bash
-node tools/check_staged_files.mjs --docs-only
-```
-
-## Windows / ThinkPad
-
-The working repository is currently inside OneDrive:
-
-```text
-C:\Users\Admin\OneDrive\Documents\Amir_OS
-```
-
-If a CLI starts somewhere else, point it at this repository and run `node tools/agent_bootstrap.mjs`.
-
-A Desktop pointer can be created later, but the canonical files should remain in the repository so they stay versioned and portable.
-
-## Raspberry Pi / `tars.local`
-
-The production checkout is:
-
-```text
-/home/admin/tars-face
-```
-
-TARS-specific agent instructions are also present inside:
-
-```text
-/home/admin/tars-face/projects/tars-face/AGENTS.md
-```
-
-For local models or agent CLIs running on the Pi, start from `/home/admin/tars-face` if possible. If the sparse checkout does not expose root files, start from `/home/admin/tars-face/projects/tars-face` and read that local `AGENTS.md`.
-
-## Rule
-
-Do not duplicate long-form memory into many untracked places. Prefer small pointer files that direct agents back to the versioned repository truth.
+The Obsidian vault is a separate learning/wiki workspace: `C:/Users/Admin/Documents/Amir's Obsidian Vault`. Start at Home. See `MEMORY_PROTOCOL.md` for ownership.

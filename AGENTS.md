@@ -1,61 +1,30 @@
-# Amir OS Agent Contract
+# Amir OS agent contract
 
-This is the root agent entry point for Amir OS. Any AI agent, CLI model, local model, or coding assistant operating inside this repository should read this file before acting.
+Read `START_HERE.md` and `identity/COLLABORATION.md` first. Load context for the current task only. Personal learning does not require loading the TARS repository history.
 
-## Required Startup
+## Repository work
 
-1. Read `HEAD.md`.
-2. Run:
+Before source/state claims, run `node tools/agent_bootstrap.mjs` and inspect relevant changes. Read `MEMORY_PROTOCOL.md` when changing continuity tools or records.
 
-```bash
-node tools/agent_bootstrap.mjs
-```
+For TARS, read `HEAD.md`, `projects/tars-face/AGENTS.md`, and the relevant architecture/current-state documents. Verify the Pi separately before runtime claims.
 
-3. Verify live Git state before making claims:
+## Authority
 
-```bash
-git status --short --branch
-git rev-parse HEAD
-git log --oneline --decorate -10
-```
+- The user's current task governs scope; old handoffs do not authorize replaying actions.
+- `PROJECT_STATE.json` records the declared software checkpoint and separate acceptance gates.
+- `HEAD.md` is navigation and interpretation, not live deployment proof.
+- Git verifies committed source and immutable release tags; production checks verify deployed runtime.
+- Historical `memory/*_v2.md`, old boot files, and copied vault references are context only.
+- Obsidian owns personal learning evidence; do not automatically copy private notes or credentials into Git.
 
-4. Treat `memory/*`, old boot files, old session logs, and old active-project files as historical context unless root `HEAD.md` says otherwise.
+## Working safely
 
-## Truth Model
+Preserve user changes. Stage explicit paths only. Never stage scratch/debug HTML or use `git add .` without exact authorization. Do not delete unknown files.
 
-- Git history is source truth for committed development state.
-- `HEAD.md` is the operational entry point.
-- `PROJECT_STATE.json` is the machine-readable state pointer.
-- `RELEASE_STATE.md` distinguishes release, development, and production runtime.
-- `tars.local` `/health` is production runtime truth.
-- Chat history is not authority.
+Do not modify TARS application/runtime code during documentation, governance, or memory-tool repair. Phase 10.3.1 software work does not prove Phase 9.4 display/touch/reliability acceptance. Do not call an untagged branch a release.
 
-## Safety Rules
+Before committing: `node tools/check_staged_files.mjs` and `git diff --cached --check`. Run tests proportionate to the changed behavior.
 
-- Do not use `git add .` unless explicitly approved for the exact task.
-- Prefer explicit path staging.
-- Do not stage scratch/debug HTML files.
-- Do not delete unknown files. Unknown does not mean unused.
-- Do not modify application/runtime code during documentation-only or governance-only tasks.
-- Do not claim Phase 9.4 complete until display, touch, kiosk, and hardware reliability acceptance are documented.
-- Do not call `master` a release until a tag exists.
+## Continuity
 
-Before committing, run:
-
-```bash
-node tools/check_staged_files.mjs
-git diff --cached --check
-```
-
-## TARS Project Entry
-
-For TARS work, after reading root `HEAD.md` and this file, read:
-
-- `projects/tars-face/AGENTS.md`
-- `projects/tars-face/docs/CURRENT_STATE.md`
-- `projects/tars-face/docs/ARCHITECTURE.md`
-- `projects/tars-face/docs/PHASE_HISTORY.md`
-
-## Common Agent Entrypoints
-
-This repository also includes `CLAUDE.md` and `GEMINI.md` as lightweight pointers for agent CLIs that look for model-specific instruction files. They intentionally delegate back to this file and `HEAD.md`.
+Record task, outcome, evidence, uncertainty, and next action. Preserve raw history. Generate a bounded briefing with `python tools/continuity_bootstrap_v2.py`; add `--write` only to save the derived view. Never truncate source records to meet context budgets.

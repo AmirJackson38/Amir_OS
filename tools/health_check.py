@@ -8,7 +8,7 @@ import os
 import sys
 import io
 import subprocess
-import py_compile
+import json
 
 # Force UTF-8 output on Windows
 if sys.platform == 'win32':
@@ -36,7 +36,9 @@ CORE_TOOLS = [
     "project_autodiscovery.py",
     "health_check.py",
     "auto_heal.py",
-    "character_limiter.py"
+    "character_limiter.py",
+    "memory_promoter.py",
+    "memory_io.py"
 ]
 
 
@@ -61,9 +63,7 @@ def audit_memory_files(root):
         try:
             with open(path, 'r', encoding='utf-8') as f:
                 char_count = len(f.read())
-            status = f"{GREEN}PASS{RESET}" if char_count <= budget else f"{RED}EXCEEDED ({char_count - budget} OVER){RESET}"
-            if char_count > budget:
-                all_passed = False
+            status = f"{GREEN}PRESERVED{RESET}" if char_count <= budget else f"{YELLOW}HISTORY EXCEEDS OLD BRIEFING BUDGET (not an error){RESET}"
             results.append((filename, char_count, budget, status))
         except Exception as e:
             results.append((filename, 0, budget, f"{RED}ERROR: {e}{RESET}"))
@@ -83,9 +83,10 @@ def audit_core_tools(root):
             continue
             
         try:
-            py_compile.compile(path, doraise=True)
+            with open(path, 'r', encoding='utf-8-sig') as source:
+                compile(source.read(), path, 'exec')
             results.append((tool_name, f"{GREEN}PASS (Syntax OK){RESET}"))
-        except py_compile.PyCompileError as e:
+        except (SyntaxError, OSError) as e:
             results.append((tool_name, f"{RED}SYNTAX ERROR{RESET}"))
             all_passed = False
             
@@ -195,34 +196,47 @@ def main():
     print(f"{CYAN}{BOLD}========================================================{RESET}\n")
 
 
-    # 1. Audit Memory Files
-    print(f"{BOLD}[1/4] Memory Character Budget Audit:{RESET}")
+    # History size is informational; only generated context has a hard budget.
+    print(f"{BOLD}[1/5] Historical Memory Inventory (non-destructive):{RESET}")
     mem_passed, mem_results = audit_memory_files(root)
     for filename, count, budget, status in mem_results:
         pct = (count / budget * 100) if budget else 0
         print(f"  • {filename:<22} : {count:>5,}/{budget:>5,} chars ({pct:>5.1f}%) -> {status}")
         
     # 2. Audit Core Tools
-    print(f"\n{BOLD}[2/4] Core Python Tools Syntax Check:{RESET}")
+    print(f"\n{BOLD}[2/5] Core Python Tools Syntax Check:{RESET}")
     tools_passed, tools_results = audit_core_tools(root)
     for tool_name, status in tools_results:
         print(f"  • {tool_name:<22} : {status}")
 
     # 3. Manifest & Dependency Validation
-    print(f"\n{BOLD}[3/4] Manifest & Dependency Validation:{RESET}")
+    print(f"\n{BOLD}[3/5] Manifest & Dependency Validation:{RESET}")
     manifest_passed, manifest_results = audit_manifest(root)
     for status, msg in manifest_results:
         print(f"  • {status:<10} {msg}")
 
     # 4. Audit Git Repository
-    print(f"\n{BOLD}[4/4] Workspace & Git Sync Status:{RESET}")
+    print(f"\n{BOLD}[4/5] Workspace & Git Sync Status:{RESET}")
     git_passed, git_msg = audit_git_status(root)
     print(f"  • Repository Status       : {git_msg}")
 
     print(f"\n{CYAN}--------------------------------------------------------{RESET}")
-    overall = mem_passed and tools_passed and manifest_passed and git_passed
+    print(f"{BOLD}[5/5] Declared state and generated briefing:{RESET}")
+    state_passed = False
+    try:
+        from continuity_bootstrap_v2 import build_packet, DEFAULT_BUDGET
+        with open(os.path.join(root, 'PROJECT_STATE.json'), encoding='utf-8-sig') as source:
+            state = json.load(source)
+        with open(os.path.join(root, 'HEAD.md'), encoding='utf-8-sig') as source:
+            head_text = source.read()
+        phase = state['tars']['current_phase']
+        state_passed = phase in head_text and len(build_packet(root)) <= DEFAULT_BUDGET
+        print(f"Declared phase: {phase}; HEAD agreement and context budget: {state_passed}")
+    except (OSError, ValueError, KeyError) as error:
+        print(f"State check failed: {error}")
+    overall = mem_passed and tools_passed and manifest_passed and git_passed and state_passed
     if overall:
-        print(f"{GREEN}{BOLD} OVERALL HEALTH CHECK: PASS — All System Metrics Healthy {RESET}\n")
+        print(f"{GREEN}{BOLD} Repository checks PASS. Pi runtime, hardware, backups, and learning mastery were not tested. {RESET}\n")
         sys.exit(0)
     else:
         print(f"{RED}{BOLD} OVERALL HEALTH CHECK: FAIL — Issues Detected Above {RESET}\n")

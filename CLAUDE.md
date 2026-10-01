@@ -1,11 +1,5 @@
-# Claude Agent Pointer
+# Claude entrypoint
 
-Read `AGENTS.md` first, then `HEAD.md`.
+Read `START_HERE.md` and `identity/COLLABORATION.md`. For work in this repository follow `AGENTS.md`. Load `HEAD.md` only for TARS work.
 
-For a compact machine-generated startup packet, run:
-
-```bash
-node tools/agent_bootstrap.mjs
-```
-
-Do not rely on stale chat context or historical memory files without verifying Git and production state.
+Historical bootstrap summaries are not current state. The same files can support consistent collaboration across clients, but each client must actually load them.

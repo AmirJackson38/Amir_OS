@@ -1,8 +1,8 @@
 # Amir OS
 
-> **Start here:** For current operational truth, read `HEAD.md` before relying on older memory, changelog, or project-status documents.
+> **Start here:** Read `START_HERE.md` and `identity/COLLABORATION.md`. Load TARS context only for TARS work. Personal learning lives in the separate Obsidian vault.
 
-> **Agent startup:** AI agents and CLI models should read `AGENTS.md` and run `node tools/agent_bootstrap.mjs` before acting.
+> **Current architecture:** `MEMORY_PROTOCOL.md` defines ownership and non-destructive continuity. The original overview below is background; older boot and character-limit instructions are superseded by the current entrypoints.
 
 ## Overview
 

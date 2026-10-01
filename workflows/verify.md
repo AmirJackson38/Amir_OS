@@ -1,26 +1,19 @@
 ---
 name: verify
-description: Validate that changes are correct, complete, and safe
+description: Check changed behavior and report precise evidence
 version: 1.0.0
-requires_skills: [tars-memory, tars-architecture]
-requires_tools: [health_check, character_limiter]
+requires_skills: []
+requires_tools: [health_check]
 ---
 
-# Workflow: Verify
+# Verify
 
-## When to Use
+1. Inspect the diff and preserve unrelated user changes.
+2. Run checks appropriate to changed behavior; include regression cases for memory-loss repairs.
+3. Run tools/health_check.py for repository diagnostics when relevant. It is not a runtime health check.
+4. For memory tooling, verify original records remain unchanged and generated views meet their budget.
+5. Verify links and state declarations when changing documentation.
+6. Before committing, run tools/check_staged_files.mjs and git diff --cached --check.
+7. State what passed, what was not checked, and the next action.
 
-- After completing a build or fix
-- Before committing changes
-- Before deployment
-- When checking system health
-
-## Steps
-
-1. **Syntax check** — Verify language syntax (braces, parens, brackets balanced).
-2. **Run tests** — Execute any existing test suite.
-3. **Check memory limits** — Run character_limiter.py.
-4. **Run health check** — Execute health_check.py for system diagnostics.
-5. **Review diff** — Inspect git diff for unintended changes.
-6. **Check dependencies** — Verify all referenced files and skills exist.
-7. **Report** — Summarize what was verified and the results.
+Production, physical hardware, and learning mastery require their own evidence.

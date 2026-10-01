@@ -1,58 +1,16 @@
-# TARS Known Issues
+# TARS known issues and open verification
 
-This file records current repository-discoverable issues and ambiguity. Verify production separately before acting on runtime behavior.
+Reviewed: 2026-10-01.
 
-## Current Issues
+- **Manual candidate validation pending:** Phase 10.3.1 has source/test evidence but still needs the documented live shadow comparison gate before diagnostic cutover.
+- **Hardware acceptance incomplete:** display, touch, cold visual startup, and reliability remain separate acceptance work.
+- **Deployment differs from local source:** live Pi checked at ad3f6f5; local candidate checkpoint is later. This is a recorded difference, not automatically a fault.
+- **Historical documentation may disagree:** old phase names, IP addresses, and boot summaries are not current authority. Use START_HERE.md, PROJECT_STATE.json, and dated runtime receipts.
+- **Wiki references are not synchronized automatically:** check their source and review date before operational use.
+- **Local recovery copy only:** the foundation repair preserves a local pre-change copy; off-device vault recovery has not been established by this task.
 
-### Release tag and branch HEAD differ
+## Fixed in the foundation repair
 
-- Latest release tag: `tars-v9.3.2` at `92adc86b965c8fa23b99b8f635900ce20b16665e`.
-- Current `master` HEAD: `9744f5327d4995a25fd33bcef6961770c0cc79a8`.
-- Status: expected forward-only development state.
-- Rule: do not move the tag; create a new version if current HEAD becomes a release.
+Destructive character truncation is removed from the active memory maintenance commands. Briefings are generated separately; inferred memory candidates require review. Shared entrypoints no longer force TARS/history into every learning session. Regression tests live in tools/test_memory_safety.py.
 
-### Production runtime differs from both latest release and branch HEAD
-
-- Last verified production runtime SHA: `ba9559011f5493ba866c101715a6d31c7cf569a9`.
-- This is newer than `tars-v9.3.2` but older than current `master` HEAD.
-- Status: expected during active stabilization, but must be visible to future agents.
-- Rule: check `RELEASE_STATE.md` and `/health` before claiming what production is running.
-
-### TARS and Amir OS version records are easy to confuse
-
-- `version.md` records Amir OS platform version `v0.9.0`.
-- TARS runtime releases use `tars-v*` tags.
-- Status: clarified in `HEAD.md` and `VERSIONING_POLICY.md`.
-
-### TARS release history is split
-
-- Amir OS history lives in `docs/CHANGELOG.md`.
-- TARS phase history lives in `projects/tars-face/docs/PHASE_HISTORY.md`.
-- Git tags carry release markers.
-- Missing: a dedicated TARS release ledger/manifest.
-
-### Phase 9.4 / 9.5 wording is inconsistent
-
-- Current project docs generally identify Phase 9.4 physical embodiment as the next/current work.
-- Old `memory/HEAD.md` claimed Phase 9.5 and a different commit.
-- Status: `memory/HEAD.md` now points to root `HEAD.md`; remaining docs should be updated only after repo/runtime verification.
-
-### Untracked debug HTML files are present
-
-Known untracked files under `projects/tars-face/`:
-
-- `minimal_test.html`
-- `simple_test.html`
-- `tars_debug.html`
-- `test.html`
-- `test1_fcss_sbody.html`
-- `test2_scss_fbody.html`
-
-Do not commit or delete them without explicit intent.
-
-## Needed Future Artifacts
-
-- Dedicated TARS release manifest/history beyond `RELEASE_STATE.md`.
-- Test matrix for release validation.
-- Runtime contract for browser globals/public APIs.
-- Production kiosk/display/touch documentation captured from the Pi.
+Do not declare all systems healthy based on a repository syntax check. Runtime, hardware, recovery, and learner understanding each need their own evidence.

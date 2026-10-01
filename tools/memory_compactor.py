@@ -1,143 +1,17 @@
-import os
-import sys
-import io
-import re
+#!/usr/bin/env python3
+"""Compatibility command: preserve source records and report size."""
+from pathlib import Path
+from character_limiter import main
 
-# Force UTF-8 output on Windows
-if sys.platform == 'win32':
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
-DEFAULT_CHAR_BUDGET = 2500
+def compact_session_log(session_log_path, char_budget=2500):
+    path = Path(session_log_path)
+    if not path.exists():
+        return False, f"Session log not found: {path}"
+    size = len(path.read_text(encoding="utf-8-sig"))
+    return False, (f"Preserved {size} source characters. Budget {char_budget} applies only "
+                   "to generated context; use continuity_bootstrap_v2.py.")
 
-def get_repo_root():
-    return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-def strip_noise(text):
-    """
-    Deterministic rule-based noise stripper (0-token overhead).
-    Strips raw command scrollback, repeated ping lines, progress bars, and redundant headers.
-    """
-    lines = text.split('\n')
-    cleaned_lines = []
-    
-    for line in lines:
-        if re.search(r'64 bytes from|Reply from|bytes=32 time=', line, re.IGNORECASE):
-            continue
-            
-        if re.search(r'\[[=\s>-]+\] \d+%', line) or re.search(r'Reading package lists\.\.\.', line):
-            continue
-            
-        if "The term" in line and "is not recognized as the name of a cmdlet" in line:
-            continue
-            
-        cleaned_lines.append(line)
-        
-    return '\n'.join(cleaned_lines)
-
-def archive_old_sessions(root, archived_sessions):
-    """Archive omitted sessions into SESSION_LOG_ARCHIVE.md."""
-    if not archived_sessions:
-        return
-    archive_path = os.path.join(root, "memory", "SESSION_LOG_ARCHIVE.md")
-    archive_content = "\n\n".join(archived_sessions) + "\n\n"
-    
-    try:
-        header = "# Session Log Archive\n\nThis file contains archived session logs rotated from SESSION_LOG_v2.md.\n\n---\n\n"
-        if not os.path.exists(archive_path):
-            with open(archive_path, 'w', encoding='utf-8') as f:
-                f.write(header + archive_content)
-        else:
-            with open(archive_path, 'a', encoding='utf-8') as f:
-                f.write(archive_content)
-    except Exception as e:
-        print(f"[WARN] Failed to write to archive: {e}")
-
-def compact_session_log(session_log_path, char_budget=DEFAULT_CHAR_BUDGET):
-    if not os.path.exists(session_log_path):
-        return False, f"Session log not found at {session_log_path}"
-        
-    with open(session_log_path, 'r', encoding='utf-8') as f:
-        original_content = f.read()
-        
-    original_char_count = len(original_content)
-    
-    # 1. Deterministic noise stripping
-    cleaned_content = strip_noise(original_content)
-    
-    # 2. Check if under budget
-    if len(cleaned_content) <= char_budget:
-        return False, f"Session log is already within character budget ({len(cleaned_content)} / {char_budget} chars). No compaction needed."
-        
-    # 3. Split sessions
-    parts = re.split(r'(^## Session )', cleaned_content, flags=re.MULTILINE)
-    
-    header = parts[0]
-    sessions = []
-    
-    for i in range(1, len(parts), 2):
-        if i + 1 < len(parts):
-            sessions.append(parts[i] + parts[i+1])
-            
-    compacted_sessions = []
-    omitted_sessions = []
-    current_length = len(header)
-    
-    # Process newest first (reverse)
-    for session in reversed(sessions):
-        if current_length + len(session) <= char_budget:
-            compacted_sessions.insert(0, session)
-            current_length += len(session)
-        else:
-            # Condense older session down to core log bullets only
-            lines = session.split('\n')
-            condensed = []
-            for line in lines:
-                if line.startswith('## Session') or line.startswith('**Objective:**') or line.startswith('* **'):
-                    condensed.append(line)
-            session_condensed = '\n'.join(condensed) + '\n'
-            if current_length + len(session_condensed) <= char_budget:
-                compacted_sessions.insert(0, session_condensed)
-                current_length += len(session_condensed)
-            else:
-                omitted_sessions.insert(0, session)
-                
-    compacted_content = header.strip() + '\n\n' + '\n\n'.join(compacted_sessions).strip() + '\n'
-    compacted_char_count = len(compacted_content)
-    
-    with open(session_log_path, 'w', encoding='utf-8') as f:
-        f.write(compacted_content)
-        
-    root = get_repo_root()
-    if omitted_sessions:
-        archive_old_sessions(root, omitted_sessions)
-        
-    saved_chars = original_char_count - compacted_char_count
-    est_tokens_saved = saved_chars // 4
-    
-    msg = (
-        f"[SUCCESS] Session log compacted & archived.\n"
-        f"Original Size:  {original_char_count:,} chars\n"
-        f"Compacted Size: {compacted_char_count:,} chars (Budget: {char_budget:,})\n"
-        f"Archived:       {len(omitted_sessions)} old session(s) moved to SESSION_LOG_ARCHIVE.md\n"
-        f"Saved:          {saved_chars:,} chars (~{est_tokens_saved:,} tokens saved per prompt)"
-    )
-    return True, msg
-
-def main():
-    root = get_repo_root()
-    session_log_path = os.path.join(root, "memory", "SESSION_LOG_v2.md")
-    if not os.path.exists(session_log_path):
-        session_log_path = os.path.join(root, "memory", "SESSION_LOG.md")
-    
-    print("\033[1;36mInitializing Amir OS Memory Compactor...\033[0m")
-    print(f"Target file: {session_log_path}")
-    print(f"Character Budget: {DEFAULT_CHAR_BUDGET} chars (~{DEFAULT_CHAR_BUDGET//4} tokens)\n")
-    
-    compacted, report = compact_session_log(session_log_path, DEFAULT_CHAR_BUDGET)
-    if compacted:
-        print(f"\033[1;32m{report}\033[0m")
-    else:
-        print(f"\033[1;33m{report}\033[0m")
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

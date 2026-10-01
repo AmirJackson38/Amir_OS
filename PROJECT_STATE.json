@@ -15,8 +15,13 @@
     "latest_release": "tars-v9.3.2",
     "latest_release_commit": "92adc86b965c8fa23b99b8f635900ce20b16665e",
     "development_branch": "master",
-    "current_phase": "Phase 9.4",
-    "phase_status": "in_progress",
+    "current_phase": "Phase 10.3.1",
+    "phase_status": "shadow_validation_pending",
+    "state_reviewed_on": "2026-10-01",
+    "next_gate": "Manual Observatory candidate shadow comparison; preserve legacy rollback before diagnostic cutover",
+    "runtime_authority": "frontend",
+    "candidate_deployment": "not_deployed_at_2026-10-01_check",
+    "hardware_acceptance": "Phase 9.4 remains open independently of the software checkpoint",
     "phase_9_4_completed": [
       "kiosk service verification"
     ],
@@ -26,7 +31,10 @@
       "hardware reliability validation",
       "cold visual startup acceptance record"
     ],
-    "production_host": "tars.local"
+    "production_host": "tars.local",
+    "production_verification": "docs/FOUNDATION_RUNTIME_CHECK_2026-10-01.md",
+    "production_last_verified_commit": "ad3f6f53a7d1a1990e4c57092fd377c9c11ee516",
+    "production_last_verified_date": "2026-10-01"
   },
   "agent_entrypoints": {
     "repo_root": [

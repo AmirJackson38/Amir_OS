@@ -1,25 +1,19 @@
 ---
 name: learn
-description: Save non-trivial bugs, troubleshooting steps, or insights to permanent memory
+description: Record an evidence-backed learning attempt or technical lesson
 version: 1.0.0
 requires_skills: [tars-memory]
 requires_tools: []
 trigger: "/learn"
 ---
 
-# Workflow: Learn
+# Learn
 
-## When to Use
+1. State the question or problem and Amir's initial prediction.
+2. Record what Amir attempted, what assistance was used, and what was observed.
+3. Explain the result in Amir's own words; link commands, output, or the relevant artifact.
+4. Put personal skill evidence in the Obsidian lab/learning record. Put project decisions in the project repository with their rationale.
+5. Mark understanding as unassessed, practiced with help, demonstrated independently, or retained on revisit.
+6. Choose one revisit prompt and date. Update the learning queue.
 
-- A non-trivial bug was solved
-- An important troubleshooting technique was discovered
-- A significant insight about the system emerged
-- An architectural decision was made
-
-## Steps
-
-1. **Capture** — What happened? What was the root cause? How was it fixed?
-2. **Condense** — Write a concise lesson (1-3 sentences).
-3. **Update LESSONS_v2.md** — Add to the rolling window, archive oldest if needed.
-4. **Update DECISIONS_v2.md** — If this was an architectural decision, record it.
-5. **Run character_limiter.py** — Verify memory budgets are still respected.
+Source records are durable. Do not compact or truncate them. Automated candidates belong in memory/REVIEW_QUEUE.md until reviewed; see MEMORY_PROTOCOL.md.

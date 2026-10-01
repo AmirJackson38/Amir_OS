@@ -62,7 +62,7 @@ phase explicitly changes this mode.
 
 | Aspect | Documented | Actual |
 |--------|-----------|--------|
-| Host | Raspberry Pi (TARS_PHASE_* docs) | **Deployed**: `tars_backend` container live on `tars` @ `192.168.0.102:8080` (Phase 9.2). Development still on Windows. |
+| Host | Raspberry Pi (TARS_PHASE_* docs) | **Deployed**: `tars_backend` on `tars.local:8080`; use hostname and live resolution rather than historical IP addresses. Development remains on Windows. |
 | Deployment | Systemd service, kiosk mode | **Docker** container `unless-stopped` (Phase 9.2). `tars-kiosk.service` has been verified active. Display/touch validation and hardware reliability remain Phase 9.4 work. |
 | Optiplex/TrueNAS/Plex monitoring | Planned (TARS_PHASE_8_3 docs) | **Not implemented** |
 | Home Assistant bridge | Designed | **Not implemented** |
