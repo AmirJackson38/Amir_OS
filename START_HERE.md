@@ -16,7 +16,7 @@ Read `identity/COLLABORATION.md` for the small, stable collaboration contract. T
 | Learning, personal planning, or daily notes | Obsidian vault `Home.md`, then `Learning Queue.md` |
 | Understand memory ownership | `MEMORY_PROTOCOL.md` |
 
-On this Windows machine the vault is `C:/Users/Admin/Documents/Amir's Obsidian Vault`. The versioned repository is `C:/Users/Admin/OneDrive/Documents/Amir_OS`. These are different folders with different responsibilities.
+On this Windows machine the vault is `C:/Users/Admin/Documents/Amir's Obsidian Vault`. The versioned repository is `C:/Users/Admin/Documents/Amir_OS`. These are different folders with different responsibilities.
 
 For TARS, `node tools/agent_bootstrap.mjs` prints live Git state and declared project status. It does not verify the Pi. `python tools/continuity_bootstrap_v2.py` prints a bounded briefing without editing source records.
 

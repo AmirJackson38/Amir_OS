@@ -270,6 +270,14 @@ Data accuracy standard enforced:
    * **Network Mode:** `host`
    * **Host Mount:** `/:/host:ro,rslave`
 
+4. **Obsidian LiveSync CouchDB Server** (`/mnt/storage/services/obsidian-livesync/`):
+   * **Database API / Sync Endpoint:** TCP `5984` (`http://192.168.0.103:5984`)
+   * **Container Name:** `obsidian-livesync` (`couchdb:3.3.3`)
+   * **Vault DB:** `obsidian-vault`
+   * **Auth:** User: `admin` | Password: `AmirBarry24!`
+   * **Data Storage:** `/mnt/storage/services/obsidian-livesync/data`
+   * **Config:** `/mnt/storage/services/obsidian-livesync/local.ini` (CORS enabled for Obsidian)
+
 ---
 
 # 4a. Master Credentials & Access Matrix
@@ -279,6 +287,7 @@ Authoritative inventory of homelab administrative access, ports, protocols, and 
 | Device / Service | Host / IP / Endpoint | Protocol / Port | Username | Password / Auth Key | Verification Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Alarm Media Pi 4** | `alarm.local` (`192.168.0.103`) | SSH (22) | `alarm` | Passwordless Key (`~/.ssh/id_ed25519`) + sudo: `Kaylan38` | `VERIFIED` (Passwordless SSH active) |
+| **Obsidian LiveSync** | `http://192.168.0.103:5984` | HTTP (5984) | `admin` | `AmirBarry24!` (DB: `obsidian-vault`) | `VERIFIED` |
 | **Immich Web UI / App** | `http://192.168.0.103:2283` | HTTP (2283) | `amirjacksonmusic@gmail.com` | `AmirBarry24!` | `VERIFIED` |
 | **Immich PostgreSQL** | Internal Docker (`192.168.0.103`) | TCP (5432) | `postgres` | `postgres` (DB: `immich`) | `VERIFIED` |
 | **Plex Media Server** | `http://192.168.0.103:32400/web` | HTTP (32400) | Plex Account | OAuth / Plex login | `CONFIRMED` |

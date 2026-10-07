@@ -2,7 +2,7 @@
 **Date:** September 3, 2026
 **Author:** Antigravity Engineering Assistant (Amir OS v0.9.0)
 **Target Audience:** Succeeding AI Agents & Engineering Pair Programmers
-**Authoritative Documentation:** [`docs/home-lab-network.md`](file:///C:/Users/Admin/OneDrive/Documents/Amir_OS/docs/home-lab-network.md) | [`memory/BOOTSTRAP_v2.md`](file:///C:/Users/Admin/OneDrive/Documents/Amir_OS/memory/BOOTSTRAP_v2.md)
+**Authoritative Documentation:** [`docs/home-lab-network.md`](file:///C:/Users/Admin/Documents/Amir_OS/docs/home-lab-network.md) | [`memory/BOOTSTRAP_v2.md`](file:///C:/Users/Admin/Documents/Amir_OS/memory/BOOTSTRAP_v2.md)
 
 ---
 

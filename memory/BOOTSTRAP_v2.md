@@ -13,9 +13,9 @@
 ## 1. System File Index (Lazy Loading)
 
 Load secondary detail files on-demand based on the user's focus:
-- **Root & TARS Truth:** [`HEAD.md`](file:///C:/Users/Admin/OneDrive/Documents/Amir_OS/HEAD.md) | [`projects/tars-face/docs/CURRENT_STATE.md`](file:///C:/Users/Admin/OneDrive/Documents/Amir_OS/projects/tars-face/docs/CURRENT_STATE.md) | [`projects/tars-face/docs/ARCHITECTURE.md`](file:///C:/Users/Admin/OneDrive/Documents/Amir_OS/projects/tars-face/docs/ARCHITECTURE.md)
-- **Home Lab Topology & Credentials:** [`docs/home-lab-network.md`](file:///C:/Users/Admin/OneDrive/Documents/Amir_OS/docs/home-lab-network.md) | [`docs/SESSION_SUMMARY_2026-09-03.md`](file:///C:/Users/Admin/OneDrive/Documents/Amir_OS/docs/SESSION_SUMMARY_2026-09-03.md)
-- **Memory & Change History:** [`memory/SESSION_LOG_v2.md`](file:///C:/Users/Admin/OneDrive/Documents/Amir_OS/memory/SESSION_LOG_v2.md) | [`memory/STAGING_INTENT.md`](file:///C:/Users/Admin/OneDrive/Documents/Amir_OS/memory/STAGING_INTENT.md) | [`memory/ACTIVE_PROJECT_v2.md`](file:///C:/Users/Admin/OneDrive/Documents/Amir_OS/memory/ACTIVE_PROJECT_v2.md)
+- **Root & TARS Truth:** [`HEAD.md`](file:///C:/Users/Admin/Documents/Amir_OS/HEAD.md) | [`projects/tars-face/docs/CURRENT_STATE.md`](file:///C:/Users/Admin/Documents/Amir_OS/projects/tars-face/docs/CURRENT_STATE.md) | [`projects/tars-face/docs/ARCHITECTURE.md`](file:///C:/Users/Admin/Documents/Amir_OS/projects/tars-face/docs/ARCHITECTURE.md)
+- **Home Lab Topology & Credentials:** [`docs/home-lab-network.md`](file:///C:/Users/Admin/Documents/Amir_OS/docs/home-lab-network.md) | [`docs/SESSION_SUMMARY_2026-09-03.md`](file:///C:/Users/Admin/Documents/Amir_OS/docs/SESSION_SUMMARY_2026-09-03.md)
+- **Memory & Change History:** [`memory/SESSION_LOG_v2.md`](file:///C:/Users/Admin/Documents/Amir_OS/memory/SESSION_LOG_v2.md) | [`memory/STAGING_INTENT.md`](file:///C:/Users/Admin/Documents/Amir_OS/memory/STAGING_INTENT.md) | [`memory/ACTIVE_PROJECT_v2.md`](file:///C:/Users/Admin/Documents/Amir_OS/memory/ACTIVE_PROJECT_v2.md)
 
 ---
 
@@ -54,8 +54,9 @@ When generating the session-opening **Ready State**, synthesize status across bo
 * Active Tracks:
   1. TARS World Engine: Phase 10.3.1 Observatory extraction candidate (shadow mode). Next: Physical presence / display integration on tars.local (192.168.0.104).
   2. Home Lab: Alarm Media Pi 4 (192.168.0.103) running Immich (:2283), Plex (:32400), Node Exporter (:9100) on 2TB SSD (/mnt/storage). WireGuard ingress verified.
-* Last Progress: Homelab service migration, VectorChord Postgres upgrade, and fleet-wide passwordless SSH deployment.
+* Last Progress: Synthesized unified Obsidian knowledge vault; modernized banner engine (Pixel Banner v3.6.18) and enabled Windows 11 Acrylic translucency.
 * Next Action Candidates:
+  - Obsidian Polish: Reload Obsidian (Ctrl+R) to initialize Pixel Banner and Translucent BG; verify Live Preview and Reading View.
   - Homelab: Configure ER605 static DHCP reservations for alarm/tars/truenas; set up automated backups or reverse proxy/SSL.
   - TARS: Physical display panel integration or Phase 10.3.1 shadow candidate validation.
 ```
