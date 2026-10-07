@@ -2,8 +2,34 @@
 
 > **Historical context only:** Current project truth is maintained in root `HEAD.md`. Use this file as a chronological flight recorder, not as authority for current version, phase, release, or production runtime.
 
-**Last Updated:** September 14, 2026
+**Last Updated:** October 06, 2026
 **Character Budget:** 2,500 chars | **Status:** ✅ Within limit
+
+---
+
+## Session 2026-10-06
+
+**Start Time:** 2026-10-06 21:15 CDT
+**Status:** Completed
+**Objective:** TARS Baseline Release Alignment & Production Runtime Verification
+
+### Handoff Entry
+* **Production Runtime Verification:** Queried `http://192.168.0.104:8080/health`. Confirmed continuous stable operation on Raspberry Pi (`ad3f6f53a7d1a1990e4c57092fd377c9c11ee516`) with 3,384,231 seconds (~39 days) uninterrupted uptime, 7,304,012 events published (0 dropped, 0 errors), active behavioral memory writes, and 0 alerts. Documented in `docs/FOUNDATION_RUNTIME_CHECK_2026-10-06.md`.
+* **Test Suite Verification:** Executed and passed all 5 test suites: `test_behavioral_memory.mjs`, `test_canonical_runtime_shell.mjs`, `test_observatory_candidate.mjs`, `test_observatory.js` (59/59 unit tests), and `test_shadow_observation.mjs`. Fixed fixture path resolution in `test_shadow_observation.mjs` for portable execution.
+* **Release Baseline Alignment:** Created immutable annotated tags: `tars-v10.2.1` on `ad3f6f5` (deployed production baseline) and `tars-v10.3.1` on `6de1858` (Phase 10.3.1 candidate baseline). Updated `PROJECT_STATE.json`, `HEAD.md`, and `RELEASE_STATE.md` to reflect new baselines.
+
+---
+
+## Session 2026-09-30
+
+**Start Time:** 2026-09-30 22:12 CDT
+**Status:** Completed
+**Objective:** Obsidian Vault Synthesis, Modern Banner Engine & Windows 11 Acrylic Translucency
+
+### Handoff Entry
+* **Vault Architecture:** Synthesized durable knowledge vault outside OneDrive at `C:\Users\Admin\Documents\Amir's Obsidian Vault` (97 notes, 21 modular directories, 379 bi-directional wikilinks). Clean separation of personal identity from system memory.
+* **Banner Engine Modernization:** Root cause analyzed: Obsidian v1.13.7 decoupled note frontmatter into isolated Properties DOM (`.metadata-container`), silently breaking legacy `obsidian-banners` 1.3.3. Deployed maintained **Pixel Banner v3.6.18** (`jparkerweb/pixel-banner`) to restore all Unsplash headers across `Home.md` and hub notes without modifying YAML.
+* **Windows 11 Acrylic Translucency:** Deployed **Translucent BG v1.1.2** for DWM `setBackgroundMaterial('acrylic')` injection, enabled `"translucency": true` in `appearance.json`, and injected custom `acrylic-transparency.css` snippet for frosted glass dark-theme workspace styling.
 
 ---
 

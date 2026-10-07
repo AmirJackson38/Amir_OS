@@ -4,19 +4,19 @@ This is the TARS navigation page. Begin general assistant sessions at START_HERE
 
 ## Current State
 
-- **Current release version:** `tars-v9.3.2`
-- **Release tag target:** `92adc86b965c8fa23b99b8f635900ce20b16665e` — `TARS: guard fallback animation state`
+- **Current release version:** `tars-v10.3.1` (development candidate baseline) / `tars-v10.2.1` (deployed runtime baseline)
+- **Release tag targets:** tars-v10.3.1 (`6de185859a1d9e35a5293c838bbaef8d624b1c5c` — Phase 10.3.1 candidate), tars-v10.2.1 (`ad3f6f53a7d1a1990e4c57092fd377c9c11ee516` — deployed Pi runtime)
 - **Development verification:** run `git rev-parse HEAD`; the foundation audit began at `b51260f` on 2026-10-01. A historical SHA is not a live branch pointer.
 - **Current branch:** `master`
-- **Last verified production runtime:** `ad3f6f53a7d1a1990e4c57092fd377c9c11ee516` — `/health`, Pi checkout, and container image verified on 2026-10-01; see `docs/FOUNDATION_RUNTIME_CHECK_2026-10-01.md`.
+- **Last verified production runtime:** `ad3f6f53a7d1a1990e4c57092fd377c9c11ee516` — `/health`, Pi checkout, and container image verified on 2026-10-06 (uptime 3,384,231s, 0 alerts); see `docs/FOUNDATION_RUNTIME_CHECK_2026-10-06.md`.
 - **Current phase:** Phase 10.3.1 Observatory extraction checkpoint. The candidate is implemented in local source, shadow-capable, and disabled by default. The running Pi is at `ad3f6f5`, before candidate checkpoint commit `6de1858`; no runtime authority has moved.
 - **Independent hardware gate:** Phase 9.4 display/touch/reliability acceptance remains open in PROJECT_STATE.json. This does not move the software checkpoint backward.
-- **Last validated milestone marker:** `tars-v9.3.2` — TARS Phase 9.3.2 kiosk startup regression recovery.
+- **Last validated milestone marker:** `tars-v10.3.1` — Phase 10.3.1 candidate baseline; `tars-v10.2.1` — Phase 10.2.1 deployed baseline.
 - **Active workstream:** Phase 10.3.1 candidate validation only. `TARS_RUNTIME_MODE=legacy`; frontend remains authoritative for worldState, autonomy, persistence, and behavioral memory.
 
 ## Important Version Note
 
-`tars-v9.3.2` is the latest release tag. At last verification, `master` had commits after that tag. This is normal forward-only development, not permission to rewrite the release. If the post-release state should become a release, create a new tag/version.
+`tars-v10.3.1` is the development baseline release tag, and `tars-v10.2.1` is the deployed production baseline tag. At last verification, `master` had maintenance commits after those tags. This is normal forward-only development, not permission to rewrite releases. If post-release state should become a release, create a new tag/version.
 
 Live branch HEAD is mutable. Before any release, deployment, or state claim, check it directly:
 

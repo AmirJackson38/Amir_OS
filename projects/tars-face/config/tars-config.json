@@ -1,5 +1,5 @@
 {
-    "_comment": "TARS Runtime Configuration — Phase 8.1",
+    "_comment": "TARS Runtime Configuration — Phase 10.3.1 (updated to match deployed topology)",
 
     "server": {
         "port": 8080,
@@ -32,10 +32,19 @@
             "intervalMs": 30000,
             "timeoutMs": 5000,
             "hosts": [
-                { "id": "tars", "address": "localhost" },
-                { "id": "optiplex", "address": "192.168.1.100" },
-                { "id": "truenas", "address": "192.168.1.100" }
+                { "id": "tars", "address": "192.168.0.104" },
+                { "id": "alarm-media-pi", "address": "192.168.0.103" },
+                { "id": "truenas-optiplex", "address": "192.168.0.100" }
             ]
+        }
+    },
+
+    "services": {
+        "plex": {
+            "enabled": true,
+            "host": "alarm-media-pi",
+            "port": 32400,
+            "path": "/web"
         }
     }
 }

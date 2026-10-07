@@ -1,7 +1,14 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const fixturesDir = fs.existsSync(path.join(process.cwd(), "fixtures"))
+    ? path.join(process.cwd(), "fixtures")
+    : path.join(__dirname, "fixtures");
 
 const require = createRequire(import.meta.url);
 const { FrontendObservationAdapter } = require("./frontend-observation-adapter.js");
@@ -106,7 +113,7 @@ const transition = engine.compare(
 );
 assert.ok(transition.differences.some(item => item.kind === "transition" && item.field === "activity"));
 
-const fixturePath = path.join(process.cwd(), "fixtures", "shadow-session.json");
+const fixturePath = path.join(fixturesDir, "shadow-session.json");
 const fixture = JSON.parse(fs.readFileSync(fixturePath, "utf8"));
 assert.equal(fixture.schemaVersion, 1);
 assert.equal(fixture.observations.length, 2);
@@ -116,7 +123,7 @@ assert.deepEqual(
     fixture.expected.differences
 );
 
-const phase94Fixture = JSON.parse(fs.readFileSync(path.join(process.cwd(), "fixtures", "phase94-behavior.json"), "utf8"));
+const phase94Fixture = JSON.parse(fs.readFileSync(path.join(fixturesDir, "phase94-behavior.json"), "utf8"));
 assert.equal(phase94Fixture.schemaVersion, 1);
 assert.deepEqual(phase94Fixture.scenarios.map(scenario => scenario.id), [
     "idle",

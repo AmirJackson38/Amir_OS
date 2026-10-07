@@ -12,12 +12,13 @@
     "memory": "memory/* files are historical context unless referenced by HEAD.md."
   },
   "tars": {
-    "latest_release": "tars-v9.3.2",
-    "latest_release_commit": "92adc86b965c8fa23b99b8f635900ce20b16665e",
+    "latest_release": "tars-v10.3.1",
+    "latest_release_commit": "6de185859a1d9e35a5293c838bbaef8d624b1c5c",
+    "production_release": "tars-v10.2.1",
     "development_branch": "master",
     "current_phase": "Phase 10.3.1",
     "phase_status": "shadow_validation_pending",
-    "state_reviewed_on": "2026-10-01",
+    "state_reviewed_on": "2026-10-06",
     "next_gate": "Manual Observatory candidate shadow comparison; preserve legacy rollback before diagnostic cutover",
     "runtime_authority": "frontend",
     "candidate_deployment": "not_deployed_at_2026-10-01_check",
@@ -32,9 +33,9 @@
       "cold visual startup acceptance record"
     ],
     "production_host": "tars.local",
-    "production_verification": "docs/FOUNDATION_RUNTIME_CHECK_2026-10-01.md",
+    "production_verification": "docs/FOUNDATION_RUNTIME_CHECK_2026-10-06.md",
     "production_last_verified_commit": "ad3f6f53a7d1a1990e4c57092fd377c9c11ee516",
-    "production_last_verified_date": "2026-10-01"
+    "production_last_verified_date": "2026-10-06"
   },
   "agent_entrypoints": {
     "repo_root": [
