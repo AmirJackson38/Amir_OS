@@ -280,13 +280,43 @@ Data accuracy standard enforced:
    * **Data Storage:** `/mnt/storage/services/obsidian-livesync/data`
    * **Config:** `/mnt/storage/services/obsidian-livesync/local.ini` (CORS enabled for Obsidian)
 
-5. **Caddy Reverse Proxy (HTTPS for Obsidian LiveSync)** (`/mnt/storage/services/obsidian-livesync/`):
+5. **Caddy Reverse Proxy (HTTPS for Obsidian LiveSync + Services)** (`/mnt/storage/services/obsidian-livesync/`):
    * **Public HTTPS Endpoint:** `https://amirshomelab.duckdns.org` (Port 443)
    * **Container Name:** `livesync-caddy` (`caddy-duckdns:2.8` — custom build with DuckDNS DNS-01 module)
-   * **Reverse Proxy Target:** `couchdb:5984` (internal Docker network `livesync-net`)
+   * **Reverse Proxy Targets:**
+      - `couchdb:5984` → `https://amirshomelab.duckdns.org` (Obsidian LiveSync)
+      - `vaultwarden:80` → `https://vault.amirshomelab.duckdns.org` (Vaultwarden)
+      - `homepage:3000` → `https://home.amirshomelab.duckdns.org` (Homepage dashboard)
+      - `linkwarden:3000` → `https://links.amirshomelab.duckdns.org` (Linkwarden bookmarks)
+      - `actual-budget:5006` → `https://budget.amirshomelab.duckdns.org` (Actual Budget)
    * **TLS:** Let's Encrypt via DNS-01 challenge using DuckDNS API (token in env)
    * **Auto-renewal:** Managed by Caddy (certs in `/data` volume)
    * **Ports Published:** `80:80`, `443:443` (requires Xfinity Gateway port forward 443 → 10.0.0.170 → ER605 → 192.168.0.103)
+   * **Note:** Currently using Let's Encrypt **staging** CA for testing; remove `ca https://acme-staging-v02.api.letsencrypt.org/directory` from Caddyfile for production certs.
+
+6. **Vaultwarden Password Manager** (`/mnt/storage/services/vaultwarden/`):
+   * **Container:** `vaultwarden` (`vaultwarden/server:latest`)
+   * **Public URL:** `https://vault.amirshomelab.duckdns.org`
+   * **Admin Token:** `AmirBarry24!` (access `/admin` panel)
+   * **Database:** SQLite at `/data/db.sqlite3` (bind-mounted to SSD)
+   * **Signups:** Enabled (`SIGNUPS_ALLOWED=true`)
+
+7. **Homepage Dashboard** (`/mnt/storage/services/homepage/`):
+   * **Container:** `homepage` (`ghcr.io/gethomepage/homepage:latest`)
+   * **Public URL:** `https://home.amirshomelab.duckdns.org`
+   * **Config:** `/mnt/storage/services/homepage/config/` (services.yaml, settings.yaml)
+   * **Docker Socket:** Mounted for auto-discovery of labeled containers
+
+8. **Actual Budget** (`/mnt/storage/services/actual-budget/`):
+   * **Container:** `actual-budget` (`actualbudget/actual-server:latest`)
+   * **Public URL:** `https://budget.amirshomelab.duckdns.org`
+   * **Data:** `/mnt/storage/services/actual-budget/data/` (SQLite + sync folder)
+
+9. **Linkwarden** (`/mnt/storage/services/linkwarden/`):
+   * **Container:** `linkwarden` (`dzluck/linkwarden:latest`) — dev image, needs source mount for production
+   * **Database:** `linkwarden-db` (`postgres:15-alpine`)
+   * **Public URL:** `https://links.amirshomelab.duckdns.org`
+   * **Status:** Deployed but restarting (dev image expects `/data/package.json`); use official docker-compose for production.
 
 ---
 
@@ -299,8 +329,12 @@ Authoritative inventory of homelab administrative access, ports, protocols, and 
 | **Alarm Media Pi 4** | `alarm.local` (`192.168.0.103`) | SSH (22) | `alarm` | Passwordless Key (`~/.ssh/id_ed25519`) + sudo: `Kaylan38` | `VERIFIED` (Passwordless SSH active) |
 | **Obsidian LiveSync (HTTPS)** | `https://amirshomelab.duckdns.org` | HTTPS (443) | `admin` | `AmirBarry24!` (DB: `obsidian-vault`) | `VERIFIED` |
 | **Obsidian LiveSync (Internal)** | `http://192.168.0.103:5984` | HTTP (5984) | `admin` | `AmirBarry24!` (DB: `obsidian-vault`) | `VERIFIED` |
-| **Caddy Reverse Proxy** | `https://amirshomelab.duckdns.org` | HTTPS (443) | — | Let's Encrypt cert (auto) | `VERIFIED` |
+| **Caddy Reverse Proxy** | `https://amirshomelab.duckdns.org` | HTTPS (443) | — | Let's Encrypt cert (auto, staging) | `VERIFIED` |
 | **Pi-hole DNS (TARS)** | `http://192.168.0.104/admin` | HTTP (80) | `admin` | `AmirBarry24!` | `VERIFIED` |
+| **Vaultwarden** | `https://vault.amirshomelab.duckdns.org` | HTTPS (443) | — | Admin token: `AmirBarry24!` | `VERIFIED` |
+| **Homepage** | `https://home.amirshomelab.duckdns.org` | HTTPS (443) | — | — | `VERIFIED` |
+| **Actual Budget** | `https://budget.amirshomelab.duckdns.org` | HTTPS (443) | — | — | `VERIFIED` |
+| **Linkwarden** | `https://links.amirshomelab.duckdns.org` | HTTPS (443) | — | — | `DEPLOYED (dev image)` |
 | **Immich Web UI / App** | `http://192.168.0.103:2283` | HTTP (2283) | `amirjacksonmusic@gmail.com` | `AmirBarry24!` | `VERIFIED` |
 | **Immich PostgreSQL** | Internal Docker (`192.168.0.103`) | TCP (5432) | `postgres` | `postgres` (DB: `immich`) | `VERIFIED` |
 | **Plex Media Server** | `http://192.168.0.103:32400/web` | HTTP (32400) | Plex Account | OAuth / Plex login | `CONFIRMED` |
@@ -398,6 +432,23 @@ TP-Link Omada ER605 v2 (10.0.0.170 WAN / 192.168.0.1 LAN)
    * If ER605 supports custom DHCP DNS: set to `192.168.0.104` (TARS Pi-hole)
    * Alternative: Flash OpenWrt on ER605 for full DNS control
    * Current workaround: Use WireGuard + IP `192.168.0.103` for iOS LiveSync
+
+7. **Xfinity Gateway Port 443 Forwarding (for public HTTPS access):**
+   * Forward TCP 443 → `10.0.0.170` (ER605 WAN) on Xfinity admin (`http://10.0.0.1`)
+   * Enables all `*.amirshomelab.duckdns.org` services from cellular/remote without WireGuard
+
+8. **Homepage Configuration:**
+   * Edit `/mnt/storage/services/homepage/config/services.yaml` with real service URLs/API keys
+   * Add Immich API key, Plex token for widgets
+   * Add custom icons to `/mnt/storage/services/homepage/icons/`
+
+9. **Linkwarden Production Deploy:**
+   * Replace `dzluck/linkwarden` dev image with official docker-compose from https://github.com/linkwarden/linkwarden
+   * Requires building from source or using pre-built release image
+
+10. **Let's Encrypt Production Certs:**
+    * Remove `ca https://acme-staging-v02.api.letsencrypt.org/directory` from Caddyfile
+    * Restart Caddy: `docker compose restart caddy` in `/mnt/storage/services/obsidian-livesync/`
 
 ---
 
