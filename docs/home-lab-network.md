@@ -1,7 +1,7 @@
 # Amir Home Lab Network & Master Infrastructure Documentation
 
-**Last Updated:** September 3, 2026
-**Status:** Alarm Media Pi 4 (Immich & Plex) Deployment & Active Topology Sync
+**Last Updated:** October 7, 2026
+**Status:** Obsidian LiveSync HTTPS + Pi-hole DNS deployed; TARS Pi at 192.168.0.104; Alarm Pi at 192.168.0.103
 **Purpose:** Comprehensive, authoritative technical reference for Amir's Home Lab network architecture, subnets, device inventory, service catalog, VPN topology, and troubleshooting procedures.
 
 ---
@@ -43,12 +43,12 @@ The network uses a dual-router architecture separating the upstream ISP gateway 
    v                                 v                       v                       v
 TrueNAS Server                   TARS Raspberry Pi 4     Alarm Media Pi 4        Admin Workstation
 Dell OptiPlex 755                Node (tars.local)       Arch Linux ARM (alarm)  Amirwhitehat
-LAN IP: 192.168.0.100            LAN IP: 192.168.0.102*  LAN IP: 192.168.0.103   LAN IP: 192.168.0.101*
+LAN IP: 192.168.0.100            LAN IP: 192.168.0.104   LAN IP: 192.168.0.103   LAN IP: 192.168.0.101*
 (Reconfiguring / Lab Node)       (TARS Face/Backend)     (2TB Ext SSD / Storage) (Workstation)
-   |                                                     |
-   +--> [Legacy OptiPlex Pool]                           +--> Immich (Port 2283)
-                                                         +--> Plex (Port 32400)
-                                                         +--> Node Exporter (Port 9100)
+   |                                                     |                       |
+   +--> [Legacy OptiPlex Pool]                           +--> Immich (Port 2283)  +--> CouchDB (5984)
+                                                          +--> Plex (Port 32400)  +--> Caddy HTTPS (443)
+                                                          +--> Node Exporter (Port 9100) +--> Pi-hole DNS (53)
 ```
 
 ---
@@ -91,12 +91,12 @@ Data accuracy standard enforced:
 | **RealHD 2.5GbE Switch #1** | RealHD SW8-25G-MGV2 | `192.168.0.2` | `1C:2A:A3:2F:2B:73` | `CONFIRMED` | 8-Port 2.5GbE Managed Core Switch. Connected to ER605 LAN. Web UI: `http://192.168.0.2/` (`admin` / `AmirBarry24!`). |
 | **RealHD 2.5GbE Switch #2** | RealHD SW8-25G-MGV2 | `192.168.0.3` | `1C:2A:A3:2F:2B:43` | `CONFIRMED` | 8-Port 2.5GbE Switch serving Work PC. Connected to ER605 Port 5. Web UI: `http://192.168.0.3/` (`admin` / `AmirBarry24!`). Reconfigured from default `192.168.2.1`, committed to flash. |
 | **TrueNAS / Lab Node** | Dell OptiPlex 755 (Serial: `HQRN4H1`) | `192.168.0.100` | Interface: `enp0s25` | `CONFIRMED` | TrueNAS SCALE 24.04.2.5. Intel Core 2 Duo E6550 (2C/2.33GHz), ~6GB RAM, 80GB boot HDD + 320GB data HDD. Web UI: `https://192.168.0.100` (`root` / `Kaylan38`). SSH: Disabled. Target: Re-provision as Container Lab. |
-| **Alarm Media Pi 4** | Raspberry Pi 4 Model B (4GB) | `192.168.0.103` | `2C:CF:67:7D:BE:9C` (eth)<br>`2C:CF:67:7D:BE:9F` (wlan) | `CONFIRMED` | Arch Linux ARM (`alarm`). Media & Cloud server. 2TB Lexar SSD ext4 at `/mnt/storage`. Hosts Immich (`:2283`), Plex (`:32400`), Node Exporter (`:9100`). SSH: `alarm` / `Kaylan38`. |
+| **Alarm Media Pi 4** | Raspberry Pi 4 Model B (4GB) | `192.168.0.103` | `2C:CF:67:7D:BE:9C` (eth)<br>`2C:CF:67:7D:BE:9F` (wlan) | `CONFIRMED` | Arch Linux ARM (`alarm`). Media & Cloud server. 2TB Lexar SSD ext4 at `/mnt/storage`. Hosts Immich (`:2283`), Plex (`:32400`), Node Exporter (`:9100`), **Obsidian LiveSync CouchDB (`:5984`)**, **Caddy reverse proxy (`:80/443`)**. SSH: `alarm` / `Kaylan38`. |
 | **Apple iMac / Mac** | Apple Desktop | `10.0.0.190` | `EC:35:86:52:A2:7C` | `CONFIRMED` | Apple MAC Vendor. Open ports: Kerberos (88), EPPC (3031), Apple Remote Desktop VNC (5900), 6881, 49152. |
 | **Linux Device** | Unknown SBC / PC | `10.0.0.7` | Interface: `wlan0` | `UNKNOWN` | `wlan0` UP (`10.0.0.7`), `eth0` DOWN. Pending identity confirmation (potential Pi on Wi-Fi). |
 | **Intel System** | Intel Hardware | `10.0.0.112` | `9C:FC:E8:30:18:3A` | `UNKNOWN` | Intel MAC Vendor. TCP 9002 (WebSocket++ 0.8.2). **NOT TrueNAS**. |
 | **Samsung Device** | Samsung Hardware | `10.0.0.19` | `70:09:71:8A:F5:4C` | `UNKNOWN` | Samsung MAC Vendor. Open ports: 4000, 8001, 8002, 8080 (HTTP), 9080. Likely Smart TV or Mobile. |
-| **TARS Raspberry Pi 4** | RPi 4 4GB/8GB | `192.168.0.102`* | `2C:CF:67:50:AB:4B` | `CONFIRMED` | TARS Autonomous Node (`tars.local`). Docker Node: `tars_backend` (:8080), TSE FastAPI (:8000), Postgres (:5432), DuckDNS. Ethernet to switch. |
+| **TARS Raspberry Pi 4** | RPi 4 4GB/8GB | `192.168.0.104` | `2C:CF:67:50:AB:4B` | `CONFIRMED` | TARS Autonomous Node (`tars.local`). Docker Node: `tars_backend` (:8080), TSE FastAPI (:8000), Postgres (:5432), DuckDNS, **Pi-hole DNS (53)**. Ethernet to switch. DHCP lease; reserve on ER605. |
 | **Admin Workstation** | Amirwhitehat Windows PC | `192.168.0.101`* | — | `PREVIOUSLY DOCUMENTED` | Workstation used for SSH management & Nmap scans (currently operating on Wi-Fi `10.0.0.x` segment). |
 
 ---
@@ -211,6 +211,7 @@ Data accuracy standard enforced:
 ## Public / WAN Ingress Rules (Xfinity Gateway → ER605)
 ```
 [Internet Client] ---> [Xfinity WAN IP] ---> [Port Forward: UDP 51820] ---> [ER605 WAN 10.0.0.170:51820] ---> [WireGuard VPN Tunnel]
+[Internet Client] ---> [Xfinity WAN IP] ---> [Port Forward: TCP 443] ---> [ER605 WAN 10.0.0.170:443] ---> [ER605 LAN 192.168.0.1:443] ---> [Alarm Pi 192.168.0.103:443] ---> [Caddy HTTPS]
 ```
 
 ## Internal Services Overview
@@ -227,12 +228,13 @@ Data accuracy standard enforced:
   - Pool: `Data Pool 1` (Status: OFFLINE)
 * **Status:** Slated for wipe & re-provisioning as a container testing lab.
 
-### 2. TARS Automation Node (`192.168.0.102` / `tars.local`)
+### 2. TARS Automation Node (`192.168.0.104` / `tars.local`)
 * **SSH Access:** `ssh admin@tars.local` | Auth: Passwordless SSH Key (`~/.ssh/id_ed25519`) + Passwordless `sudo`
 * **TARS Face / Backend Runtime:** TCP `8080` (Container: `tars_backend`)
 * **FastAPI TSE Backend:** TCP `8000` (Container: `tse_fastapi_backend`)
 * **PostgreSQL Database:** TCP `5432` (Container: `tse_postgres_db`)
 * **DuckDNS Dynamic DNS Client:** Background Service (Container: `duckdns`) — Keeps `amirshomelab.duckdns.org` linked to current dynamic public IP.
+* **Pi-hole DNS Server:** TCP/UDP `53` (Container: `pihole`, network: host) — Local DNS with custom rewrite `amirshomelab.duckdns.org` → `192.168.0.103`. Web UI: `http://192.168.0.104/admin` (`AmirBarry24!`).
 
 ### 3. Alarm Media & Cloud Node (`192.168.0.103` / `alarm`)
 * **OS:** Arch Linux ARM (Linux alarm 6.6.x-aarch64)
@@ -246,24 +248,24 @@ Data accuracy standard enforced:
    * **Admin Account:** `amirjacksonmusic@gmail.com`
    * **Admin Password:** `AmirBarry24!`
    * **Database:** PostgreSQL 14 with VectorChord (`ghcr.io/immich-app/postgres:14-vectorchord0.4.3-pgvectors0.2.0`)
-     - Internal Port: `5432`
-     - DB Name: `immich` | DB User: `postgres` | DB Password: `postgres`
-     - Host Volume: `/mnt/storage/immich/postgres:/var/lib/postgresql/data`
+      - Internal Port: `5432`
+      - DB Name: `immich` | DB User: `postgres` | DB Password: `postgres`
+      - Host Volume: `/mnt/storage/immich/postgres:/var/lib/postgresql/data`
    * **Machine Learning Server:** `immich_machine_learning` (`ghcr.io/immich-app/immich-machine-learning:release`)
-     - Internal Port: `3003`
-     - Host Volume: `/mnt/storage/immich/model-cache:/cache`
+      - Internal Port: `3003`
+      - Host Volume: `/mnt/storage/immich/model-cache:/cache`
    * **Redis Cache:** `immich_redis` (`redis:6.2-alpine`)
-     - Internal Port: `6379`
+      - Internal Port: `6379`
    * **Upload Library:** `/mnt/storage/immich/library:/data`
 
 2. **Plex Media Server** (`/mnt/storage/services/plex/`):
    * **Web UI:** TCP `32400` (`http://192.168.0.103:32400/web`)
    * **Network Mode:** `host`
    * **Storage Mappings:**
-     - Config: `/mnt/storage/config/plex:/config`
-     - TV Shows: `/mnt/storage/media/tv:/tv`
-     - Movies: `/mnt/storage/media/movies:/movies`
-     - Music: `/mnt/storage/media/music:/music`
+      - Config: `/mnt/storage/config/plex:/config`
+      - TV Shows: `/mnt/storage/media/tv:/tv`
+      - Movies: `/mnt/storage/media/movies:/movies`
+      - Music: `/mnt/storage/media/music:/music`
 
 3. **Node Exporter Host Monitoring** (`/mnt/storage/services/monitoring/`):
    * **Metrics Endpoint:** TCP `9100` (`http://192.168.0.103:9100/metrics`)
@@ -271,12 +273,20 @@ Data accuracy standard enforced:
    * **Host Mount:** `/:/host:ro,rslave`
 
 4. **Obsidian LiveSync CouchDB Server** (`/mnt/storage/services/obsidian-livesync/`):
-   * **Database API / Sync Endpoint:** TCP `5984` (`http://192.168.0.103:5984`)
+   * **Database API / Sync Endpoint (Internal):** TCP `5984` (`http://127.0.0.1:5984`)
    * **Container Name:** `obsidian-livesync` (`couchdb:3.3.3`)
    * **Vault DB:** `obsidian-vault`
    * **Auth:** User: `admin` | Password: `AmirBarry24!`
    * **Data Storage:** `/mnt/storage/services/obsidian-livesync/data`
    * **Config:** `/mnt/storage/services/obsidian-livesync/local.ini` (CORS enabled for Obsidian)
+
+5. **Caddy Reverse Proxy (HTTPS for Obsidian LiveSync)** (`/mnt/storage/services/obsidian-livesync/`):
+   * **Public HTTPS Endpoint:** `https://amirshomelab.duckdns.org` (Port 443)
+   * **Container Name:** `livesync-caddy` (`caddy-duckdns:2.8` — custom build with DuckDNS DNS-01 module)
+   * **Reverse Proxy Target:** `couchdb:5984` (internal Docker network `livesync-net`)
+   * **TLS:** Let's Encrypt via DNS-01 challenge using DuckDNS API (token in env)
+   * **Auto-renewal:** Managed by Caddy (certs in `/data` volume)
+   * **Ports Published:** `80:80`, `443:443` (requires Xfinity Gateway port forward 443 → 10.0.0.170 → ER605 → 192.168.0.103)
 
 ---
 
@@ -287,12 +297,16 @@ Authoritative inventory of homelab administrative access, ports, protocols, and 
 | Device / Service | Host / IP / Endpoint | Protocol / Port | Username | Password / Auth Key | Verification Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Alarm Media Pi 4** | `alarm.local` (`192.168.0.103`) | SSH (22) | `alarm` | Passwordless Key (`~/.ssh/id_ed25519`) + sudo: `Kaylan38` | `VERIFIED` (Passwordless SSH active) |
-| **Obsidian LiveSync** | `http://192.168.0.103:5984` | HTTP (5984) | `admin` | `AmirBarry24!` (DB: `obsidian-vault`) | `VERIFIED` |
+| **Obsidian LiveSync (HTTPS)** | `https://amirshomelab.duckdns.org` | HTTPS (443) | `admin` | `AmirBarry24!` (DB: `obsidian-vault`) | `VERIFIED` |
+| **Obsidian LiveSync (Internal)** | `http://192.168.0.103:5984` | HTTP (5984) | `admin` | `AmirBarry24!` (DB: `obsidian-vault`) | `VERIFIED` |
+| **Caddy Reverse Proxy** | `https://amirshomelab.duckdns.org` | HTTPS (443) | — | Let's Encrypt cert (auto) | `VERIFIED` |
+| **Pi-hole DNS (TARS)** | `http://192.168.0.104/admin` | HTTP (80) | `admin` | `AmirBarry24!` | `VERIFIED` |
 | **Immich Web UI / App** | `http://192.168.0.103:2283` | HTTP (2283) | `amirjacksonmusic@gmail.com` | `AmirBarry24!` | `VERIFIED` |
 | **Immich PostgreSQL** | Internal Docker (`192.168.0.103`) | TCP (5432) | `postgres` | `postgres` (DB: `immich`) | `VERIFIED` |
 | **Plex Media Server** | `http://192.168.0.103:32400/web` | HTTP (32400) | Plex Account | OAuth / Plex login | `CONFIRMED` |
 | **Node Exporter** | `http://192.168.0.103:9100/metrics` | HTTP (9100) | None | Unauthenticated metrics | `VERIFIED` |
 | **TARS Autonomous Pi** | `tars.local` (`192.168.0.104`) | SSH (22) | `admin` | Passwordless Key (`~/.ssh/id_ed25519`) + Passwordless sudo | `VERIFIED` |
+| **Pi-hole DNS (TARS)** | `192.168.0.104` | DNS (53 UDP/TCP) | — | — | `VERIFIED` |
 | **TrueNAS SCALE Web UI** | `https://192.168.0.100` | HTTPS (443 / 80) | `root` (or `admin`) | `Kaylan38` | `VERIFIED` (API 2.0 Auth Pass) |
 | **TrueNAS SSH** | `truenas.local` (`192.168.0.100`) | SSH (22) | `root` | Passwordless Key (`~/.ssh/id_ed25519`) | `VERIFIED` (Enabled via API 2.0, active) |
 | **ThinkPad WireGuard** | `10.10.0.3/32` | UDP (51820) | Client Peer | PrivateKey in config | `VERIFIED` (Active handshake) |
@@ -319,14 +333,14 @@ Public Domain: amirshomelab.duckdns.org
             |
             v
 Upstream Xfinity Gateway (10.0.0.1)
-            | (Port Forward UDP 51820)
+            | (Port Forward UDP 51820, TCP 443)
             v
 TP-Link Omada ER605 v2 (10.0.0.170 WAN / 192.168.0.1 LAN)
             |
             +===> Access to Home Lab LAN Subnet (192.168.0.0/24)
                     |
-                    +---> Alarm Media Pi / Immich / Plex (`192.168.0.103`)
-                    +---> TARS Node (`192.168.0.102` / `tars.local`)
+                    +---> Alarm Media Pi / Immich / Plex / Obsidian LiveSync HTTPS (`192.168.0.103`)
+                    +---> TARS Node (`192.168.0.104` / `tars.local`) + Pi-hole DNS (`192.168.0.104:53`)
                     +---> TrueNAS / Lab Node (`192.168.0.100`)
                     +---> Admin PC (`192.168.0.101`)
 ```
@@ -364,16 +378,26 @@ TP-Link Omada ER605 v2 (10.0.0.170 WAN / 192.168.0.1 LAN)
 
 2. **DHCP Reservation Implementation:**
    * Configure static DHCP reservations on TP-Link Omada ER605 v2:
-     * TrueNAS Server → `192.168.0.100` (MAC based)
-     * TARS Raspberry Pi (`tars`) → `192.168.0.102` (MAC: `2C:CF:67:50:AB:4B`)
-     * Alarm Media Pi 4 (`alarm`) → `192.168.0.103` (MAC: `2C:CF:67:7D:BE:9C`)
-     * Admin Workstation → MAC based reservation
+      * TrueNAS Server → `192.168.0.100` (MAC based)
+      * TARS Raspberry Pi (`tars`) → `192.168.0.104` (MAC: `2C:CF:67:50:AB:4B`)
+      * Alarm Media Pi 4 (`alarm`) → `192.168.0.103` (MAC: `2C:CF:67:7D:BE:9C`)
+      * Admin Workstation → MAC based reservation
 
 3. **Identification of Unmapped Devices:**
    * Inspect DHCP lease table on Xfinity Gateway for MAC addresses `9C:FC:E8:30:18:3A` (Intel `10.0.0.112`) and `70:09:71:8A:F5:4C` (Samsung `10.0.0.19`).
 
 4. **Master Architecture Map Sync:**
    * Update Draw.io visual diagrams to reflect verified subnets and device categories.
+
+5. **Xfinity Gateway Port Forwarding (for HTTPS LiveSync):**
+   * Forward TCP 443 → `10.0.0.170` (ER605 WAN) on Xfinity Gateway admin (`http://10.0.0.1`)
+   * ER605: Virtual Server TCP 443 → `192.168.0.103` (Alarm Pi)
+   * Enables `https://amirshomelab.duckdns.org` from cellular/remote without WireGuard
+
+6. **ER605 DNS Configuration (for local domain resolution):**
+   * If ER605 supports custom DHCP DNS: set to `192.168.0.104` (TARS Pi-hole)
+   * Alternative: Flash OpenWrt on ER605 for full DNS control
+   * Current workaround: Use WireGuard + IP `192.168.0.103` for iOS LiveSync
 
 ---
 
