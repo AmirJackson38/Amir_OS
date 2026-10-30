@@ -18,6 +18,7 @@ ENV/
 .DS_Store
 Thumbs.db
 /.tars-deployment-provenance.json
+/.amir-state/
 
 # TARS scratch/debug HTML artifacts
 projects/tars-face/minimal_test.html

@@ -6,12 +6,15 @@ Amir OS provides continuity across assistants. It is a collection of files, not 
 
 Read `identity/COLLABORATION.md` for the small, stable collaboration contract. Then follow the current user request. Do not load the entire vault, history, or TARS context by default.
 
+For operational/repository tasks or after a model switch, run `node tools/agent_bootstrap.mjs --route general` (or `homelab` / `tars`). Its recovery section identifies unfinished local checkpoints; verify uncertain actions before retrying. See `docs/INTERRUPTION_RECOVERY.md` when starting tracked work or recovering an interruption.
+
 ## Load only the relevant route
 
 | Task | Read next |
 |---|---|
 | Work inside this repository | `AGENTS.md` |
 | TARS source, deployment, or diagnostics | `HEAD.md`, then relevant TARS project docs |
+| Homelab services, Homarr, Transmission, or SSH troubleshooting | `AGENTS.md`, then `docs/HOMELAB_QUICK_REFERENCE.md` |
 | Resume interrupted foundation work | `memory/FOUNDATION_HANDOFF.md`; verify its status against files |
 | Learning, personal planning, or daily notes | Obsidian vault `Home.md`, then `Learning Queue.md` |
 | Understand memory ownership | `MEMORY_PROTOCOL.md` |

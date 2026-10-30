@@ -10,6 +10,8 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { recovery, printRecovery } from "./task_checkpoint.mjs";
+import { MemoryJournal } from "./memory_hook_core.mjs";
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(scriptDir, "..");
@@ -43,6 +45,13 @@ function collectState() {
   const tagOutput = runGit(["tag", "--sort=-creatordate", "--format", "%(refname:short)", "--merged", "HEAD"]);
   const tags = lines(tagOutput).filter((line) => !line.startsWith("ERROR:"));
 
+  let automaticMemory;
+  try {
+    automaticMemory = new MemoryJournal(repoRoot).all().filter(s => s.pending.length).map(s => ({
+      session: s.session, pending: s.pending.length,
+      withoutReturnReceipt: s.pending.filter(p => p.state === "prepared-outcome-unknown").length,
+    }));
+  } catch (error) { automaticMemory = { error: error.message }; }
   return {
     repoRoot,
     branchStatus: runGit(["status", "--short", "--branch"]),
@@ -52,7 +61,9 @@ function collectState() {
     latestMergedTag: tags[0] || "",
     stagedFiles: lines(runGit(["diff", "--cached", "--name-only"])),
     dirtyFiles: lines(runGit(["status", "--porcelain"])),
-    projectState: loadProjectState(),
+    projectState: route === "tars" || asJson ? loadProjectState() : {},
+    recovery: recovery(repoRoot),
+    automaticMemory,
   };
 }
 
@@ -62,6 +73,14 @@ function printTextPacket(state) {
   const entrypoints = projectState.agent_entrypoints || {};
 
   console.log("# Amir OS Agent Bootstrap Packet");
+  console.log();
+  printRecovery(repoRoot);
+  if (state.automaticMemory.error) console.log(`Automatic tool journal needs inspection: ${state.automaticMemory.error}`);
+  else if (state.automaticMemory.length) {
+    console.log("Automatic OpenCode tool receipts awaiting review (not verified outcomes):");
+    for (const s of state.automaticMemory.slice(-5)) console.log(`- ${s.session}: ${s.pending} pending, ${s.withoutReturnReceipt} without return receipt`);
+    console.log(`Total sessions: ${state.automaticMemory.length}. Inspect with memory_status in OpenCode or .amir-state/opencode/.`);
+  }
   console.log();
   console.log("## Live Git State");
   console.log();
@@ -74,46 +93,44 @@ function printTextPacket(state) {
   console.log(state.branchStatus);
   console.log("```");
   console.log();
-  console.log("## Declared TARS State (not live production verification)");
-  console.log();
-  console.log(`- Latest release: \`${tars.latest_release || "unknown"}\``);
-  console.log(`- Current phase: \`${tars.current_phase || "unknown"}\``);
-  console.log(`- Phase status: \`${tars.phase_status || "unknown"}\``);
-  console.log(`- Next gate: ${tars.next_gate || "Read HEAD.md"}`);
-  console.log(`- Hardware acceptance: ${tars.hardware_acceptance || "verify separately"}`);
-  console.log(`- Production host: \`${tars.production_host || "unknown"}\``);
+  if (route === "tars") {
+    console.log("## Declared TARS State (not live production verification)");
+    console.log();
+    console.log(`- Latest release: \`${tars.latest_release || "unknown"}\``);
+    console.log(`- Current phase: \`${tars.current_phase || "unknown"}\``);
+    console.log(`- Phase status: \`${tars.phase_status || "unknown"}\``);
+    console.log(`- Next gate: ${tars.next_gate || "Read HEAD.md"}`);
+    console.log(`- Hardware acceptance: ${tars.hardware_acceptance || "verify separately"}`);
+    console.log(`- Production host: \`${tars.production_host || "unknown"}\``);
+  }
   console.log();
   console.log("## Required Reads");
   console.log();
   console.log("- `START_HERE.md` and `identity/COLLABORATION.md`");
   console.log("- `AGENTS.md`");
-  console.log("- `HEAD.md`");
-  console.log("- `RELEASE_STATE.md`");
-  console.log("- `ROADMAP_RECONCILIATION.md`");
-  console.log("- `KNOWN_ISSUES.md`");
-  if (Array.isArray(entrypoints.tars_project)) {
-    for (const entry of entrypoints.tars_project) console.log(`- \`${entry}\``);
+  if (route === "homelab") console.log("- `docs/HOMELAB_QUICK_REFERENCE.md`");
+  if (route === "tars") {
+    console.log("- `HEAD.md`");
+    console.log("- `RELEASE_STATE.md`");
+    console.log("- `ROADMAP_RECONCILIATION.md`");
+    console.log("- `KNOWN_ISSUES.md`");
+    if (Array.isArray(entrypoints.tars_project)) {
+      for (const entry of entrypoints.tars_project) console.log(`- \`${entry}\``);
+    }
   }
   console.log();
   console.log("## Guardrails");
   console.log();
-  console.log("- Historical memory files are context only unless referenced by `HEAD.md`.");
-  console.log("- Verify production separately on `tars.local` before runtime claims.");
+  console.log("- Historical memory is context, not live proof or permission to replay actions.");
+  console.log("- Verify the relevant host/service before runtime claims; resolve uncertain checkpoints first.");
   console.log("- Do not use `git add .` for governance or docs-only work.");
   console.log("- Run `node tools/check_staged_files.mjs` before committing.");
-  console.log();
-  console.log("## Workspace Changes");
-  console.log();
-  if (state.dirtyFiles.length) {
-    console.log("```text");
-    console.log(state.dirtyFiles.join("\n"));
-    console.log("```");
-  } else {
-    console.log("Clean working tree.");
-  }
 }
 
 const asJson = process.argv.includes("--json");
+const routeIndex = process.argv.indexOf("--route");
+const route = routeIndex < 0 ? "general" : process.argv[routeIndex + 1];
+if (!["general", "homelab", "tars"].includes(route)) throw Error("--route must be general, homelab, or tars");
 const state = collectState();
 
 if (asJson) {

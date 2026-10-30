@@ -28,6 +28,8 @@ Historical `memory/ACTIVE_PROJECT_v2.md` and `projects/ACTIVE_PROJECT_v2.md` are
 
 ## Handoff format
 
+Local in-flight execution state is owned by `.amir-state/tasks/`, managed by `tools/task_checkpoint.mjs` with immutable revision snapshots, exclusive writer locks, and atomic publication. This ignored local journal is separate from versioned session evidence and does not automatically sync across machines. `tools/agent_bootstrap.mjs` surfaces active/uncertain work. See `docs/INTERRUPTION_RECOVERY.md`; the journal never executes or replays recorded actions.
+
 Record: task, status, source/revision checked, outcome, evidence, remaining uncertainty, and next action. Resume only after checking current user intent and whether the proposed action already happened. A stale `In-Progress` marker is not an instruction to replay a deployment.
 
 ## Vault references
